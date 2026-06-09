@@ -41,3 +41,5 @@ Thumbs.db
 .venv/
 venv/
 docs/reference-traces/
+# Python packaging
+*.egg-info/
