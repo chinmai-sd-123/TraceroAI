@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: traceroai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: traceroai
+      POSTGRES_PASSWORD: traceroai
+      POSTGRES_DB: traceroai
+    ports:
+      - "5432:5432"
+    volumes:
+      - traceroai_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U traceroai -d traceroai"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+
+volumes:
+  traceroai_postgres_data:
+
+      
