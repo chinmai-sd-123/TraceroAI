@@ -37,3 +37,9 @@ Thumbs.db
 # Secrets / certificates
 *.pem
 *.key
+
+.venv/
+venv/
+docs/reference-traces/
+# Python packaging
+*.egg-info/
