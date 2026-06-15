@@ -80,7 +80,21 @@ def test_ingested_trace_can_be_fetched_by_id() -> None:
     trace = get_response.json()
     assert trace["trace_id"] == trace_id
     assert trace["query"]["original"] == "Can admins change the workspace region themselves?"
-    assert trace["diagnosis"]["label"] == "healthy_answer"
+
+
+def test_ingest_runs_quick_evaluation_and_overwrites_diagnosis() -> None:
+    ingest_response = client.post("/v1/traces", json=make_trace_payload())
+    trace_id = ingest_response.json()["trace_id"]
+
+    trace = client.get(f"/v1/traces/{trace_id}").json()
+
+    quick = trace["evaluations"]["quick"]
+    evaluator_names = {result["evaluator_name"] for result in quick}
+    assert evaluator_names == {"context_relevance", "groundedness", "answer_relevance"}
+
+    diagnosis_label = trace["diagnosis"]["label"]
+    assert diagnosis_label != "pending"
+    assert diagnosis_label != "healthy_answer"
 
 
 def test_list_traces_includes_ingested_trace() -> None:

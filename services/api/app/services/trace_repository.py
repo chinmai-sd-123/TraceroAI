@@ -1,10 +1,12 @@
+from __future__ import annotations
 from uuid import UUID
+
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import TraceRecord
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import TraceIngestRequest, EvaluationResult
 
 
 class TraceRepository:
@@ -39,3 +41,19 @@ class TraceRepository:
 
     def get(self, trace_id: UUID) -> TraceRecord | None:
         return self.db.get(TraceRecord, trace_id)
+    
+    def set_deep_evaluations(
+        self, trace_id: UUID, deep_results: list[EvaluationResult]
+    ) -> TraceRecord | None:
+            record = self.db.get(TraceRecord, trace_id)
+            if record is None:
+                return None
+
+            trace = TraceIngestRequest(**record.payload)
+            trace.evaluations.deep = deep_results
+            record.payload = trace.model_dump(mode="json")
+
+            self.db.add(record)
+            self.db.commit()
+            self.db.refresh(record)
+            return record
