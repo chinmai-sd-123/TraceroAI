@@ -1,0 +1,56 @@
+{
+  "cases": [
+    {
+      "case_id": "healthy_refund_timeline",
+      "expected_diagnosis": "healthy_answer",
+      "trace": {
+        "query": { "original": "How long does a refund take to process?" },
+        "retrieval": {
+          "chunks": [
+            { "rank": 1, "chunk_id": "refund_1", "text": "Refunds are processed within 5 to 7 business days after the request is approved." }
+          ]
+        },
+        "generation": { "model": "gpt-4o-mini", "answer": "Refunds are processed within 5 to 7 business days after approval." }
+      }
+    },
+    {
+      "case_id": "healthy_region_change",
+      "expected_diagnosis": "healthy_answer",
+      "trace": {
+        "query": { "original": "Can I change my workspace region after creation?" },
+        "retrieval": {
+          "chunks": [
+            { "rank": 1, "chunk_id": "faq_1", "text": "Customers cannot change a workspace region after the workspace is created." }
+          ]
+        },
+        "generation": { "model": "gpt-4o-mini", "answer": "No, you cannot change a workspace region after the workspace is created." }
+      }
+    },
+    {
+      "case_id": "unsupported_claim_refund_method",
+      "expected_diagnosis": "unsupported_claim",
+      "trace": {
+        "query": { "original": "How are refunds issued?" },
+        "retrieval": {
+          "chunks": [
+            { "rank": 1, "chunk_id": "refund_2", "text": "Refunds are processed within 5 to 7 business days after the request is approved." }
+          ]
+        },
+        "generation": { "model": "gpt-4o-mini", "answer": "Refunds are settled instantly through blockchain cryptocurrency transfers to your wallet." }
+      }
+    },
+    {
+      "case_id": "retrieval_miss_office_for_refund",
+      "expected_diagnosis": "retrieval_miss",
+      "trace": {
+        "query": { "original": "What is the refund policy for annual plans?" },
+        "retrieval": {
+          "chunks": [
+            { "rank": 1, "chunk_id": "office_1", "text": "Our headquarters is located in Austin, Texas and the office is open Monday through Friday." }
+          ]
+        },
+        "generation": { "model": "gpt-4o-mini", "answer": "Annual plans can be refunded on a prorated basis within thirty days." }
+      }
+    }
+  ]
+}
