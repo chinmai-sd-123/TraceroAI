@@ -1,6 +1,9 @@
-import { experimentRuns, regressionRuns } from "@/lib/mock-eval-runs";
+import Link from "next/link";
 
-export default function EvalRunsPage() {
+import { getEvalRuns } from "@/lib/api";
+
+export default async function EvalRunsPage() {
+  const { regressionRuns, experimentRuns } = await getEvalRuns();
   return (
     <section>
       <div>
@@ -19,9 +22,10 @@ export default function EvalRunsPage() {
           <h2 className="text-lg font-semibold">Regression Runs</h2>
           <div className="mt-4 grid gap-4">
             {regressionRuns.map((run) => (
-              <div
+              <Link
                 key={run.id}
-                className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6"
+                href={`/dashboard/eval-runs/${run.id}`}
+                className="block rounded-lg border border-zinc-800 bg-zinc-900/60 p-6 transition hover:border-zinc-700 hover:bg-zinc-900"
               >
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
@@ -49,7 +53,7 @@ export default function EvalRunsPage() {
                   />
                   <Metric label="Avg latency" value={`${run.summary.avgLatencyMs}ms`} />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
@@ -58,9 +62,10 @@ export default function EvalRunsPage() {
           <h2 className="text-lg font-semibold">Experiment Runs</h2>
           <div className="mt-4 grid gap-4">
             {experimentRuns.map((run) => (
-              <div
+              <Link
                 key={run.id}
-                className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6"
+                href={`/dashboard/eval-runs/${run.id}`}
+                className="block rounded-lg border border-zinc-800 bg-zinc-900/60 p-6 transition hover:border-zinc-700 hover:bg-zinc-900"
               >
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
@@ -103,7 +108,7 @@ export default function EvalRunsPage() {
                 <p className="mt-4 text-sm leading-6 text-zinc-400">
                   {run.recommendation.reason}
                 </p>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
