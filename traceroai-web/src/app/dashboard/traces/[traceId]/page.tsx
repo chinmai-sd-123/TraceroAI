@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { mockTraces, type TraceDiagnosis } from "@/lib/mock-traces";
+import { getTrace } from "@/lib/api";
+import type { TraceDiagnosis } from "@/lib/mock-traces";
 
 const diagnosisStyles: Record<TraceDiagnosis, string> = {
   healthy_answer: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
@@ -27,7 +28,7 @@ export default async function TraceDetailPage({
   params: Promise<{ traceId: string }>;
 }) {
   const { traceId } = await params;
-  const trace = mockTraces.find((item) => item.traceId === traceId);
+  const trace = await getTrace(traceId);
 
   if (!trace) {
     notFound();
@@ -130,7 +131,7 @@ export default async function TraceDetailPage({
                     #{chunk.rank} {chunk.documentTitle}
                   </p>
                   <p className="mt-1 text-xs text-zinc-500">
-                    {chunk.section} · {chunk.source}
+                    {chunk.section} / {chunk.source}
                   </p>
                 </div>
 

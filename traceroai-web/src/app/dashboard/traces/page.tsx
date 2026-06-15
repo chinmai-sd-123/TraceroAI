@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { mockTraces, type TraceDiagnosis } from "@/lib/mock-traces";
+import { getTraces } from "@/lib/api";
+import type { TraceDiagnosis } from "@/lib/mock-traces";
 
 const diagnosisStyles: Record<TraceDiagnosis, string> = {
   healthy_answer: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
@@ -23,7 +24,8 @@ function formatTime(timestamp: string) {
   }).format(new Date(timestamp));
 }
 
-export default function TracesPage() {
+export default async function TracesPage() {
+  const traces = await getTraces();
   return (
     <section>
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -40,7 +42,7 @@ export default function TracesPage() {
 
         <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3">
           <p className="text-xs text-zinc-500">Total traces</p>
-          <p className="mt-1 text-xl font-semibold">{mockTraces.length}</p>
+          <p className="mt-1 text-xl font-semibold">{traces.length}</p>
         </div>
       </div>
 
@@ -54,7 +56,7 @@ export default function TracesPage() {
         </div>
 
         <div className="divide-y divide-zinc-800">
-          {mockTraces.map((trace) => (
+          {traces.map((trace) => (
             <Link
               key={trace.traceId}
               href={`/dashboard/traces/${trace.traceId}`}
