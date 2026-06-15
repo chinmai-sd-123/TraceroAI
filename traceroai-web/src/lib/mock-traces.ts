@@ -50,6 +50,12 @@ export type MockTrace = {
       score: number;
       reason: string;
     };
+    deepGroundedness?: {
+      label: string;
+      score: number | null;
+      reason: string;
+      claims: Array<{ claim: string; supported: boolean; reason: string }>;
+    };
   };
   diagnosis: {
     label: TraceDiagnosis;

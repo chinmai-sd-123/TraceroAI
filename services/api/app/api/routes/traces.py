@@ -1,27 +1,34 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.schemas.traces import TraceIngestRequest, TraceIngestResponse
+from app.services.quick_evaluation import run_quick_evaluation
 from app.services.trace_repository import TraceRepository
-
+from app.services.deep_evaluation import run_deep_evaluation
 router = APIRouter(prefix="/v1/traces", tags=["traces"])
 
 @router.post("", response_model=TraceIngestResponse, status_code=status.HTTP_202_ACCEPTED)
 def ingest_trace(
     payload: TraceIngestRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> TraceIngestResponse:
+    payload = run_quick_evaluation(payload)
+
     repository = TraceRepository(db)
     repository.save(payload)
+
+    background_tasks.add_task(run_deep_evaluation, payload.trace_id)
 
     return TraceIngestResponse(
         trace_id=payload.trace_id,
         status="accepted",
         message="Trace accepted for ingestion.",
     )
+
 
 
 @router.get("", response_model=list[TraceIngestRequest])

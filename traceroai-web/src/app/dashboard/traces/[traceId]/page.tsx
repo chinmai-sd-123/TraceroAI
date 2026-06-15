@@ -18,6 +18,17 @@ const relevanceStyles = {
   irrelevant: "border-red-500/30 bg-red-500/10 text-red-300",
 };
 
+const deepLabelStyles: Record<string, string> = {
+  grounded: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  not_grounded: "border-red-500/30 bg-red-500/10 text-red-300",
+  needs_review: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
+  error: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+};
+
+function deepLabelStyle(label: string) {
+  return deepLabelStyles[label] ?? deepLabelStyles.needs_review;
+}
+
 function formatLabel(label: string) {
   return label.replaceAll("_", " ");
 }
@@ -117,6 +128,56 @@ export default async function TraceDetailPage({
           </div>
         </Panel>
       </div>
+
+      {trace.evaluations.deepGroundedness && (
+        <Panel title="Claim Support — LLM Judge" className="mt-6">
+          <div className="flex items-center justify-between gap-4">
+            <span
+              className={`inline-flex rounded-md border px-3 py-1.5 text-sm font-medium ${deepLabelStyle(trace.evaluations.deepGroundedness.label)}`}
+            >
+              {formatLabel(trace.evaluations.deepGroundedness.label)}
+            </span>
+            {trace.evaluations.deepGroundedness.score !== null && (
+              <span className="font-mono text-sm text-cyan-300">
+                {Math.round(trace.evaluations.deepGroundedness.score * 100)}%
+              </span>
+            )}
+          </div>
+
+          <p className="mt-3 text-sm leading-6 text-zinc-400">
+            {trace.evaluations.deepGroundedness.reason}
+          </p>
+
+          {trace.evaluations.deepGroundedness.claims.length > 0 && (
+            <div className="mt-5 space-y-3">
+              {trace.evaluations.deepGroundedness.claims.map((claim, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="text-sm font-medium text-zinc-100">
+                      {claim.claim}
+                    </p>
+                    <span
+                      className={`shrink-0 rounded-md border px-2 py-1 text-xs font-medium ${
+                        claim.supported
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                          : "border-red-500/30 bg-red-500/10 text-red-300"
+                      }`}
+                    >
+                      {claim.supported ? "supported" : "unsupported"}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-zinc-500">
+                    {claim.reason}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      )}
 
       <Panel title="Retrieved Chunks" className="mt-6">
         <div className="space-y-4">

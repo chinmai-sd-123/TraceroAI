@@ -42,6 +42,15 @@ type ApiTrace = {
       score?: number | null;
       reason?: string | null;
     }>;
+    deep?: Array<{
+      evaluator_name: string;
+      label: string;
+      score?: number | null;
+      reason?: string | null;
+      details?: {
+        claims?: Array<{ claim: string; supported: boolean; reason: string }>;
+      };
+    }>;
   };
   diagnosis: {
     label: TraceDiagnosis | string;
@@ -204,6 +213,9 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
   const groundedness = findEval(trace, "groundedness");
   const contextRelevance = findEval(trace, "context_relevance");
   const answerRelevance = findEval(trace, "answer_relevance");
+  const deepGroundedness = trace.evaluations.deep?.find(
+    (item) => item.evaluator_name === "claim_groundedness",
+  );
 
   return {
     traceId: trace.trace_id,
@@ -250,6 +262,14 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
         score: answerRelevance?.score ?? 0,
         reason: answerRelevance?.reason || "No answer relevance result available.",
       },
+      deepGroundedness: deepGroundedness
+        ? {
+            label: deepGroundedness.label,
+            score: deepGroundedness.score ?? null,
+            reason: deepGroundedness.reason || "No reason provided.",
+            claims: deepGroundedness.details?.claims ?? [],
+          }
+        : undefined,
     },
     diagnosis: {
       label: normalizeDiagnosis(trace.diagnosis.label),
