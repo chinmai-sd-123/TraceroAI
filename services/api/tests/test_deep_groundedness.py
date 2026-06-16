@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.services.deep_evaluation import run_deep_evaluation
-from app.services.llm_judge import ClaimGroundednessVerdict, JudgedClaim
+from app.services.llm_judge import ClaimGroundednessVerdict, JudgedClaim, RelevanceVerdict
 
 client = TestClient(app)
 
@@ -20,6 +20,12 @@ class StubJudge:
                 )
             ]
         )
+
+    def judge_context_relevance(self, query: str, context: str) -> RelevanceVerdict:
+        return RelevanceVerdict(relevant=True, reason="context addresses the query")
+
+    def judge_answer_relevance(self, query: str, answer: str) -> RelevanceVerdict:
+        return RelevanceVerdict(relevant=True, reason="answer addresses the query")
 
 
 def make_trace_payload() -> dict:
@@ -41,18 +47,23 @@ def make_trace_payload() -> dict:
     }
 
 
-def test_deep_evaluation_populates_grounded_result() -> None:
+def test_deep_evaluation_populates_all_deep_results() -> None:
     trace_id = client.post("/v1/traces", json=make_trace_payload()).json()["trace_id"]
 
     run_deep_evaluation(UUID(trace_id), judge=StubJudge())
 
-    trace = client.get(f"/v1/traces/{trace_id}").json()
-    deep = trace["evaluations"]["deep"]
+    deep = client.get(f"/v1/traces/{trace_id}").json()["evaluations"]["deep"]
+    by_name = {result["evaluator_name"]: result for result in deep}
 
-    assert len(deep) == 1
-    assert deep[0]["evaluator_name"] == "claim_groundedness"
-    assert deep[0]["label"] == "grounded"
-    assert deep[0]["details"]["claims"][0]["supported"] is True
+    assert set(by_name) == {
+        "deep_context_relevance",
+        "claim_groundedness",
+        "deep_answer_relevance",
+    }
+    assert by_name["claim_groundedness"]["label"] == "grounded"
+    assert by_name["claim_groundedness"]["details"]["claims"][0]["supported"] is True
+    assert by_name["deep_context_relevance"]["label"] == "relevant"
+    assert by_name["deep_answer_relevance"]["label"] == "relevant"
 
 
 def test_ingest_triggers_deep_eval_and_degrades_without_key() -> None:

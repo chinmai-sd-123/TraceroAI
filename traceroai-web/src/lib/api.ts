@@ -216,6 +216,12 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
   const deepGroundedness = trace.evaluations.deep?.find(
     (item) => item.evaluator_name === "claim_groundedness",
   );
+  const deepContextRelevance = trace.evaluations.deep?.find(
+    (item) => item.evaluator_name === "deep_context_relevance",
+  );
+  const deepAnswerRelevance = trace.evaluations.deep?.find(
+    (item) => item.evaluator_name === "deep_answer_relevance",
+  );
 
   return {
     traceId: trace.trace_id,
@@ -268,6 +274,18 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
             score: deepGroundedness.score ?? null,
             reason: deepGroundedness.reason || "No reason provided.",
             claims: deepGroundedness.details?.claims ?? [],
+          }
+        : undefined,
+      deepContextRelevance: deepContextRelevance
+        ? {
+            label: deepContextRelevance.label,
+            reason: deepContextRelevance.reason || "No reason provided.",
+          }
+        : undefined,
+      deepAnswerRelevance: deepAnswerRelevance
+        ? {
+            label: deepAnswerRelevance.label,
+            reason: deepAnswerRelevance.reason || "No reason provided.",
           }
         : undefined,
     },

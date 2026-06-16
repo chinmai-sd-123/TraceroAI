@@ -56,6 +56,14 @@ export type MockTrace = {
       reason: string;
       claims: Array<{ claim: string; supported: boolean; reason: string }>;
     };
+    deepContextRelevance?: {
+      label: string;
+      reason: string;
+    };
+    deepAnswerRelevance?: {
+      label: string;
+      reason: string;
+    };
   };
   diagnosis: {
     label: TraceDiagnosis;

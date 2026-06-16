@@ -29,6 +29,34 @@ function deepLabelStyle(label: string) {
   return deepLabelStyles[label] ?? deepLabelStyles.needs_review;
 }
 
+function DeepRelevanceCard({
+  title,
+  label,
+  reason,
+}: {
+  title: string;
+  label: string;
+  reason: string;
+}) {
+  return (
+    <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-zinc-100">{title}</p>
+        <span
+          className={`shrink-0 rounded-md border px-2 py-1 text-xs font-medium ${
+            label === "relevant"
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+              : "border-red-500/30 bg-red-500/10 text-red-300"
+          }`}
+        >
+          {label}
+        </span>
+      </div>
+      <p className="mt-2 text-sm leading-6 text-zinc-500">{reason}</p>
+    </div>
+  );
+}
+
 function formatLabel(label: string) {
   return label.replaceAll("_", " ");
 }
@@ -147,6 +175,26 @@ export default async function TraceDetailPage({
           <p className="mt-3 text-sm leading-6 text-zinc-400">
             {trace.evaluations.deepGroundedness.reason}
           </p>
+
+          {(trace.evaluations.deepContextRelevance ||
+            trace.evaluations.deepAnswerRelevance) && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {trace.evaluations.deepContextRelevance && (
+                <DeepRelevanceCard
+                  title="Context relevance"
+                  label={trace.evaluations.deepContextRelevance.label}
+                  reason={trace.evaluations.deepContextRelevance.reason}
+                />
+              )}
+              {trace.evaluations.deepAnswerRelevance && (
+                <DeepRelevanceCard
+                  title="Answer relevance"
+                  label={trace.evaluations.deepAnswerRelevance.label}
+                  reason={trace.evaluations.deepAnswerRelevance.reason}
+                />
+              )}
+            </div>
+          )}
 
           {trace.evaluations.deepGroundedness.claims.length > 0 && (
             <div className="mt-5 space-y-3">
