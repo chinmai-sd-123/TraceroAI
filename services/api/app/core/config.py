@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # An ingest request authenticated with a known key is stamped with that
     # project; unknown/absent keys fall back to the client-provided project.
     project_api_keys: dict[str, str] = Field(default_factory=dict)
+    # When True, POST /v1/traces requires a valid key from project_api_keys (else 401).
+    # Reads (the dashboard) are NEVER gated, so visitors/recruiters can browse freely.
+    # Default False so local dev/tests and unauthenticated demos keep working.
+    require_api_key: bool = False
     # Extra browser origins allowed by CORS (the deployed frontend URL).
     # JSON list, e.g. TRACEROAI_CORS_ORIGINS='["https://traceroai.vercel.app"]'.
     cors_origins: list[str] = Field(default_factory=list)

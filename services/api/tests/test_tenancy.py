@@ -51,3 +51,30 @@ def test_list_filters_by_project() -> None:
     acme_ids = {t["trace_id"] for t in client.get("/v1/traces?project_id=acme").json()}
     assert acme_id in acme_ids
     assert globex_id not in acme_ids
+
+
+class TestApiKeyEnforcement:
+    @pytest.fixture(autouse=True)
+    def _enforce(self, monkeypatch):
+        monkeypatch.setattr(get_settings(), "require_api_key", True)
+
+    def test_valid_key_is_accepted(self) -> None:
+        response = client.post(
+            "/v1/traces", json=_payload(), headers={"Authorization": "Bearer key_acme"}
+        )
+        assert response.status_code == 202
+
+    def test_missing_key_is_rejected(self) -> None:
+        response = client.post("/v1/traces", json=_payload())
+        assert response.status_code == 401
+
+    def test_unknown_key_is_rejected(self) -> None:
+        response = client.post(
+            "/v1/traces", json=_payload(), headers={"Authorization": "Bearer nope"}
+        )
+        assert response.status_code == 401
+
+    def test_reads_stay_open_without_a_key(self) -> None:
+        # Recruiters/visitors must be able to browse the dashboard data unauthenticated.
+        assert client.get("/v1/traces").status_code == 200
+        assert client.get("/v1/jobs/stats").status_code == 200

@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.tenancy import project_for_api_key
 from app.db.session import get_db
 from app.schemas.traces import TraceIngestRequest, TraceIngestResponse, FeedbackEntry
@@ -21,9 +22,18 @@ def ingest_trace(
     db: Session = Depends(get_db),
     authorization: str | None = Header(default=None),
 ) -> TraceIngestResponse:
-    # Multi-tenant lite: if the API key maps to a project, the server owns the
-    # attribution — overwrite whatever project the client claimed.
+    # Multi-tenant lite: resolve the API key to a project. When enforcement is on,
+    # a missing/unknown key is rejected; otherwise it falls back to the client's
+    # project. Either way, a known key means the server owns the attribution.
     project_id = project_for_api_key(authorization)
+
+    if get_settings().require_api_key and project_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="A valid project API key is required to send traces.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     if project_id:
         payload.project.project_id = project_id
 
