@@ -57,12 +57,12 @@ export default function Home() {
             >
               Open Dashboard
             </Link>
-            <a
-              href="#quickstart"
+            <Link
+              href="/docs"
               className="rounded-md border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500"
             >
-              Quickstart
-            </a>
+              Docs &amp; Examples
+            </Link>
             <a
               href="#product"
               className="rounded-md border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500"
@@ -109,13 +109,15 @@ export default function Home() {
             <pre className="overflow-auto p-5 text-sm leading-6 text-zinc-300">
               <code>{`from traceroai import TraceroClient
 
-client = TraceroClient(base_url="http://localhost:8000")
+client = TraceroClient(
+    base_url="https://traceroai.onrender.com",
+    api_key="your_project_key",
+)
 
-client.log_trace(
-    query={"original": user_question},
-    retrieval={"strategy": "hybrid", "chunks": retrieved_chunks},
-    generation={"model": "gpt-4o-mini", "answer": answer},
-)`}</code>
+with client.trace(user_question) as t:
+    t.log_retrieval(retrieved_chunks, strategy="hybrid")
+    t.log_generation(answer, model="gpt-4o-mini")
+# auto-times the block and sends the trace on exit`}</code>
             </pre>
           </div>
 

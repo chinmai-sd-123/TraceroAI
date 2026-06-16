@@ -19,7 +19,10 @@ Times the block and sends the trace automatically:
 ```python
 from traceroai import TraceroClient
 
-client = TraceroClient(base_url="http://localhost:8000")
+client = TraceroClient(
+    base_url="https://traceroai.onrender.com",
+    api_key="your_project_key",
+)
 
 with client.trace("How long does a refund take?") as t:
     t.log_retrieval(chunks, strategy="hybrid", config={"final_top_k": 3})
@@ -57,5 +60,5 @@ client.log_trace(
 Pass your project API key; the server attributes traces to your project:
 
 ```python
-client = TraceroClient(base_url="https://api.traceroai.example", api_key="key_acme")
+client = TraceroClient(base_url="https://traceroai.onrender.com", api_key="your_project_key")
 ```

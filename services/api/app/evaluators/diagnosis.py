@@ -23,6 +23,45 @@ def is_refusal(answer: str) -> bool:
     return any(marker in text for marker in REFUSAL_MARKERS)
 
 
+# Maps deep (LLM-judge) evaluator names+labels onto the deterministic
+# name/label vocabulary that diagnose_trace reasons over, so a single
+# diagnosis function serves both the quick and deep layers.
+_DEEP_NAME_MAP = {
+    "deep_context_relevance": "context_relevance",
+    "claim_groundedness": "groundedness",
+    "deep_answer_relevance": "answer_relevance",
+}
+_DEEP_PASS_LABELS = {"relevant", "grounded"}
+_DEEP_FAIL_LABELS = {"irrelevant", "not_grounded"}
+
+
+def diagnose_from_deep(
+    deep_evaluations: list[EvaluationResult], *, refused: bool = False
+) -> DiagnosisTrace | None:
+    """Diagnose a trace from deep LLM-judge results.
+
+    Returns None if the deep results aren't usable (e.g. the judge errored or
+    produced no recognizable verdict), so callers can fall back to the
+    deterministic diagnosis instead of masking a failure.
+    """
+    mapped: list[EvaluationResult] = []
+    for evaluation in deep_evaluations:
+        name = _DEEP_NAME_MAP.get(evaluation.evaluator_name)
+        if name is None:
+            continue
+        if evaluation.label in _DEEP_PASS_LABELS:
+            label = "pass"
+        elif evaluation.label in _DEEP_FAIL_LABELS:
+            label = "fail"
+        else:
+            label = "needs_review"
+        mapped.append(evaluation.model_copy(update={"evaluator_name": name, "label": label}))
+
+    if not mapped:
+        return None
+    return diagnose_trace(mapped, refused=refused)
+
+
 def diagnose_trace(
     evaluations: list[EvaluationResult], *, refused: bool = False
 ) -> DiagnosisTrace:

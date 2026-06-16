@@ -158,6 +158,27 @@ export async function getTraces(projectId?: string): Promise<MockTrace[]> {
   }
 }
 
+export type PlaygroundResult = {
+  query: string;
+  answer: string;
+  judged_by: "llm_judge" | "deterministic";
+  diagnosis: { label: string; reason: string };
+  chunks: Array<{ title: string; score: number; text: string }>;
+};
+
+export async function tryPlayground(question: string): Promise<PlaygroundResult> {
+  const response = await fetch(`${API_BASE_URL}/v1/playground`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error(`Playground request failed (${response.status})`);
+  }
+  return (await response.json()) as PlaygroundResult;
+}
+
 export async function getProjects(): Promise<string[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/traces/projects`, {
