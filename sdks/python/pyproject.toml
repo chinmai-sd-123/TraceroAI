@@ -1,12 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "traceroai"
 version = "0.1.0"
 description = "Python SDK for sending RAG traces to TraceroAI"
+readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "chinmai-sd-123" }]
+keywords = ["rag", "observability", "evaluation", "llm", "tracing"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
   "httpx>=0.27.0",
-  "pydantic>=2.8.0"
 ]
+
+[project.urls]
+Homepage = "https://github.com/chinmai-sd-123/TraceroAI"
+Repository = "https://github.com/chinmai-sd-123/TraceroAI"
+
+[tool.hatch.build.targets.wheel]
+packages = ["traceroai"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

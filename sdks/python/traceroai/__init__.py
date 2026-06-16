@@ -1,2 +1,4 @@
 from traceroai.client import TraceroClient
-__all__ = ["TraceroClient"]
+from traceroai.trace import TraceContext
+
+__all__ = ["TraceroClient", "TraceContext"]

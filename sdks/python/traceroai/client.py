@@ -3,11 +3,55 @@ from uuid import UUID
 
 import httpx
 
+from traceroai.trace import TraceContext
+
+
 class TraceroClient:
     def __init__(self, base_url: str, api_key: str| None = None, timeout_seconds: float = 10.0,)-> None:
         self.base_url = base_url
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
+
+    def trace(
+        self,
+        query: str,
+        *,
+        rewritten: str | None = None,
+        project: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> TraceContext:
+        """Open a trace context manager that auto-times and auto-sends.
+
+        with client.trace("How long is a refund?") as t:
+            t.log_retrieval(chunks)
+            t.log_generation(answer, model="gpt-4o-mini")
+        """
+        return TraceContext(
+            self, query, rewritten=rewritten, project=project, metadata=metadata
+        )
+
+    def traced(self, *, model: str, strategy: str = "vector"):
+        """Decorator for a RAG function that returns (answer, chunks).
+
+        The first positional arg of the wrapped function is treated as the query.
+
+            @client.traced(model="gpt-4o-mini")
+            def answer(query: str) -> tuple[str, list[dict]]:
+                chunks = retrieve(query)
+                return generate(query, chunks), chunks
+        """
+
+        def decorator(func):
+            def wrapper(query: str, *args: Any, **kwargs: Any):
+                with self.trace(query) as t:
+                    answer, chunks = func(query, *args, **kwargs)
+                    t.log_retrieval(chunks, strategy=strategy)
+                    t.log_generation(answer, model=model)
+                    return answer
+
+            return wrapper
+
+        return decorator
 
     def log_trace(self , *,query:dict[str, Any],
                   retrieval: dict[str, Any],
