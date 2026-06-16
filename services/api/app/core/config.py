@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     judge_model: str = "gpt-4o-mini"
     deep_eval_enabled: bool = True
+    redis_url: str | None = None
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore")
 
 

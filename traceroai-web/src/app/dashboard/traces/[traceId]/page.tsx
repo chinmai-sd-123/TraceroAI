@@ -8,14 +8,9 @@ const diagnosisStyles: Record<TraceDiagnosis, string> = {
   healthy_answer: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
   retrieval_miss: "border-amber-500/30 bg-amber-500/10 text-amber-300",
   unsupported_claim: "border-red-500/30 bg-red-500/10 text-red-300",
+  wrong_answer: "border-red-500/30 bg-red-500/10 text-red-300",
   low_context_relevance: "border-orange-500/30 bg-orange-500/10 text-orange-300",
   needs_review: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
-};
-
-const relevanceStyles = {
-  relevant: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-  partially_relevant: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-  irrelevant: "border-red-500/30 bg-red-500/10 text-red-300",
 };
 
 const deepLabelStyles: Record<string, string> = {
@@ -95,11 +90,18 @@ export default async function TraceDetailPage({
           <p className="mt-3 font-mono text-xs text-zinc-500">{trace.traceId}</p>
         </div>
 
-        <span
-          className={`inline-flex rounded-md border px-3 py-2 text-sm font-medium ${diagnosisStyles[trace.diagnosis.label]}`}
-        >
-          {formatLabel(trace.diagnosis.label)}
-        </span>
+        <div className="flex items-center gap-2">
+          {trace.status && (
+            <span className="inline-flex rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-300">
+              {formatLabel(trace.status)}
+            </span>
+          )}
+          <span
+            className={`inline-flex rounded-md border px-3 py-2 text-sm font-medium ${diagnosisStyles[trace.diagnosis.label]}`}
+          >
+            {formatLabel(trace.diagnosis.label)}
+          </span>
+        </div>
       </div>
 
       <div className="mt-8 grid gap-4 md:grid-cols-4">
@@ -227,6 +229,52 @@ export default async function TraceDetailPage({
         </Panel>
       )}
 
+      <div className="mt-6 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <Panel title="Retrieval Configuration">
+          <div className="space-y-3">
+            <Field label="Strategy" value={trace.retrieval.strategy} />
+            {trace.retrieval.config && (
+              <div className="grid grid-cols-2 gap-3">
+                {trace.retrieval.config.lexicalTopK !== undefined && (
+                  <Field label="Lexical top_k" value={String(trace.retrieval.config.lexicalTopK)} />
+                )}
+                {trace.retrieval.config.denseTopK !== undefined && (
+                  <Field label="Dense top_k" value={String(trace.retrieval.config.denseTopK)} />
+                )}
+                {trace.retrieval.config.finalTopK !== undefined && (
+                  <Field label="Final top_k" value={String(trace.retrieval.config.finalTopK)} />
+                )}
+                {trace.retrieval.config.fusion && (
+                  <Field label="Fusion" value={trace.retrieval.config.fusion} />
+                )}
+                {trace.retrieval.config.reranker && (
+                  <Field label="Reranker" value={trace.retrieval.config.reranker} />
+                )}
+              </div>
+            )}
+            {trace.latency.promptBuildMs !== undefined && (
+              <Field label="Prompt build" value={`${trace.latency.promptBuildMs}ms`} />
+            )}
+          </div>
+        </Panel>
+
+        <Panel title="Prompt">
+          {trace.prompt?.version && (
+            <p className="mb-3 text-xs text-zinc-500">
+              {trace.prompt.version}
+              {trace.prompt.templateName ? ` / ${trace.prompt.templateName}` : ""}
+            </p>
+          )}
+          {trace.prompt?.content ? (
+            <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md border border-zinc-800 bg-zinc-950/60 p-4 text-xs leading-6 text-zinc-400">
+              {trace.prompt.content}
+            </pre>
+          ) : (
+            <p className="text-sm text-zinc-500">No prompt was captured for this trace.</p>
+          )}
+        </Panel>
+      </div>
+
       <Panel title="Retrieved Chunks" className="mt-6">
         <div className="space-y-4">
           {trace.retrieval.chunks.map((chunk) => (
@@ -244,16 +292,9 @@ export default async function TraceDetailPage({
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`rounded-md border px-2 py-1 text-xs font-medium ${relevanceStyles[chunk.relevance]}`}
-                  >
-                    {formatLabel(chunk.relevance)}
-                  </span>
-                  <span className="font-mono text-xs text-zinc-500">
-                    score {chunk.score}
-                  </span>
-                </div>
+                <span className="font-mono text-xs text-zinc-500">
+                  score {chunk.score}
+                </span>
               </div>
 
               <p className="mt-4 leading-7 text-zinc-400">{chunk.textPreview}</p>

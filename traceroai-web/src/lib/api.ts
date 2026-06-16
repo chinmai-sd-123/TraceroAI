@@ -9,12 +9,20 @@ import { mockTraces, type MockTrace, type TraceDiagnosis } from "./mock-traces";
 type ApiTrace = {
   trace_id: string;
   timestamp: string;
+  status?: string | null;
   query: {
     original: string;
     rewritten?: string | null;
   };
   retrieval: {
     strategy: string;
+    config?: {
+      lexical_top_k?: number | null;
+      dense_top_k?: number | null;
+      final_top_k?: number | null;
+      fusion?: string | null;
+      reranker?: string | null;
+    } | null;
     chunks: Array<{
       rank: number;
       chunk_id: string;
@@ -26,6 +34,11 @@ type ApiTrace = {
       text: string;
     }>;
   };
+  prompt?: {
+    version?: string | null;
+    template_name?: string | null;
+    content?: string | null;
+  } | null;
   generation: {
     model: string;
     answer: string;
@@ -33,6 +46,7 @@ type ApiTrace = {
   latency: {
     total_ms?: number | null;
     retrieval_ms?: number | null;
+    prompt_build_ms?: number | null;
     generation_ms?: number | null;
   };
   evaluations: {
@@ -223,26 +237,44 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
     (item) => item.evaluator_name === "deep_answer_relevance",
   );
 
+  const config = trace.retrieval.config;
+
   return {
     traceId: trace.trace_id,
     timestamp: trace.timestamp,
+    status: trace.status || undefined,
     query: {
       original: trace.query.original,
       rewritten: trace.query.rewritten || undefined,
     },
     retrieval: {
       strategy: trace.retrieval.strategy,
+      config: config
+        ? {
+            lexicalTopK: config.lexical_top_k ?? undefined,
+            denseTopK: config.dense_top_k ?? undefined,
+            finalTopK: config.final_top_k ?? undefined,
+            fusion: config.fusion ?? undefined,
+            reranker: config.reranker ?? undefined,
+          }
+        : undefined,
       chunks: trace.retrieval.chunks.map((chunk) => ({
         rank: chunk.rank,
         chunkId: chunk.chunk_id,
         documentTitle: chunk.document_title || "Untitled document",
         section: chunk.section || "Unknown section",
         source: chunk.source || "unknown",
-        relevance: "relevant",
         score: chunk.final_score ?? 0,
         textPreview: chunk.text_preview || chunk.text,
       })),
     },
+    prompt: trace.prompt
+      ? {
+          version: trace.prompt.version ?? undefined,
+          templateName: trace.prompt.template_name ?? undefined,
+          content: trace.prompt.content ?? undefined,
+        }
+      : undefined,
     generation: {
       model: trace.generation.model,
       answer: trace.generation.answer,
@@ -250,6 +282,7 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
     latency: {
       totalMs: trace.latency.total_ms ?? 0,
       retrievalMs: trace.latency.retrieval_ms ?? 0,
+      promptBuildMs: trace.latency.prompt_build_ms ?? undefined,
       generationMs: trace.latency.generation_ms ?? 0,
     },
     evaluations: {
@@ -307,6 +340,7 @@ function normalizeDiagnosis(label: string): TraceDiagnosis {
     "healthy_answer",
     "retrieval_miss",
     "unsupported_claim",
+    "wrong_answer",
     "low_context_relevance",
     "needs_review",
   ];
