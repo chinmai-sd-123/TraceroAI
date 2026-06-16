@@ -166,6 +166,15 @@ export type PlaygroundResult = {
   chunks: Array<{ title: string; score: number; text: string }>;
 };
 
+export class PlaygroundError extends Error {
+  rateLimited: boolean;
+  constructor(message: string, rateLimited = false) {
+    super(message);
+    this.name = "PlaygroundError";
+    this.rateLimited = rateLimited;
+  }
+}
+
 export async function tryPlayground(question: string): Promise<PlaygroundResult> {
   const response = await fetch(`${API_BASE_URL}/v1/playground`, {
     method: "POST",
@@ -173,8 +182,19 @@ export async function tryPlayground(question: string): Promise<PlaygroundResult>
     body: JSON.stringify({ question }),
     cache: "no-store",
   });
+  if (response.status === 429) {
+    // Read the server's "slow down" detail; fall back to a sensible default.
+    let detail = "You're sending requests too quickly. Please wait a minute and try again.";
+    try {
+      const body = (await response.json()) as { detail?: string };
+      if (body.detail) detail = body.detail;
+    } catch {
+      /* non-JSON body — keep the default */
+    }
+    throw new PlaygroundError(detail, true);
+  }
   if (!response.ok) {
-    throw new Error(`Playground request failed (${response.status})`);
+    throw new PlaygroundError(`Playground request failed (${response.status})`);
   }
   return (await response.json()) as PlaygroundResult;
 }

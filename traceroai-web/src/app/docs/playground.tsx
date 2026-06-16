@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { tryPlayground, type PlaygroundResult } from "@/lib/api";
+import { PlaygroundError, tryPlayground, type PlaygroundResult } from "@/lib/api";
 
 const DIAGNOSIS_STYLES: Record<string, string> = {
   healthy_answer: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
@@ -32,8 +32,12 @@ export function Playground() {
     setError(null);
     try {
       setResult(await tryPlayground(text));
-    } catch {
-      setError("Couldn't reach the live API (it may be waking up — try again in ~30s).");
+    } catch (err) {
+      if (err instanceof PlaygroundError && err.rateLimited) {
+        setError(err.message);
+      } else {
+        setError("Couldn't reach the live API (it may be waking up — try again in ~30s).");
+      }
     } finally {
       setLoading(false);
     }

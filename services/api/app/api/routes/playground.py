@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import re
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -27,6 +27,7 @@ from app.services.llm_judge import OpenAIJudge
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.trace_repository import TraceRepository
 from fastapi import Depends
+from app.services.rate_limiter import check_rate_limit
 
 router = APIRouter(prefix="/v1/playground", tags=["playground"])
 
@@ -41,6 +42,16 @@ _DOCS = [
 ]
 
 _STOP = {"the", "a", "an", "is", "are", "do", "does", "how", "what", "can", "i", "to", "of", "my", "you", "your"}
+
+def _client_ip(request: Request) -> str:
+    # Behind Render's proxy, request.client.host is the proxy. The original
+    # visitor IP is the FIRST entry in X-Forwarded-For. Fall back to the
+    # socket peer for local/dev where there's no proxy.
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
 
 
 def _normalize(token: str) -> str:
@@ -65,7 +76,19 @@ class PlaygroundRequest(BaseModel):
 
 
 @router.post("")
-def try_query(payload: PlaygroundRequest, db: Session = Depends(get_db)) -> dict:
+def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depends(get_db)) -> dict:
+    # Check rate limit
+    if not check_rate_limit(
+        bucket="playground",
+        identity=_client_ip(request),
+        limit=10,
+        window_seconds=60
+    ):
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit reached for the live demo — please wait a minute and try again.",
+        )
+
     query = payload.question.strip()
     q = _terms(query)
 
