@@ -12,30 +12,31 @@ function calculateHealthyRate(traces: Awaited<ReturnType<typeof getTraces>>) {
   return `${Math.round((healthyCount / traces.length) * 100)}%`;
 }
 
+// Only traces that actually reported latency (> 0) — a missing/unmeasured
+// latency must NOT be counted as 0, or it skews the average and percentiles.
+function measuredLatencies(traces: Awaited<ReturnType<typeof getTraces>>) {
+  return traces
+    .map((trace) => trace.latency.totalMs)
+    .filter((ms) => ms > 0);
+}
+
 function calculateAverageLatency(traces: Awaited<ReturnType<typeof getTraces>>) {
-  if (traces.length === 0) {
+  const values = measuredLatencies(traces);
+  if (values.length === 0) {
     return "--";
   }
-
-  const totalLatency = traces.reduce(
-    (sum, trace) => sum + trace.latency.totalMs,
-    0,
-  );
-
-  return `${Math.round(totalLatency / traces.length)}ms`;
+  const total = values.reduce((sum, ms) => sum + ms, 0);
+  return `${Math.round(total / values.length)}ms`;
 }
 
 function calculatePercentileLatency(
   traces: Awaited<ReturnType<typeof getTraces>>,
   percentile: number,
 ) {
-  if (traces.length === 0) {
+  const sorted = measuredLatencies(traces).sort((a, b) => a - b);
+  if (sorted.length === 0) {
     return "--";
   }
-
-  const sorted = traces
-    .map((trace) => trace.latency.totalMs)
-    .sort((a, b) => a - b);
   // Nearest-rank percentile.
   const rank = Math.ceil((percentile / 100) * sorted.length) - 1;
   const index = Math.min(Math.max(rank, 0), sorted.length - 1);
