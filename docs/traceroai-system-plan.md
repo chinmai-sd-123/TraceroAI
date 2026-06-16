@@ -1,4 +1,13 @@
-# TraceroAI System Plan
+# TraceroAI — System Design
+
+> **Status (June 2026):** The RAG debugger is built and deployed end-to-end —
+> ingestion API, Python SDK (published to PyPI), Postgres storage, deterministic
+> *and* LLM-as-judge evaluation, automatic diagnosis, the Next.js dashboard, a
+> public live playground, and a sample monitored RAG app are all live. The
+> experiment/MLOps layer and the LangGraph recovery layer are the next
+> milestones — see the [Roadmap](#roadmap) at the end.
+>
+> This document describes the system as built and where it is going.
 
 ## Product Definition
 
@@ -604,42 +613,32 @@ This distinction makes the system feel production-grade.
 
 ## Diagnosis Labels
 
-Use these labels:
+Every trace is reduced to exactly one of six diagnosis labels:
 
 ```text
-healthy
-healthy_answer
-retrieval_miss
-low_context_relevance
-unsupported_claim
-wrong_answer
-noisy_context
-context_truncation
-false_refusal
-correct_refusal
-needs_review
-latency_spike
-high_cost
+healthy_answer      retrieval, grounding, and relevance all pass
+correct_refusal     model correctly declined when context didn't support an answer
+retrieval_miss      retrieved context doesn't match the query
+unsupported_claim   answer asserts things the context doesn't support
+wrong_answer        answer doesn't address the query
+needs_review        mixed signals — flagged for a human
 ```
 
-Example rules:
+The diagnosis reducer evaluates in priority order (a correct refusal short-circuits
+before the failure checks, so a model declining on weak context is never mislabeled
+as a failure):
 
 ```text
-if context_relevance is low:
-  label = low_context_relevance
-
-if expected source is missing:
-  label = retrieval_miss
-
-if context is relevant but groundedness is low:
-  label = unsupported_claim
-
-if all evals pass:
-  label = healthy
-
-if eval confidence is low:
-  label = needs_review
+if refused (no answer or a refusal phrase):  correct_refusal
+elif context_relevance == fail:              retrieval_miss
+elif groundedness == fail:                   unsupported_claim
+elif answer_relevance == fail:               wrong_answer
+elif all three pass:                         healthy_answer
+else:                                        needs_review
 ```
+
+Implemented in `services/api/app/evaluators/diagnosis.py`. Additional signals
+(latency spikes, cost) surface as dashboard metrics rather than diagnosis labels.
 
 ## Dashboard Plan
 
@@ -741,6 +740,9 @@ security_policy.md
 
 ## Experiment Layer
 
+> **Planned** (Roadmap item 1). The eval-run *schema* and dashboard for this are
+> already built; the run generator and winner selection are what remain.
+
 Compare:
 
 ```text
@@ -766,7 +768,8 @@ This is the MLOps layer and should be one of the strongest portfolio signals.
 
 ## LangGraph Layer
 
-Add this only after the normal RAG debugger works.
+> **Planned** (Roadmap item 3). Designed to be added after the core debugger —
+> which is now done.
 
 Workflow:
 
@@ -782,149 +785,47 @@ query
 
 This makes TraceroAI attractive for agentic AI roles without distracting from the core debugger.
 
-## Build Milestones
+## Build Status
 
-### Milestone 1: API Ingestion
+The core RAG debugger is built and deployed. Progress against the original milestones:
 
-Build:
+| # | Milestone | Status |
+|---|---|---|
+| 1 | API ingestion (`/health`, `POST /v1/traces`, trace schema) | ✅ Done |
+| 2 | Python SDK (`log_trace`, context-manager, decorator) — published to PyPI | ✅ Done |
+| 3 | Storage — Postgres (traces persisted as JSONB) | ✅ Done |
+| 4 | Dashboard screens (trace list, trace detail, eval runs) | ✅ Done |
+| 5 | Dashboard ↔ FastAPI integration | ✅ Done |
+| 6 | Evaluators (groundedness, context/answer relevance, diagnosis) | ✅ Done |
+| 7 | Sample monitored RAG app | ✅ Done |
+| 8 | Eval runs (datasets, variant comparison, summary metrics) | 🔶 Mostly done — schema, ingest/CRUD, and dashboard exist; a run *generator* + recommendation logic remain |
+| 9 | LangGraph recovery workflow | ⬜ Planned |
+| 10 | Portfolio polish (README, diagram, screenshots, demo, CI) | 🔶 README + architecture diagram + screenshots done; CI + demo video remain |
 
-```text
-services/api
-GET /health
-POST /v1/traces
-Trace schema
-temporary in-memory trace store
-```
+**Shipped beyond the original plan:** provider-agnostic LLM judge (OpenAI *or*
+Gemini via one config), a public interactive `/docs` playground, the quick→deep
+diagnosis correction, multi-tenant-lite project API keys, and a per-IP rate limiter
+on the public endpoint.
 
-### Milestone 2: SDK
+## Roadmap
 
-Build:
+What's next, roughly in order:
 
-```text
-TraceroClient.log_trace()
-schemas for trace payloads
-basic error handling
-```
+1. **Eval runs (complete the loop)** — a harness that *generates* runs by replaying a
+   dataset across pipeline configs (`top_k`, prompt, reranker), plus a `recommended_config`
+   winner. The Experiment Layer above is the design for this — the MLOps story.
+2. **Cost tracking** — capture token usage + estimated cost per trace and aggregate it
+   on the dashboard (surfaced as a metric, alongside latency).
+3. **LangGraph recovery** — the self-healing workflow in the LangGraph Layer above:
+   `evaluate → retry/regenerate → needs_review`. The agentic-AI signal.
+4. **OpenTelemetry** — OTel-compatible export so traces flow into standard observability
+   tooling. The "real infrastructure" signal.
 
-### Milestone 3: Storage
-
-Build:
-
-```text
-Postgres connection
-traces table
-retrieved_chunks table
-evaluations table
-```
-
-### Milestone 4: Dashboard Mock
-
-Build dashboard screens using mock data:
-
-```text
-trace list
-trace detail
-eval runs
-```
-
-### Milestone 5: Dashboard Integration
-
-Connect Next.js to FastAPI:
+### Deliberately out of scope (for now)
 
 ```text
-GET /v1/traces
-GET /v1/traces/{trace_id}
+billing · enterprise auth · ClickHouse analytics · complex multi-agent systems
+full multi-tenant SaaS · too many dashboard pages
 ```
 
-### Milestone 6: Evaluators
-
-Build:
-
-```text
-groundedness
-context relevance
-answer relevance
-diagnosis
-```
-
-### Milestone 7: Sample RAG App
-
-Build:
-
-```text
-document loading
-retrieval
-prompt construction
-generation
-SDK trace sending
-seed traces
-```
-
-### Milestone 8: Eval Runs
-
-Build:
-
-```text
-dataset cases
-top_k comparison
-summary metrics
-recommendation
-```
-
-### Milestone 9: LangGraph Recovery
-
-Build:
-
-```text
-evaluate -> retry -> regenerate -> needs_review workflow
-```
-
-### Milestone 10: Portfolio Polish
-
-Add:
-
-```text
-README
-architecture diagram
-screenshots
-demo video
-CI
-deployment docs
-```
-
-## What To Avoid Early
-
-Do not build these first:
-
-```text
-billing
-enterprise auth
-ClickHouse
-full OpenTelemetry compatibility
-complex agents
-too many dashboard pages
-multi-tenant SaaS features
-```
-
-Build the debugger first.
-
-## Immediate Next Step
-
-Start with:
-
-```text
-feature/api-ingestion
-```
-
-Build:
-
-```text
-services/api
-GET /health
-POST /v1/traces
-TraceIngestRequest schema
-TraceIngestResponse schema
-temporary in-memory trace store
-```
-
-TraceroAI becomes real the moment an external RAG system can send a trace into it.
+The debugger comes first; these are scale concerns, not learning-project concerns.
