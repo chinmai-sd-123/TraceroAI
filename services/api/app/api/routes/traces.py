@@ -8,6 +8,9 @@ from app.schemas.traces import TraceIngestRequest, TraceIngestResponse
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.trace_repository import TraceRepository
 from app.services.deep_evaluation import run_deep_evaluation
+from app.services.deep_eval_queue import enqueue_deep_eval_request
+
+
 router = APIRouter(prefix="/v1/traces", tags=["traces"])
 
 @router.post("", response_model=TraceIngestResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -21,7 +24,8 @@ def ingest_trace(
     repository = TraceRepository(db)
     repository.save(payload)
 
-    background_tasks.add_task(run_deep_evaluation, payload.trace_id)
+    if not enqueue_deep_eval_request(payload.trace_id):
+        background_tasks.add_task(run_deep_evaluation, payload.trace_id)
 
     return TraceIngestResponse(
         trace_id=payload.trace_id,

@@ -4,8 +4,10 @@ from app.core.config import get_settings
 
 
 @pytest.fixture(autouse=True)
-def _no_real_llm_calls(monkeypatch):
-    # Never hit the OpenAI network in tests, regardless of what's in .env.
-    # Deep evaluation still RUNS (so stub-judge tests work) — it just can't build
-    # a real judge, so route-triggered runs degrade to an `error` EvaluationResult.
-    monkeypatch.setattr(get_settings(), "openai_api_key", None)
+def _isolate_external_services(monkeypatch):
+    # Never touch real external services in tests, regardless of .env:
+    # - no OpenAI network (deep eval degrades to an error result)
+    # - no Redis (ingest falls back to BackgroundTasks)
+    settings = get_settings()
+    monkeypatch.setattr(settings, "openai_api_key", None)
+    monkeypatch.setattr(settings, "redis_url", None)
