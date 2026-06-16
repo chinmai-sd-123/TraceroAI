@@ -25,3 +25,17 @@ def enqueue_deep_eval_request(trace_id : UUID) -> bool:
         return True
     except redis.exceptions.RedisError:
         return False
+
+def queue_stats() -> dict:
+    """Return deep-eval queue health: depth + whether Redis is reachable.
+
+    Degrades gracefully — if Redis is unconfigured or unreachable, reports
+    redis_connected=False (the app falls back to BackgroundTasks).
+    """
+    client = _client()
+    if client is None:
+        return {"redis_connected": False, "queued": 0}
+    try:
+        return {"redis_connected": True, "queued": client.llen(QUEUE_NAME)}
+    except redis.exceptions.RedisError:
+        return {"redis_connected": False, "queued": 0}
