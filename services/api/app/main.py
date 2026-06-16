@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.traces import router as traces_router
 from app.api.routes.health import router as health_router
 from app.api.routes.eval_runs import router as eval_runs_router
+from app.api.routes.jobs import router as jobs_router
+
+
+
 app = FastAPI(
     title="TraceroAI API",
     version="0.1.0",
@@ -23,3 +27,4 @@ app.add_middleware(
 app.include_router(health_router)
 app.include_router(traces_router)
 app.include_router(eval_runs_router)
+app.include_router(jobs_router)
