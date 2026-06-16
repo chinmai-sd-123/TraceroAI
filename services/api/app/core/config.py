@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # An ingest request authenticated with a known key is stamped with that
     # project; unknown/absent keys fall back to the client-provided project.
     project_api_keys: dict[str, str] = Field(default_factory=dict)
+    # Extra browser origins allowed by CORS (the deployed frontend URL).
+    # JSON list, e.g. TRACEROAI_CORS_ORIGINS='["https://traceroai.vercel.app"]'.
+    cors_origins: list[str] = Field(default_factory=list)
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore")
 
 

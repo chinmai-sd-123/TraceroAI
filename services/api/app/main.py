@@ -4,6 +4,7 @@ from app.api.routes.traces import router as traces_router
 from app.api.routes.health import router as health_router
 from app.api.routes.eval_runs import router as eval_runs_router
 from app.api.routes.jobs import router as jobs_router
+from app.core.config import get_settings
 
 
 
@@ -18,6 +19,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        *get_settings().cors_origins,
     ],
     allow_credentials=True,
     allow_methods=["*"],
