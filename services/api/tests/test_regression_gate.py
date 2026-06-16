@@ -2,8 +2,8 @@ from app.eval.regression_gate import run_regression_gate
 
 # Baseline measured 2026-06-16: 75% (3/4). The one miss (healthy_refund_timeline)
 # is a known context_relevance limitation: lexical term-overlap can't see that
-# "5-7 business days" answers "how long...". Tracked as a backlog item
-# (incl. an asymmetric-stemming bug in normalize_token).
+# "5-7 business days" answers "how long..." (it lands on needs_review, not
+# healthy_answer). The real fix is the deep LLM judge applied to relevance.
 # This gate guards against regressions BELOW the baseline. Ratchet up as evaluators improve.
 MIN_DIAGNOSIS_ACCURACY = 0.75
 

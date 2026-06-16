@@ -92,6 +92,9 @@ def extract_terms(text: str) -> set[str]:
     terms = set()
 
     for token in re.findall(r"[a-zA-Z0-9]+", text.lower()):
+        if token in STOPWORDS:
+            continue
+
         token = normalize_token(token)
 
         if len(token) < 3:
@@ -115,7 +118,7 @@ def normalize_token(token: str) -> str:
     if token.endswith("es") and len(token) > 4:
         return token[:-2]
 
-    if token.endswith("s") and len(token) > 3:
+    if token.endswith("s") and not token.endswith("ss") and len(token) > 3:
         return token[:-1]
 
     return token
