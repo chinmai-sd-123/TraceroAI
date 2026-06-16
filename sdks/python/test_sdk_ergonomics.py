@@ -54,6 +54,58 @@ def test_exception_marks_trace_unanswered_and_still_sends() -> None:
     assert captured[0]["generation"]["answered"] is False
 
 
+def test_failed_generation_still_sends_a_valid_trace() -> None:
+    # When generation never ran (e.g. LLM quota error), the trace must still be
+    # sent with a non-empty placeholder answer that captures the failure.
+    captured: list[dict] = []
+    client = _client_capturing(captured)
+
+    try:
+        with client.trace("boom") as t:
+            raise RuntimeError("429 quota exceeded")
+    except RuntimeError:
+        pass
+
+    assert len(captured) == 1
+    answer = captured[0]["generation"]["answer"]
+    assert answer  # non-empty -> passes the schema's min_length
+    assert "429 quota exceeded" in answer
+
+
+def test_send_failure_is_best_effort_and_does_not_raise() -> None:
+    # A failure to SEND the trace must never break the caller's code.
+    import pytest
+
+    client = TraceroClient(base_url="http://test")
+
+    def boom_log_trace(**payload):
+        raise ConnectionError("API unreachable")
+
+    client.log_trace = boom_log_trace  # type: ignore[method-assign]
+
+    with pytest.warns(UserWarning, match="failed to send trace"):
+        with client.trace("q") as t:
+            t.log_generation("an answer", model="gpt-4o-mini")
+
+    assert t.trace_id is None  # send failed, but no exception propagated
+
+
+def test_send_failure_does_not_mask_callers_exception() -> None:
+    # If the caller's code raises AND sending fails, the caller's exception wins.
+    import pytest
+
+    client = TraceroClient(base_url="http://test")
+
+    def boom_log_trace(**payload):
+        raise ConnectionError("API unreachable")
+
+    client.log_trace = boom_log_trace  # type: ignore[method-assign]
+
+    with pytest.raises(ValueError, match="user bug"):
+        with client.trace("q"):
+            raise ValueError("user bug")
+
+
 def test_decorator_traces_and_returns_answer() -> None:
     captured: list[dict] = []
     client = _client_capturing(captured)

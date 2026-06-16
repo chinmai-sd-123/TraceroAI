@@ -8,12 +8,15 @@ Instead of hand-assembling the log_trace(...) payload, wrap the RAG work:
         t.log_generation(answer, model="gpt-4o-mini")
 
 The context manager times the block automatically, fills latency.total_ms, marks
-the trace unanswered if an exception escapes, and sends it on exit.
+the trace unanswered if an exception escapes, and sends it on exit. Sending is
+best-effort: a logging/network failure never breaks the caller's code or masks
+the caller's own exception (it warns and leaves trace_id as None).
 """
 
 from __future__ import annotations
 
 import time
+import warnings
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -95,13 +98,30 @@ class TraceContext:
         # The schema requires a model; default it so a half-finished trace still sends.
         self._generation.setdefault("model", "unknown")
 
-        self.trace_id = self._client.log_trace(
-            query=self._query,
-            retrieval=self._retrieval,
-            generation=self._generation,
-            prompt=self._prompt,
-            latency={"total_ms": total_ms},
-            project=self._project,
-            metadata=self._metadata,
-        )
-        return False  # never suppress exceptions
+        # The schema requires a non-empty answer. If generation failed/was skipped,
+        # record a placeholder (with the error, if any) so the FAILURE is still
+        # captured as a trace instead of being dropped.
+        if not self._generation.get("answer"):
+            self._generation["answer"] = (
+                f"[generation failed: {exc}]" if exc is not None else "[no answer generated]"
+            )
+
+        # Telemetry is best-effort: a failure to send a trace must NEVER break the
+        # caller's app, nor mask the caller's own exception. On send failure we
+        # warn and leave trace_id as None.
+        try:
+            self.trace_id = self._client.log_trace(
+                query=self._query,
+                retrieval=self._retrieval,
+                generation=self._generation,
+                prompt=self._prompt,
+                latency={"total_ms": total_ms},
+                project=self._project,
+                metadata=self._metadata,
+            )
+        except Exception as send_error:  # noqa: BLE001 - intentionally broad
+            warnings.warn(
+                f"TraceroAI: failed to send trace: {send_error}", stacklevel=2
+            )
+
+        return False  # never suppress the caller's exception
