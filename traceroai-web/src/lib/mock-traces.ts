@@ -30,6 +30,11 @@ export type MockTrace = {
       section: string;
       source: string;
       score: number;
+      rrfScore?: number;
+      lexicalRank?: number;
+      denseRank?: number;
+      lexicalScore?: number;
+      denseScore?: number;
       textPreview: string;
     }>;
   };
@@ -83,6 +88,11 @@ export type MockTrace = {
     label: TraceDiagnosis;
     reason: string;
   };
+  feedback?: Array<{
+    rating: string;
+    comment?: string;
+    createdAt?: string;
+  }>;
 };
 
 export const mockTraces: MockTrace[] = [

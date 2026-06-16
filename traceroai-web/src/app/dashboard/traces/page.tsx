@@ -1,9 +1,18 @@
-import { getTraces } from "@/lib/api";
+import { getProjects, getTraces } from "@/lib/api";
 
+import { ProjectSelector } from "./project-selector";
 import { TraceList } from "./trace-list";
 
-export default async function TracesPage() {
-  const traces = await getTraces();
+export default async function TracesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>;
+}) {
+  const { project } = await searchParams;
+  const [traces, projects] = await Promise.all([
+    getTraces(project),
+    getProjects(),
+  ]);
 
   return (
     <section>
@@ -19,9 +28,14 @@ export default async function TracesPage() {
           </p>
         </div>
 
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3">
-          <p className="text-xs text-zinc-500">Total traces</p>
-          <p className="mt-1 text-xl font-semibold">{traces.length}</p>
+        <div className="flex items-center gap-3">
+          {projects.length > 0 && (
+            <ProjectSelector projects={projects} selected={project} />
+          )}
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3">
+            <p className="text-xs text-zinc-500">Total traces</p>
+            <p className="mt-1 text-xl font-semibold">{traces.length}</p>
+          </div>
         </div>
       </div>
 

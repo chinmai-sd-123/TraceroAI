@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getTrace } from "@/lib/api";
-import type { TraceDiagnosis } from "@/lib/mock-traces";
+import type { MockTrace, TraceDiagnosis } from "@/lib/mock-traces";
+
+import { FeedbackWidget } from "./feedback-widget";
 
 const diagnosisStyles: Record<TraceDiagnosis, string> = {
   healthy_answer: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
@@ -292,16 +294,55 @@ export default async function TraceDetailPage({
                   </p>
                 </div>
 
-                <span className="font-mono text-xs text-zinc-500">
-                  score {chunk.score}
+                <span className="font-mono text-xs text-zinc-400">
+                  final {chunk.score.toFixed(3)}
                 </span>
               </div>
+
+              <ChunkScores chunk={chunk} />
 
               <p className="mt-4 leading-7 text-zinc-400">{chunk.textPreview}</p>
             </div>
           ))}
         </div>
       </Panel>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
+        <Panel title="Add Feedback">
+          <FeedbackWidget traceId={trace.traceId} />
+        </Panel>
+
+        <Panel title="Feedback">
+          {trace.feedback && trace.feedback.length > 0 ? (
+            <div className="space-y-3">
+              {trace.feedback.map((item, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium text-zinc-100">
+                      {item.rating === "thumbs_up" ? "👍 Helpful" : "👎 Not helpful"}
+                    </span>
+                    {item.createdAt && (
+                      <span className="text-xs text-zinc-500">
+                        {new Date(item.createdAt).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                  {item.comment && (
+                    <p className="mt-2 text-sm leading-6 text-zinc-400">
+                      {item.comment}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">No feedback yet.</p>
+          )}
+        </Panel>
+      </div>
     </section>
   );
 }
@@ -311,6 +352,34 @@ function MetricCard({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-5">
       <p className="text-sm text-zinc-500">{label}</p>
       <p className="mt-2 text-lg font-semibold">{value}</p>
+    </div>
+  );
+}
+
+type Chunk = MockTrace["retrieval"]["chunks"][number];
+
+function ChunkScores({ chunk }: { chunk: Chunk }) {
+  const parts: string[] = [];
+  if (chunk.rrfScore !== undefined) parts.push(`rrf ${chunk.rrfScore.toFixed(3)}`);
+  if (chunk.lexicalScore !== undefined) parts.push(`lex ${chunk.lexicalScore.toFixed(3)}`);
+  if (chunk.denseScore !== undefined) parts.push(`dense ${chunk.denseScore.toFixed(3)}`);
+  if (chunk.lexicalRank !== undefined) parts.push(`lex#${chunk.lexicalRank}`);
+  if (chunk.denseRank !== undefined) parts.push(`dense#${chunk.denseRank}`);
+
+  if (parts.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {parts.map((part) => (
+        <span
+          key={part}
+          className="rounded border border-zinc-800 bg-zinc-900/60 px-2 py-0.5 font-mono text-[11px] text-zinc-500"
+        >
+          {part}
+        </span>
+      ))}
     </div>
   );
 }

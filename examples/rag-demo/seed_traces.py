@@ -11,17 +11,10 @@ Usage (API must be running on :8000):
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
 import httpx
+from traceroai import TraceroClient
 
-# Make the local SDK importable without installing it.
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "sdks" / "python"))
-
-from traceroai import TraceroClient  # noqa: E402
-
-from rag_pipeline import build_prompt, generate, load_chunks, retrieve  # noqa: E402
+from rag_pipeline import build_prompt, generate, load_chunks, retrieve
 
 BASE_URL = "http://127.0.0.1:8000"
 

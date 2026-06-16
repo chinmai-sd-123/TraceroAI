@@ -30,6 +30,11 @@ type ApiTrace = {
       section?: string | null;
       source?: string | null;
       final_score?: number | null;
+      rrf_score?: number | null;
+      lexical_rank?: number | null;
+      dense_rank?: number | null;
+      lexical_score?: number | null;
+      dense_score?: number | null;
       text_preview?: string | null;
       text: string;
     }>;
@@ -70,6 +75,11 @@ type ApiTrace = {
     label: TraceDiagnosis | string;
     reason?: string | null;
   };
+  feedback?: Array<{
+    rating: string;
+    comment?: string | null;
+    created_at?: string | null;
+  }>;
 };
 export type ApiEvalRun = {
   eval_run_id: string;
@@ -130,11 +140,12 @@ export type ApiEvalRun = {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_TRACEROAI_API_URL || "http://127.0.0.1:8000";
 
-export async function getTraces(): Promise<MockTrace[]> {
+export async function getTraces(projectId?: string): Promise<MockTrace[]> {
+  const url = projectId
+    ? `${API_BASE_URL}/v1/traces?project_id=${encodeURIComponent(projectId)}`
+    : `${API_BASE_URL}/v1/traces`;
   try {
-    const response = await fetch(`${API_BASE_URL}/v1/traces`, {
-      cache: "no-store",
-    });
+    const response = await fetch(url, { cache: "no-store" });
 
     if (!response.ok) {
       return mockTraces;
@@ -144,6 +155,20 @@ export async function getTraces(): Promise<MockTrace[]> {
     return traces.map(mapApiTraceToUiTrace);
   } catch {
     return mockTraces;
+  }
+}
+
+export async function getProjects(): Promise<string[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/traces/projects`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return [];
+    }
+    return (await response.json()) as string[];
+  } catch {
+    return [];
   }
 }
 
@@ -293,6 +318,11 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
         section: chunk.section || "Unknown section",
         source: chunk.source || "unknown",
         score: chunk.final_score ?? 0,
+        rrfScore: chunk.rrf_score ?? undefined,
+        lexicalRank: chunk.lexical_rank ?? undefined,
+        denseRank: chunk.dense_rank ?? undefined,
+        lexicalScore: chunk.lexical_score ?? undefined,
+        denseScore: chunk.dense_score ?? undefined,
         textPreview: chunk.text_preview || chunk.text,
       })),
     },
@@ -354,6 +384,11 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
       label: normalizeDiagnosis(trace.diagnosis.label),
       reason: trace.diagnosis.reason || "No diagnosis available.",
     },
+    feedback: (trace.feedback ?? []).map((item) => ({
+      rating: item.rating,
+      comment: item.comment ?? undefined,
+      createdAt: item.created_at ?? undefined,
+    })),
   };
 }
 
