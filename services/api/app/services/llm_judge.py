@@ -52,9 +52,15 @@ ANSWER_RELEVANCE_PROMPT = (
 )
 
 class OpenAIJudge:
+    """LLM judge over the OpenAI SDK. Works with OpenAI or any OpenAI-compatible
+    endpoint (e.g. Gemini) by setting judge_base_url + the matching key/model."""
+
     def __init__(self) -> None:
         settings = get_settings()
-        self._client = OpenAI(api_key=settings.openai_api_key)
+        self._client = OpenAI(
+            api_key=settings.openai_api_key,
+            base_url=settings.judge_base_url,  # None -> OpenAI default; set for Gemini
+        )
         self._model = settings.judge_model
 
     def judge_claim_groundedness(

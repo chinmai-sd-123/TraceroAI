@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     app_env: Literal["development", "testing", "staging", "production"] = "development"
     openai_api_key: str | None = None
     judge_model: str = "gpt-4o-mini"
+    # Optional: point the judge at any OpenAI-compatible endpoint (e.g. Gemini's
+    # https://generativelanguage.googleapis.com/v1beta/openai/ ). When set,
+    # openai_api_key holds that provider's key and judge_model its model name.
+    judge_base_url: str | None = None
     deep_eval_enabled: bool = True
     redis_url: str | None = None
     # Multi-tenant lite: maps an API key -> project_id. JSON object string, e.g.
