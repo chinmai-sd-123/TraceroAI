@@ -7,6 +7,7 @@ const diagnosisStyles: Record<TraceDiagnosis, string> = {
   healthy_answer: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
   retrieval_miss: "border-amber-500/30 bg-amber-500/10 text-amber-300",
   unsupported_claim: "border-red-500/30 bg-red-500/10 text-red-300",
+  wrong_answer: "border-red-500/30 bg-red-500/10 text-red-300",
   low_context_relevance: "border-orange-500/30 bg-orange-500/10 text-orange-300",
   needs_review: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
 };

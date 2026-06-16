@@ -2,28 +2,41 @@ export type TraceDiagnosis =
   | "healthy_answer"
   | "retrieval_miss"
   | "unsupported_claim"
+  | "wrong_answer"
   | "low_context_relevance"
   | "needs_review";
 
 export type MockTrace = {
   traceId: string;
   timestamp: string;
+  status?: string;
   query: {
     original: string;
     rewritten?: string;
   };
   retrieval: {
     strategy: string;
+    config?: {
+      lexicalTopK?: number;
+      denseTopK?: number;
+      finalTopK?: number;
+      fusion?: string;
+      reranker?: string;
+    };
     chunks: Array<{
       rank: number;
       chunkId: string;
       documentTitle: string;
       section: string;
       source: string;
-      relevance: "relevant" | "partially_relevant" | "irrelevant";
       score: number;
       textPreview: string;
     }>;
+  };
+  prompt?: {
+    version?: string;
+    templateName?: string;
+    content?: string;
   };
   generation: {
     model: string;
@@ -32,6 +45,7 @@ export type MockTrace = {
   latency: {
     totalMs: number;
     retrievalMs: number;
+    promptBuildMs?: number;
     generationMs: number;
   };
   evaluations: {
@@ -88,7 +102,6 @@ export const mockTraces: MockTrace[] = [
           documentTitle: "Product FAQ",
           section: "Can I change my workspace region?",
           source: "product_faq.md",
-          relevance: "relevant",
           score: 1.08,
           textPreview:
             "Customers cannot directly change a workspace region after the workspace is created. To request a region change, customers must contact support.",
@@ -99,7 +112,6 @@ export const mockTraces: MockTrace[] = [
           documentTitle: "Customer Onboarding Guide",
           section: "Workspace Setup",
           source: "onboarding_guide.md",
-          relevance: "relevant",
           score: 0.38,
           textPreview:
             "Admins can configure workspace region during setup. Once a workspace is created, the customer cannot change the region without contacting support.",
@@ -154,7 +166,6 @@ export const mockTraces: MockTrace[] = [
           documentTitle: "Billing Processing",
           section: "Processing Times",
           source: "billing_processing.md",
-          relevance: "partially_relevant",
           score: 0.47,
           textPreview:
             "Approved refunds are reviewed within 5 business days and may take 5 to 10 additional business days to appear.",
@@ -165,7 +176,6 @@ export const mockTraces: MockTrace[] = [
           documentTitle: "Account Cancellation",
           section: "Cancellation Flow",
           source: "account_cancellation.md",
-          relevance: "irrelevant",
           score: 0.41,
           textPreview:
             "Customers can cancel subscriptions from account settings. Cancellation does not automatically delete workspace data.",
@@ -220,7 +230,6 @@ export const mockTraces: MockTrace[] = [
           documentTitle: "Support Policy",
           section: "Support Channels",
           source: "support_policy.md",
-          relevance: "relevant",
           score: 0.64,
           textPreview:
             "Acme Cloud offers email support for all customers. Acme Cloud does not offer phone support for self-serve monthly or annual plans.",
