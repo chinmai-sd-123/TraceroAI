@@ -147,6 +147,34 @@ export async function getTraces(): Promise<MockTrace[]> {
   }
 }
 
+export type JobStats = {
+  redisConnected: boolean;
+  queued: number;
+};
+
+export async function getJobStats(): Promise<JobStats> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/jobs/stats`, {
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return { redisConnected: false, queued: 0 };
+    }
+
+    const data = (await response.json()) as {
+      redis_connected?: boolean;
+      queued?: number;
+    };
+    return {
+      redisConnected: Boolean(data.redis_connected),
+      queued: data.queued ?? 0,
+    };
+  } catch {
+    return { redisConnected: false, queued: 0 };
+  }
+}
+
 export async function getTrace(traceId: string): Promise<MockTrace | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/traces/${traceId}`, {

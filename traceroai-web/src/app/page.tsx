@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const features = [
   {
     title: "Trace every RAG answer",
@@ -49,17 +51,23 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href="#product"
-              className="rounded-md bg-cyan-300 px-5 py-3 text-sm font-semibold text-zinc-950"
+            <Link
+              href="/dashboard"
+              className="rounded-md bg-cyan-300 px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-200"
             >
-              Explore Product
-            </a>
+              Open Dashboard
+            </Link>
             <a
-              href="#build"
+              href="#quickstart"
               className="rounded-md border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500"
             >
-              Project Case Study
+              Quickstart
+            </a>
+            <a
+              href="#product"
+              className="rounded-md border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500"
+            >
+              Explore Product
             </a>
           </div>
         </div>
@@ -76,6 +84,48 @@ export default function Home() {
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-5">
             <p className="text-sm text-zinc-500">Status</p>
             <p className="mt-2 text-lg font-medium">In active development</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="quickstart" className="border-t border-zinc-800 px-6 py-20">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-cyan-300">
+            Quickstart
+          </p>
+          <h2 className="mt-4 max-w-3xl text-3xl font-semibold md:text-4xl">
+            Send your first trace in a few lines.
+          </h2>
+          <p className="mt-5 max-w-3xl leading-8 text-zinc-300">
+            TraceroAI is instrumentation, not a chat app. Drop the SDK into any
+            RAG pipeline — LangChain, LlamaIndex, or your own — and every answer
+            becomes a debuggable trace in the dashboard.
+          </p>
+
+          <div className="mt-8 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/70">
+            <div className="border-b border-zinc-800 px-4 py-2 text-xs text-zinc-500">
+              python
+            </div>
+            <pre className="overflow-auto p-5 text-sm leading-6 text-zinc-300">
+              <code>{`from traceroai import TraceroClient
+
+client = TraceroClient(base_url="http://localhost:8000")
+
+client.log_trace(
+    query={"original": user_question},
+    retrieval={"strategy": "hybrid", "chunks": retrieved_chunks},
+    generation={"model": "gpt-4o-mini", "answer": answer},
+)`}</code>
+            </pre>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/dashboard"
+              className="rounded-md bg-cyan-300 px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-200"
+            >
+              View traces in the dashboard
+            </Link>
           </div>
         </div>
       </section>

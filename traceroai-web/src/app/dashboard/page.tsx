@@ -1,4 +1,4 @@
-import { getTraces } from "@/lib/api";
+import { getJobStats, getTraces } from "@/lib/api";
 
 function calculateHealthyRate(traces: Awaited<ReturnType<typeof getTraces>>) {
   if (traces.length === 0) {
@@ -25,17 +25,35 @@ function calculateAverageLatency(traces: Awaited<ReturnType<typeof getTraces>>) 
   return `${Math.round(totalLatency / traces.length)}ms`;
 }
 
+function calculatePercentileLatency(
+  traces: Awaited<ReturnType<typeof getTraces>>,
+  percentile: number,
+) {
+  if (traces.length === 0) {
+    return "--";
+  }
+
+  const sorted = traces
+    .map((trace) => trace.latency.totalMs)
+    .sort((a, b) => a - b);
+  // Nearest-rank percentile.
+  const rank = Math.ceil((percentile / 100) * sorted.length) - 1;
+  const index = Math.min(Math.max(rank, 0), sorted.length - 1);
+  return `${sorted[index]}ms`;
+}
+
 function calculateOpenFailures(traces: Awaited<ReturnType<typeof getTraces>>) {
   return traces.filter((trace) => trace.diagnosis.label !== "healthy_answer")
     .length;
 }
 
 export default async function DashboardPage() {
-  const traces = await getTraces();
+  const [traces, jobStats] = await Promise.all([getTraces(), getJobStats()]);
 
   const totalTraces = traces.length;
   const healthyRate = calculateHealthyRate(traces);
   const averageLatency = calculateAverageLatency(traces);
+  const p95Latency = calculatePercentileLatency(traces, 95);
   const openFailures = calculateOpenFailures(traces);
 
   return (
@@ -51,10 +69,11 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-4">
+      <div className="mt-8 grid gap-4 md:grid-cols-5">
         <MetricCard label="Total traces" value={String(totalTraces)} />
         <MetricCard label="Healthy rate" value={healthyRate} />
         <MetricCard label="Avg latency" value={averageLatency} />
+        <MetricCard label="p95 latency" value={p95Latency} />
         <MetricCard label="Open failures" value={String(openFailures)} />
       </div>
 
@@ -79,27 +98,58 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
-          <h2 className="text-lg font-semibold">Failure Mix</h2>
-          <div className="mt-4 space-y-3">
-            {getFailureMix(traces).map((item) => (
-              <div key={item.label}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-300">
-                    {item.label.replaceAll("_", " ")}
-                  </span>
-                  <span className="font-mono text-zinc-500">{item.count}</span>
+        <div className="space-y-6">
+          <section className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Deep-Eval Queue</h2>
+              <span
+                className={`inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs font-medium ${
+                  jobStats.redisConnected
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                    : "border-zinc-600/40 bg-zinc-700/10 text-zinc-400"
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    jobStats.redisConnected ? "bg-emerald-400" : "bg-zinc-500"
+                  }`}
+                />
+                {jobStats.redisConnected ? "Redis connected" : "Fallback (in-process)"}
+              </span>
+            </div>
+            <div className="mt-4 flex items-end gap-3">
+              <p className="text-3xl font-semibold">{jobStats.queued}</p>
+              <p className="pb-1 text-sm text-zinc-500">jobs queued</p>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-zinc-500">
+              {jobStats.redisConnected
+                ? "Deep evaluations are processed asynchronously by the worker."
+                : "Redis is not configured — deep evaluations run in-process via background tasks."}
+            </p>
+          </section>
+
+          <section className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
+            <h2 className="text-lg font-semibold">Failure Mix</h2>
+            <div className="mt-4 space-y-3">
+              {getFailureMix(traces).map((item) => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-300">
+                      {item.label.replaceAll("_", " ")}
+                    </span>
+                    <span className="font-mono text-zinc-500">{item.count}</span>
+                  </div>
+                  <div className="mt-2 h-2 rounded-full bg-zinc-800">
+                    <div
+                      className="h-2 rounded-full bg-cyan-300"
+                      style={{ width: `${item.percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="mt-2 h-2 rounded-full bg-zinc-800">
-                  <div
-                    className="h-2 rounded-full bg-cyan-300"
-                    style={{ width: `${item.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+        </div>
       </div>
     </section>
   );
