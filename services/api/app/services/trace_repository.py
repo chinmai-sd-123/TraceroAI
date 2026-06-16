@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import TraceRecord
-from app.schemas.traces import TraceIngestRequest, EvaluationResult
+from app.schemas.traces import FeedbackEntry, TraceIngestRequest, EvaluationResult
 
 
 class TraceRepository:
@@ -35,8 +35,16 @@ class TraceRepository:
 
         return record
 
-    def list(self) -> list[TraceRecord]:
+    def list(self, project_id: str | None = None) -> list[TraceRecord]:
         statement = select(TraceRecord).order_by(TraceRecord.created_at.desc())
+        if project_id:
+            statement = statement.where(TraceRecord.project_id == project_id)
+        return list(self.db.scalars(statement).all())
+
+    def list_projects(self) -> list[str]:
+        statement = (
+            select(TraceRecord.project_id).distinct().order_by(TraceRecord.project_id)
+        )
         return list(self.db.scalars(statement).all())
 
     def get(self, trace_id: UUID) -> TraceRecord | None:
@@ -57,3 +65,20 @@ class TraceRepository:
             self.db.commit()
             self.db.refresh(record)
             return record
+    
+    def add_feedback(
+        self, trace_id: UUID, entry: FeedbackEntry
+    ) -> TraceRecord | None:
+        record = self.db.get(TraceRecord, trace_id)
+        if record is None:
+            return None
+
+        trace = TraceIngestRequest(**record.payload)
+        trace.feedback.append(entry)
+        record.payload = trace.model_dump(mode="json")
+
+        self.db.add(record)
+        self.db.commit()
+        self.db.refresh(record)
+        return record
+

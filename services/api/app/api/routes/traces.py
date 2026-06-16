@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, Header, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
+from app.core.tenancy import project_for_api_key
 from app.db.session import get_db
-from app.schemas.traces import TraceIngestRequest, TraceIngestResponse
+from app.schemas.traces import TraceIngestRequest, TraceIngestResponse, FeedbackEntry
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.trace_repository import TraceRepository
 from app.services.deep_evaluation import run_deep_evaluation
@@ -18,7 +19,14 @@ def ingest_trace(
     payload: TraceIngestRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    authorization: str | None = Header(default=None),
 ) -> TraceIngestResponse:
+    # Multi-tenant lite: if the API key maps to a project, the server owns the
+    # attribution — overwrite whatever project the client claimed.
+    project_id = project_for_api_key(authorization)
+    if project_id:
+        payload.project.project_id = project_id
+
     payload = run_quick_evaluation(payload)
 
     repository = TraceRepository(db)
@@ -36,11 +44,20 @@ def ingest_trace(
 
 
 @router.get("", response_model=list[TraceIngestRequest])
-def list_traces(db: Session = Depends(get_db)) -> list[dict]:
+def list_traces(
+    project_id: str | None = None,
+    db: Session = Depends(get_db),
+) -> list[dict]:
     repository = TraceRepository(db)
-    records = repository.list()
+    records = repository.list(project_id=project_id)
 
     return [record.payload for record in records]
+
+
+@router.get("/projects", response_model=list[str])
+def list_projects(db: Session = Depends(get_db)) -> list[str]:
+    repository = TraceRepository(db)
+    return repository.list_projects()
 
 
 @router.get("/{trace_id}", response_model=TraceIngestRequest)
@@ -58,3 +75,21 @@ def get_trace(
         )
 
     return record.payload
+
+@router.post("/{trace_id}/feedback", status_code=status.HTTP_201_CREATED)
+def add_feedback(
+    trace_id: UUID,
+    entry: FeedbackEntry,
+    db: Session = Depends(get_db),
+) -> FeedbackEntry:
+    repository = TraceRepository(db)
+    record = repository.add_feedback(trace_id, entry)
+
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Trace not found.",
+        )
+
+    return entry
+

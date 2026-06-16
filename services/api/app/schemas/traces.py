@@ -1,5 +1,5 @@
 from datetime import datetime, UTC
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -69,6 +69,12 @@ class DiagnosisTrace(BaseModel):
     label: str= Field(default= "pending", min_length=1)
     reason:str | None= None
 
+
+class FeedbackEntry(BaseModel):
+    rating: Literal["thumbs_up", "thumbs_down"]
+    comment: str | None = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
 class EvaluationResult(BaseModel):
     evaluator_name: str
     evaluator_version: str | None = None
@@ -95,6 +101,8 @@ class TraceIngestRequest(BaseModel):
     latency: LatencyTrace = Field(default_factory=LatencyTrace)
     evaluations: EvaluationsTrace = Field(default_factory=EvaluationsTrace)
     diagnosis: DiagnosisTrace = Field(default_factory=DiagnosisTrace)
+    feedback: list[FeedbackEntry] = Field(default_factory=list)
+
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -102,3 +110,4 @@ class TraceIngestResponse(BaseModel):
     trace_id: UUID
     status: str
     message: str
+
