@@ -1,5 +1,6 @@
 export type TraceDiagnosis =
   | "healthy_answer"
+  | "correct_refusal"
   | "retrieval_miss"
   | "unsupported_claim"
   | "wrong_answer"

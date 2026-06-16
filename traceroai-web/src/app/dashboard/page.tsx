@@ -43,8 +43,12 @@ function calculatePercentileLatency(
   return `${sorted[index]}ms`;
 }
 
+// "Healthy" outcomes are not failures: a healthy answer AND a correct refusal
+// (the model rightly declining when context lacks the answer) both count as good.
+const HEALTHY_LABELS = new Set(["healthy_answer", "correct_refusal"]);
+
 function calculateOpenFailures(traces: Awaited<ReturnType<typeof getTraces>>) {
-  return traces.filter((trace) => trace.diagnosis.label !== "healthy_answer")
+  return traces.filter((trace) => !HEALTHY_LABELS.has(trace.diagnosis.label))
     .length;
 }
 

@@ -401,6 +401,7 @@ function findEval(trace: ApiTrace, evaluatorName: string) {
 function normalizeDiagnosis(label: string): TraceDiagnosis {
   const knownLabels: TraceDiagnosis[] = [
     "healthy_answer",
+    "correct_refusal",
     "retrieval_miss",
     "unsupported_claim",
     "wrong_answer",

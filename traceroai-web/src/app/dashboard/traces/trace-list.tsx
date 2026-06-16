@@ -7,6 +7,7 @@ import type { MockTrace, TraceDiagnosis } from "@/lib/mock-traces";
 
 const diagnosisStyles: Record<TraceDiagnosis, string> = {
   healthy_answer: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  correct_refusal: "border-sky-500/30 bg-sky-500/10 text-sky-300",
   retrieval_miss: "border-amber-500/30 bg-amber-500/10 text-amber-300",
   unsupported_claim: "border-red-500/30 bg-red-500/10 text-red-300",
   wrong_answer: "border-red-500/30 bg-red-500/10 text-red-300",
