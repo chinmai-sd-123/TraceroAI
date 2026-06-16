@@ -1,9 +1,12 @@
 from app.eval.regression_gate import run_regression_gate
 
-# Baseline measured 2026-06-16: 75% (3/4). The one miss (healthy_refund_timeline)
-# is a known context_relevance limitation: lexical term-overlap can't see that
-# "5-7 business days" answers "how long..." (it lands on needs_review, not
-# healthy_answer). The real fix is the deep LLM judge applied to relevance.
+# Baseline measured 2026-06-16: 78% (7/9). Two misses are KNOWN deterministic
+# limits kept as ground-truth gaps (both resolved by the deep LLM judge):
+#   - healthy_refund_timeline: lexical overlap can't see that "5-7 business days"
+#     answers "how long" (semantic equivalence) -> lands on needs_review.
+#   - unsupported_claim_upload_encryption: whole-answer term-overlap averages, so
+#     one fabricated claim in an otherwise grounded answer only dips groundedness
+#     to needs_review, not fail. Per-claim (deep) groundedness is what catches it.
 # This gate guards against regressions BELOW the baseline. Ratchet up as evaluators improve.
 MIN_DIAGNOSIS_ACCURACY = 0.75
 

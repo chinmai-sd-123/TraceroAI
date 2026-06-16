@@ -51,6 +51,71 @@
         },
         "generation": { "model": "gpt-4o-mini", "answer": "Annual plans can be refunded on a prorated basis within thirty days." }
       }
+    },
+    {
+      "case_id": "healthy_upload_size",
+      "expected_diagnosis": "healthy_answer",
+      "trace": {
+        "query": { "original": "What is the maximum file upload size?" },
+        "retrieval": {
+          "chunks": [
+            { "rank": 1, "chunk_id": "limits_1", "text": "The maximum file upload size is 100 megabytes per file." }
+          ]
+        },
+        "generation": { "model": "gpt-4o-mini", "answer": "The maximum file upload size is 100 megabytes per file." }
+      }
+    },
+    {
+      "case_id": "healthy_refund_window",
+      "expected_diagnosis": "healthy_answer",
+      "trace": {
+        "query": { "original": "Can I get a refund within thirty days?" },
+        "retrieval": {
+          "chunks": [
+            { "rank": 1, "chunk_id": "refund_3", "text": "Customers can request a full refund within thirty days of purchase." }
+          ]
+        },
+        "generation": { "model": "gpt-4o-mini", "answer": "Yes, you can request a full refund within thirty days of purchase." }
+      }
+    },
+    {
+      "case_id": "unsupported_claim_upload_encryption",
+      "expected_diagnosis": "unsupported_claim",
+      "trace": {
+        "query": { "original": "What is the maximum file upload size?" },
+        "retrieval": {
+          "chunks": [
+            { "rank": 1, "chunk_id": "limits_2", "text": "The maximum file upload size is 100 megabytes per file." }
+          ]
+        },
+        "generation": { "model": "gpt-4o-mini", "answer": "The maximum file upload size is 100 megabytes, and every upload is automatically encrypted using quantum cryptography keys." }
+      }
+    },
+    {
+      "case_id": "unsupported_claim_refund_bonus",
+      "expected_diagnosis": "unsupported_claim",
+      "trace": {
+        "query": { "original": "How are refunds issued?" },
+        "retrieval": {
+          "chunks": [
+            { "rank": 1, "chunk_id": "refund_4", "text": "Refunds are issued to the original payment method." }
+          ]
+        },
+        "generation": { "model": "gpt-4o-mini", "answer": "Refunds are issued instantly to your bank account and include a ten percent bonus credit." }
+      }
+    },
+    {
+      "case_id": "retrieval_miss_password_reset",
+      "expected_diagnosis": "retrieval_miss",
+      "trace": {
+        "query": { "original": "How do I reset my password?" },
+        "retrieval": {
+          "chunks": [
+            { "rank": 1, "chunk_id": "about_1", "text": "Our company headquarters is located in Austin, Texas." }
+          ]
+        },
+        "generation": { "model": "gpt-4o-mini", "answer": "You can reset your password from the account settings page." }
+      }
     }
   ]
 }
