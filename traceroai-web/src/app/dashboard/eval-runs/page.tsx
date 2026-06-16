@@ -40,7 +40,7 @@ export default async function EvalRunsPage() {
                   </span>
                 </div>
 
-                <div className="mt-6 grid gap-4 md:grid-cols-5">
+                <div className="mt-6 grid gap-4 md:grid-cols-4">
                   <Metric label="Overall" value={`${run.summary.overallAccuracy}%`} />
                   <Metric label="Status" value={`${run.summary.statusAccuracy}%`} />
                   <Metric
@@ -51,7 +51,6 @@ export default async function EvalRunsPage() {
                     label="Failure labels"
                     value={`${run.summary.failureLabelAccuracy}%`}
                   />
-                  <Metric label="Avg latency" value={`${run.summary.avgLatencyMs}ms`} />
                 </div>
               </Link>
             ))}

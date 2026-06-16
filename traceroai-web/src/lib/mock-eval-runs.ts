@@ -12,7 +12,6 @@ export type RegressionEvalRun = {
     statusAccuracy: number;
     retrievalAccuracy: number;
     failureLabelAccuracy: number;
-    avgLatencyMs: number;
   };
 };
 
@@ -50,7 +49,6 @@ export const regressionRuns: RegressionEvalRun[] = [
       statusAccuracy: 100,
       retrievalAccuracy: 100,
       failureLabelAccuracy: 100,
-      avgLatencyMs: 1101,
     },
   },
 ];

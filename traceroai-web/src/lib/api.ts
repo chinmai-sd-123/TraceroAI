@@ -434,7 +434,6 @@ function mapApiEvalRunToRegressionRun(run: ApiEvalRun): RegressionEvalRun {
       statusAccuracy: toPercent(answerRelevance?.score),
       retrievalAccuracy: toPercent(retrievalRelevance?.score),
       failureLabelAccuracy: toPercent(groundedness?.score),
-      avgLatencyMs: 0,
     },
   };
 }
