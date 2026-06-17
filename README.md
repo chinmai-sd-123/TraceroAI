@@ -40,8 +40,9 @@ becomes a lookup instead of a guess.
 
 - **Trace every answer** — capture the query, retrieved chunks, prompt, generated
   answer, and latency as one timeline.
-- **Two-tier evaluation** — fast deterministic checks on every trace, plus an
-  optional **LLM-as-judge** for semantic verdicts the cheap checks can't make.
+- **Two-tier evaluation** — fast **embedding-based** semantic checks on every trace
+  (context/answer relevance via cosine similarity), plus an optional **LLM-as-judge**
+  for claim-level groundedness the cheap checks can't reason about.
 - **Automatic diagnosis** — each trace is labeled with one of six outcomes:
 
   | Diagnosis | Meaning |
@@ -54,8 +55,14 @@ becomes a lookup instead of a guess.
   | `needs_review` | mixed signals — flagged for a human |
 
 - **Drop-in SDK** — `pip install traceroai`; instrument any RAG pipeline in a few lines.
+- **Self-healing recovery** (`pip install traceroai[recovery]`) — a LangGraph agent that
+  retries the stage TraceroAI diagnoses as broken: a retrieval miss re-retrieves with
+  more context, an unsupported claim re-generates with a stricter prompt, and it escalates
+  to human review after a bounded number of attempts. Every attempt is traced.
 - **Multi-tenant ingest** — project API keys attribute traces to a project; reads stay
   open so a recruiter can explore the demo without a key.
+
+See **[USAGE.md](USAGE.md)** for a complete guide to every SDK feature.
 
 ## Architecture
 

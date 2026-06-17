@@ -1,0 +1,28 @@
+Data Residency
+
+Available Regions
+-----------------
+Workspaces can be created in a US region or an EU region. The region you choose
+determines where your primary data is stored and processed. EU-region workspaces keep
+customer data within EU data centers to support GDPR data-residency requirements.
+
+Changing Regions
+----------------
+A workspace region cannot be changed after creation. This is a hard constraint: region
+is fixed at creation time because data is physically provisioned in that region. To move
+to a different region you must contact support to arrange a migration, which copies your
+data to a new workspace in the target region and then decommissions the old one.
+
+Migration Process
+-----------------
+A region migration is scheduled with support and typically runs during a maintenance
+window. During the migration the source workspace is placed in read-only mode to ensure
+consistency. Downtime depends on data volume but is usually under an hour for typical
+accounts. After verification, traffic is cut over to the new region and the old
+workspace's data is securely deleted within 35 days.
+
+Latency Considerations
+----------------------
+Choose the region closest to your users. Cross-region access still works but adds
+network latency; for latency-sensitive workloads, keeping the workspace and your
+application in the same region is recommended.

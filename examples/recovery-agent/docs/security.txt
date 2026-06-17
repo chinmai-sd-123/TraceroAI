@@ -1,0 +1,28 @@
+Security
+
+Encryption
+----------
+Customer data is encrypted in transit using TLS 1.2 or higher, and at rest using
+AES-256. Encryption keys are managed in a dedicated key-management service and rotated
+on a fixed schedule. Backups are encrypted with the same standard as primary storage.
+
+Authentication
+--------------
+To reset your password, click "Forgot Password" on the login page and follow the link
+emailed to the address on file; reset links expire after 30 minutes. Accounts may
+enable multi-factor authentication using a TOTP authenticator app or a hardware security
+key. Enterprise accounts can enforce SSO, in which case local passwords are disabled and
+all sign-in flows through the identity provider.
+
+Compliance
+----------
+We are SOC 2 Type II certified, with the report available under NDA on request. We
+support data-processing agreements (DPAs) for customers subject to GDPR, and we honor
+data-subject access and deletion requests within 30 days. A current list of
+sub-processors is published on the trust page.
+
+Incident Response
+-----------------
+Suspected security issues can be reported to security@example.com. We acknowledge
+reports within one business day. Confirmed incidents affecting customer data are
+disclosed to affected customers in line with contractual and regulatory timelines.
