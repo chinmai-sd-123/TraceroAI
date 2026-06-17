@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     app_env: Literal["development", "testing", "staging", "production"] = "development"
     openai_api_key: str | None = None
     judge_model: str = "gpt-4o-mini"
+    embedding_model: str = "gemini-embedding-001"
+
     # Optional: point the judge at any OpenAI-compatible endpoint (e.g. Gemini's
     # https://generativelanguage.googleapis.com/v1beta/openai/ ). When set,
     # openai_api_key holds that provider's key and judge_model its model name.
