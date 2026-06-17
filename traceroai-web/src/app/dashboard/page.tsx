@@ -1,12 +1,19 @@
+import Link from "next/link";
+
 import { getJobStats, getTraces } from "@/lib/api";
+
+// "Healthy" outcomes are not failures: a healthy answer AND a correct refusal
+// (the model rightly declining when context lacks the answer) both count as good.
+// Defined once so Healthy rate and Open failures stay consistent.
+const HEALTHY_LABELS = new Set(["healthy_answer", "correct_refusal"]);
 
 function calculateHealthyRate(traces: Awaited<ReturnType<typeof getTraces>>) {
   if (traces.length === 0) {
     return "--";
   }
 
-  const healthyCount = traces.filter(
-    (trace) => trace.diagnosis.label === "healthy_answer",
+  const healthyCount = traces.filter((trace) =>
+    HEALTHY_LABELS.has(trace.diagnosis.label),
   ).length;
 
   return `${Math.round((healthyCount / traces.length) * 100)}%`;
@@ -42,10 +49,6 @@ function calculatePercentileLatency(
   const index = Math.min(Math.max(rank, 0), sorted.length - 1);
   return `${sorted[index]}ms`;
 }
-
-// "Healthy" outcomes are not failures: a healthy answer AND a correct refusal
-// (the model rightly declining when context lacks the answer) both count as good.
-const HEALTHY_LABELS = new Set(["healthy_answer", "correct_refusal"]);
 
 function calculateOpenFailures(traces: Awaited<ReturnType<typeof getTraces>>) {
   return traces.filter((trace) => !HEALTHY_LABELS.has(trace.diagnosis.label))
@@ -87,9 +90,10 @@ export default async function DashboardPage() {
           <h2 className="text-lg font-semibold">Recent Traces</h2>
           <div className="mt-4 space-y-3">
             {traces.slice(0, 5).map((trace) => (
-              <div
+              <Link
                 key={trace.traceId}
-                className="rounded-md border border-zinc-800 bg-zinc-950/60 p-4"
+                href={`/dashboard/traces/${trace.traceId}`}
+                className="block rounded-md border border-zinc-800 bg-zinc-950/60 p-4 transition hover:border-zinc-600 hover:bg-zinc-900/60"
               >
                 <p className="line-clamp-1 text-sm font-medium">
                   {trace.query.original}
@@ -98,8 +102,11 @@ export default async function DashboardPage() {
                   {trace.diagnosis.label.replaceAll("_", " ")} /{" "}
                   {trace.latency.totalMs}ms
                 </p>
-              </div>
+              </Link>
             ))}
+            {traces.length === 0 && (
+              <p className="text-sm text-zinc-600">No traces yet.</p>
+            )}
           </div>
         </section>
 
@@ -134,12 +141,43 @@ export default async function DashboardPage() {
           </section>
 
           <section className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
+            <h2 className="text-lg font-semibold">Evaluation Methods</h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Share of traces touched by each evaluator (two-tier: fast quick pass
+              + LLM-judge deep pass).
+            </p>
+            <div className="mt-4 space-y-3">
+              {getEvalMethodMix(traces).map((item) => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-300">{item.label}</span>
+                    <span className="font-mono text-zinc-500">{item.percentage}%</span>
+                  </div>
+                  <div className="mt-2 h-2 rounded-full bg-zinc-800">
+                    <div
+                      className="h-2 rounded-full bg-violet-400"
+                      style={{ width: `${item.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+              {traces.length === 0 && (
+                <p className="text-sm text-zinc-600">No traces yet.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
             <h2 className="text-lg font-semibold">Failure Mix</h2>
             <div className="mt-4 space-y-3">
               {getFailureMix(traces).map((item) => (
-                <div key={item.label}>
+                <Link
+                  key={item.label}
+                  href={`/dashboard/traces?diagnosis=${encodeURIComponent(item.label)}`}
+                  className="group block rounded-md p-1 transition hover:bg-zinc-800/40"
+                >
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-300">
+                    <span className="text-zinc-300 group-hover:text-zinc-100">
                       {item.label.replaceAll("_", " ")}
                     </span>
                     <span className="font-mono text-zinc-500">{item.count}</span>
@@ -150,12 +188,38 @@ export default async function DashboardPage() {
                       style={{ width: `${item.percentage}%` }}
                     />
                   </div>
-                </div>
+                </Link>
               ))}
+              {traces.length === 0 && (
+                <p className="text-sm text-zinc-600">No traces yet.</p>
+              )}
             </div>
           </section>
         </div>
       </div>
+
+      <section className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
+        <h2 className="text-lg font-semibold">Groundedness Distribution</h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          How answer groundedness scores spread across evaluated traces — most
+          should cluster high.
+        </p>
+        <div className="mt-6 flex items-end gap-3" style={{ height: "140px" }}>
+          {getGroundednessDistribution(traces).map((bin) => (
+            <div key={bin.range} className="flex flex-1 flex-col items-center justify-end">
+              <span className="mb-1 font-mono text-xs text-zinc-500">{bin.count}</span>
+              <div
+                className="w-full rounded-t bg-emerald-400/80"
+                style={{ height: `${bin.heightPct}%`, minHeight: bin.count > 0 ? "4px" : "0" }}
+              />
+              <span className="mt-2 font-mono text-[10px] text-zinc-600">{bin.range}</span>
+            </div>
+          ))}
+        </div>
+        {traces.length === 0 && (
+          <p className="mt-2 text-sm text-zinc-600">No traces yet.</p>
+        )}
+      </section>
     </section>
   );
 }
@@ -167,6 +231,55 @@ function MetricCard({ label, value }: { label: string; value: string }) {
       <p className="mt-2 text-2xl font-semibold">{value}</p>
     </div>
   );
+}
+
+// Bucket a 0..1 score into five bins for a distribution histogram. Only traces
+// that were actually scored (> 0 OR an explicit evaluated label) are counted —
+// "not_evaluated" traces are excluded so the histogram reflects real measurements.
+const SCORE_BINS = ["0.0–0.2", "0.2–0.4", "0.4–0.6", "0.6–0.8", "0.8–1.0"];
+
+function getGroundednessDistribution(
+  traces: Awaited<ReturnType<typeof getTraces>>,
+) {
+  const scores = traces
+    .filter((t) => t.evaluations.groundedness.label !== "not_evaluated")
+    .map((t) => t.evaluations.groundedness.score);
+
+  const counts = [0, 0, 0, 0, 0];
+  for (const s of scores) {
+    // clamp into [0,1], then map to a bin index 0..4 (1.0 lands in the last bin)
+    const clamped = Math.min(Math.max(s, 0), 1);
+    const idx = Math.min(Math.floor(clamped * 5), 4);
+    counts[idx] += 1;
+  }
+  const max = Math.max(1, ...counts);
+  return SCORE_BINS.map((range, i) => ({
+    range,
+    count: counts[i],
+    // bar height relative to the busiest bin
+    heightPct: Math.round((counts[i] / max) * 100),
+  }));
+}
+
+// Share of traces each evaluation method touched. Surfaces the two-tier eval
+// architecture (fast embedding/lexical quick pass + LLM-judge deep pass).
+function getEvalMethodMix(traces: Awaited<ReturnType<typeof getTraces>>) {
+  const total = traces.length;
+  if (total === 0) {
+    return [] as Array<{ label: string; count: number; percentage: number }>;
+  }
+  const count = (pred: (t: (typeof traces)[number]) => boolean) =>
+    traces.filter(pred).length;
+
+  const rows = [
+    { label: "Embedding (semantic)", count: count((t) => !!t.evalMethods?.embedding) },
+    { label: "Lexical (fallback)", count: count((t) => !!t.evalMethods?.lexical) },
+    { label: "LLM judge (deep)", count: count((t) => !!t.evalMethods?.llmJudge) },
+  ];
+  return rows.map((r) => ({
+    ...r,
+    percentage: Math.round((r.count / total) * 100),
+  }));
 }
 
 function getFailureMix(traces: Awaited<ReturnType<typeof getTraces>>) {

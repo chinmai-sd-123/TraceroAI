@@ -28,9 +28,17 @@ function formatTime(timestamp: string) {
   }).format(new Date(timestamp));
 }
 
-export function TraceList({ traces }: { traces: MockTrace[] }) {
+export function TraceList({
+  traces,
+  initialDiagnosis = "all",
+}: {
+  traces: MockTrace[];
+  initialDiagnosis?: "all" | TraceDiagnosis;
+}) {
   const [search, setSearch] = useState("");
-  const [diagnosis, setDiagnosis] = useState<"all" | TraceDiagnosis>("all");
+  const [diagnosis, setDiagnosis] = useState<"all" | TraceDiagnosis>(
+    initialDiagnosis,
+  );
 
   // Diagnosis labels actually present in the data, for the filter chips.
   const presentDiagnoses = useMemo(() => {
