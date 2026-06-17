@@ -1,11 +1,13 @@
 # TraceroAI — System Design
 
 > **Status (June 2026):** The RAG debugger is built and deployed end-to-end —
-> ingestion API, Python SDK (published to PyPI), Postgres storage, deterministic
-> *and* LLM-as-judge evaluation, automatic diagnosis, the Next.js dashboard, a
-> public live playground, and a sample monitored RAG app are all live. The
-> experiment/MLOps layer and the LangGraph recovery layer are the next
-> milestones — see the [Roadmap](#roadmap) at the end.
+> ingestion API, Python SDK (on PyPI), Postgres storage, **embedding-based** quick
+> eval *and* LLM-as-judge deep eval, automatic diagnosis, the Next.js dashboard, a
+> public live playground, and sample monitored RAG apps are all live. The
+> **experiment/MLOps harness** and the **LangGraph self-healing recovery agent** are
+> now built too (the recovery agent ships as the `traceroai[recovery]` SDK extra).
+> Remaining: cost tracking, then optional CI / OpenTelemetry. See the
+> [Roadmap](#roadmap) at the end.
 >
 > This document describes the system as built and where it is going.
 
@@ -740,8 +742,10 @@ security_policy.md
 
 ## Experiment Layer
 
-> **Planned** (Roadmap item 1). The eval-run *schema* and dashboard for this are
-> already built; the run generator and winner selection are what remain.
+> **Built.** Implemented as the experiment harness in `services/api/app/eval_runner/`
+> (`python -m app.eval_runner`): it replays a labeled dataset across pipeline variant
+> configs, grades each answer with an LLM judge, and recommends a winner. Surfaced on
+> the dashboard overview as the "Latest Experiment" card.
 
 Compare:
 
@@ -768,8 +772,9 @@ This is the MLOps layer and should be one of the strongest portfolio signals.
 
 ## LangGraph Layer
 
-> **Planned** (Roadmap item 3). Designed to be added after the core debugger —
-> which is now done.
+> **Built.** Shipped as the `traceroai[recovery]` SDK extra (`traceroai.recovery.RecoveryAgent`):
+> a LangGraph state machine that retries the stage TraceroAI diagnoses as broken, bounded by
+> max-attempts. See `examples/recovery-agent/`.
 
 Workflow:
 
@@ -796,30 +801,29 @@ The core RAG debugger is built and deployed. Progress against the original miles
 | 3 | Storage — Postgres (traces persisted as JSONB) | ✅ Done |
 | 4 | Dashboard screens (trace list, trace detail, eval runs) | ✅ Done |
 | 5 | Dashboard ↔ FastAPI integration | ✅ Done |
-| 6 | Evaluators (groundedness, context/answer relevance, diagnosis) | ✅ Done |
-| 7 | Sample monitored RAG app | ✅ Done |
-| 8 | Eval runs (datasets, variant comparison, summary metrics) | 🔶 Mostly done — schema, ingest/CRUD, and dashboard exist; a run *generator* + recommendation logic remain |
-| 9 | LangGraph recovery workflow | ⬜ Planned |
-| 10 | Portfolio polish (README, diagram, screenshots, demo, CI) | 🔶 README + architecture diagram + screenshots done; CI + demo video remain |
+| 6 | Evaluators — **embedding-cosine** relevance + groundedness + diagnosis | ✅ Done |
+| 7 | Sample monitored RAG apps (incl. LangChain) | ✅ Done |
+| 8 | Eval runs — datasets, variant comparison, **run generator + winner** | ✅ Done (`app/eval_runner/`) |
+| 9 | LangGraph recovery workflow | ✅ Done (`traceroai[recovery]`) |
+| 10 | Portfolio polish (README, diagram, screenshots, demo, CI) | 🔶 README + diagram + screenshots + USAGE.md done; CI + demo video remain |
 
-**Shipped beyond the original plan:** provider-agnostic LLM judge (OpenAI *or*
-Gemini via one config), a public interactive `/docs` playground, the quick→deep
-diagnosis correction, multi-tenant-lite project API keys, and a per-IP rate limiter
-on the public endpoint.
+**Shipped beyond the original plan:** provider-agnostic LLM judge + embeddings (OpenAI
+*or* Gemini via one config), a public interactive `/docs` playground, the quick→deep
+diagnosis correction, embedding-based quick eval, the experiment harness, the
+self-healing recovery agent, dashboard AI-eng metrics (eval-method split, score
+distribution, experiment card), multi-tenant-lite project API keys, and a per-IP rate
+limiter on the public endpoint.
 
 ## Roadmap
 
 What's next, roughly in order:
 
-1. **Eval runs (complete the loop)** — a harness that *generates* runs by replaying a
-   dataset across pipeline configs (`top_k`, prompt, reranker), plus a `recommended_config`
-   winner. The Experiment Layer above is the design for this — the MLOps story.
-2. **Cost tracking** — capture token usage + estimated cost per trace and aggregate it
-   on the dashboard (surfaced as a metric, alongside latency).
-3. **LangGraph recovery** — the self-healing workflow in the LangGraph Layer above:
-   `evaluate → retry/regenerate → needs_review`. The agentic-AI signal.
-4. **OpenTelemetry** — OTel-compatible export so traces flow into standard observability
-   tooling. The "real infrastructure" signal.
+1. **Cost tracking** — capture token usage and estimated cost per trace, and aggregate it
+   on the dashboard alongside latency.
+2. **CI** — GitHub Actions running the API and SDK test suites, with an eval-run
+   regression gate.
+3. **OpenTelemetry** — OTel-compatible export so traces flow into standard observability
+   tooling.
 
 ### Deliberately out of scope (for now)
 
