@@ -37,11 +37,21 @@ def ingest_eval_run(
 
 
 @router.get("", response_model=list[EvalRunIngestRequest])
-def list_eval_runs(db: Session = Depends(get_db)) -> list[dict]:
+def list_eval_runs(
+    project_id: str | None = None,
+    db: Session = Depends(get_db),
+) -> list[dict]:
     repository = EvalRunRepository(db)
-    records = repository.list()
+    records = repository.list(project_id=project_id)
 
     return [record.payload for record in records]
+
+
+# Declared before /{eval_run_id} so "projects" isn't captured as an id.
+@router.get("/projects", response_model=list[str])
+def list_eval_run_projects(db: Session = Depends(get_db)) -> list[str]:
+    repository = EvalRunRepository(db)
+    return repository.list_projects()
 
 
 @router.get("/{eval_run_id}", response_model=EvalRunIngestRequest)

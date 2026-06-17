@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from uuid import UUID
 
 from sqlalchemy import select
@@ -53,8 +55,18 @@ class EvalRunRepository:
 
         return record
 
-    def list(self) -> list[EvalRunRecord]:
+    def list(self, project_id: str | None = None) -> list[EvalRunRecord]:
         statement = select(EvalRunRecord).order_by(EvalRunRecord.created_at.desc())
+        if project_id:
+            statement = statement.where(EvalRunRecord.project_id == project_id)
+        return list(self.db.scalars(statement).all())
+
+    def list_projects(self) -> list[str]:
+        statement = (
+            select(EvalRunRecord.project_id)
+            .distinct()
+            .order_by(EvalRunRecord.project_id)
+        )
         return list(self.db.scalars(statement).all())
 
     def get(self, eval_run_id: UUID) -> EvalRunRecord | None:

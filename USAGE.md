@@ -184,7 +184,29 @@ demo that loads `.md`/`.txt` documents, splits them, and recovers across attempt
 
 ---
 
-## 6. Loading your own documents (any format)
+## 6. Experiment runs (A/B-test pipeline configs)
+
+Compare pipeline configurations against a labeled dataset and get a recommended
+winner. The harness replays every case across each variant, grades the answers with
+the LLM judge, and posts the result to the eval-runs API:
+
+```bash
+# from services/api
+python -m app.eval_runner \
+    --dataset support_faq_v1 \
+    --project my-app \
+    --post \
+    --api-url https://traceroai.onrender.com
+```
+
+The run appears under **Eval Runs** in the dashboard, filterable by project. Each
+variant reports **accuracy** (correct vs. expected answers, judged by the LLM) and
+**average latency**; the highest-accuracy variant is recommended. Omit `--post` to
+print the results locally without sending them.
+
+---
+
+## 7. Loading your own documents (any format)
 
 TraceroAI does **not** load documents — that's your retriever's job, which is why the
 SDK works with any source (text files, markdown, PDFs, a vector DB, an API). Use a
@@ -202,7 +224,7 @@ files, split with `RecursiveCharacterTextSplitter`, embed, and retrieve top-k.
 
 ---
 
-## 7. Examples in this repo
+## 8. Examples in this repo
 
 | Example | Shows |
 |---|---|

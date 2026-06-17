@@ -214,6 +214,20 @@ export async function getProjects(): Promise<string[]> {
   }
 }
 
+export async function getEvalRunProjects(): Promise<string[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/eval-runs/projects`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return [];
+    }
+    return (await response.json()) as string[];
+  } catch {
+    return [];
+  }
+}
+
 export type JobStats = {
   redisConnected: boolean;
   queued: number;
@@ -263,12 +277,15 @@ export async function getTrace(traceId: string): Promise<MockTrace | null> {
   }
 }
 
-export async function getEvalRuns(): Promise<{
+export async function getEvalRuns(projectId?: string): Promise<{
   regressionRuns: RegressionEvalRun[];
   experimentRuns: ExperimentEvalRun[];
 }> {
+  const url = projectId
+    ? `${API_BASE_URL}/v1/eval-runs?project_id=${encodeURIComponent(projectId)}`
+    : `${API_BASE_URL}/v1/eval-runs`;
   try {
-    const response = await fetch(`${API_BASE_URL}/v1/eval-runs`, {
+    const response = await fetch(url, {
       cache: "no-store",
     });
 
@@ -491,27 +508,36 @@ function mapApiEvalRunToRegressionRun(run: ApiEvalRun): RegressionEvalRun {
 }
 
 function mapApiEvalRunToExperimentRun(run: ApiEvalRun): ExperimentEvalRun {
-  const comparedParameter = inferComparedParameter(run);
+  // Variants can differ in several dimensions at once (top_k AND prompt AND model),
+  // so we identify each by its descriptive name rather than a single config value —
+  // this keeps row labels unique and human-readable.
+  const values = run.variants.map((variant) => ({
+    value: variant.name || variant.variant_id,
+    healthyRate: toPercent(
+      safeDivide(variant.passed_cases, variant.passed_cases + variant.failed_cases),
+    ),
+    sourceRecallRate: toPercent(findMetricOnVariant(variant, "source_recall")?.score),
+    contextPrecision: toPercent(
+      findMetricOnVariant(variant, "context_precision")?.score,
+    ),
+    avgLatencyMs: variant.average_latency_ms ?? 0,
+  }));
+
+  // Winner = highest accuracy (tie-break: lower latency). Computed here, not parsed
+  // from the recommendation sentence, so the badge is always correct.
+  const winner = [...values].sort(
+    (a, b) => b.healthyRate - a.healthyRate || a.avgLatencyMs - b.avgLatencyMs,
+  )[0];
 
   return {
     id: run.eval_run_id,
     type: "experiment",
     timestamp: run.timestamp,
     experimentName: run.pipeline.pipeline_version,
-    comparedParameter,
-    values: run.variants.map((variant) => ({
-      value: String(variant.config[comparedParameter] ?? variant.name),
-      healthyRate: toPercent(
-        safeDivide(variant.passed_cases, variant.passed_cases + variant.failed_cases),
-      ),
-      sourceRecallRate: toPercent(findMetricOnVariant(variant, "source_recall")?.score),
-      contextPrecision: toPercent(
-        findMetricOnVariant(variant, "context_precision")?.score,
-      ),
-      avgLatencyMs: variant.average_latency_ms ?? 0,
-    })),
+    comparedParameter: "Variant",
+    values,
     recommendation: {
-      value: String(run.summary.recommendation ?? "review"),
+      value: winner?.value ?? "review",
       reason:
         run.summary.recommendation ||
         "Review the experiment variants and choose the best quality-latency tradeoff.",
@@ -530,16 +556,6 @@ function findMetricOnVariant(
   return variant.metrics.find((metric) => metric.metric_name === metricName);
 }
 
-function inferComparedParameter(run: ApiEvalRun) {
-  const firstVariant = run.variants[0];
-
-  if (!firstVariant) {
-    return "config";
-  }
-
-  const keys = Object.keys(firstVariant.config);
-  return keys[0] || "config";
-}
 
 function toPercent(score: number | null | undefined) {
   if (score == null) {
