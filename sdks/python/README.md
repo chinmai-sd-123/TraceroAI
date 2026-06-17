@@ -62,3 +62,22 @@ Pass your project API key; the server attributes traces to your project:
 ```python
 client = TraceroClient(base_url="https://traceroai.onrender.com", api_key="your_project_key")
 ```
+
+## Self-healing recovery (optional)
+
+```bash
+pip install "traceroai[recovery]"
+```
+
+`RecoveryAgent` (built on LangGraph) retries the RAG stage that TraceroAI diagnoses as
+broken — re-retrieving on a retrieval miss, re-generating with a stricter prompt on an
+unsupported claim — until the answer is healthy or it escalates to review. You supply
+your own `retrieve`/`generate`; every attempt is traced.
+
+```python
+from traceroai.recovery import RecoveryAgent
+
+agent = RecoveryAgent(client, retrieve=my_retrieve, generate=my_generate, max_attempts=3)
+result = agent.run("How long does a refund take?")
+# result["answer"], result["diagnosis"], result["attempts"], result["trace_ids"]
+```

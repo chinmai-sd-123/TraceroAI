@@ -85,4 +85,15 @@ class TraceroClient:
                 data = response.json()
                 return UUID(data["trace_id"])
                 
-                
+    
+
+    def get_trace(self, trace_id: UUID | str) -> dict[str, Any]:
+        """Fetch a stored trace by its ID. Returns the full trace object, including evaluations and diagnosis.
+        """
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        response = httpx.get(f"{self.base_url}/v1/traces/{trace_id}", headers=headers, timeout=self.timeout_seconds,)
+        response.raise_for_status()
+        return response.json()
