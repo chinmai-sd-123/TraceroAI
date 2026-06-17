@@ -58,19 +58,18 @@ class TraceroClient:
                   generation: dict[str, Any],
                   prompt: dict[str, Any] | None = None,
                   latency: dict[str, Any] | None = None,
-                  evaluation: dict[str, Any] | None = None,
-                  diagnosis: dict[str, Any] | None = None,
                   project: dict[str, Any]| None = None,
                   metadata: dict[str, Any] | None = None,
             )-> UUID:
+                # Note: evaluations and diagnosis are computed server-side (the
+                # server is the source of truth), so they are intentionally not
+                # accepted here — sending them would be silently ignored.
                 payload = {
                 "query": query,
                 "retrieval": retrieval,
-                "generation": generation,    
+                "generation": generation,
                 "prompt": prompt or {},
                 "latency": latency or {},
-                "evaluation": evaluation or {},
-                "diagnosis": diagnosis or {},
                 "project": project or {},
                 "metadata": metadata or {},
                 }
