@@ -20,6 +20,11 @@ class RelevanceVerdict(BaseModel):
     reason: str
 
 
+class CorrectnessVerdict(BaseModel):
+    correct: bool
+    reason: str
+
+
 class LLMJudge(Protocol):
     def judge_claim_groundedness(
         self, answer: str, context: str
@@ -27,6 +32,9 @@ class LLMJudge(Protocol):
 
     def judge_context_relevance(self, answer: str, context: str) -> RelevanceVerdict: ...
     def judge_answer_relevance(self, answer: str, context: str) -> RelevanceVerdict: ...
+    def judge_answer_correctness(
+        self, question: str, expected: str, actual: str
+    ) -> CorrectnessVerdict: ...
 
 
 SYSTEM_PROMPT = (
@@ -49,6 +57,14 @@ ANSWER_RELEVANCE_PROMPT = (
     "You judge whether an ANSWER addresses a QUERY for a RAG system. Set "
     "relevant=true only if the answer directly addresses what the query asks. "
     "Reason in one sentence. Judge meaning, not word overlap."
+)
+
+CORRECTNESS_PROMPT = (
+    "You grade a RAG answer against a reference answer. Given the QUESTION, the "
+    "EXPECTED answer, and the ACTUAL answer, decide whether the actual answer is "
+    "correct — i.e. it conveys the same key facts as the expected answer and does "
+    "not contradict it. Allow different wording and extra correct detail. Set "
+    "correct=true only if it matches in substance. Reason in one sentence."
 )
 
 class OpenAIJudge:
@@ -107,4 +123,27 @@ class OpenAIJudge:
         return self._judge_relevance(
             ANSWER_RELEVANCE_PROMPT, f"QUERY:\n{query}\n\nANSWER:\n{answer}"
         )
+
+    def judge_answer_correctness(
+        self, question: str, expected: str, actual: str
+    ) -> CorrectnessVerdict:
+        completion = self._client.chat.completions.parse(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": CORRECTNESS_PROMPT},
+                {
+                    "role": "user",
+                    "content": (
+                        f"QUESTION:\n{question}\n\n"
+                        f"EXPECTED:\n{expected}\n\n"
+                        f"ACTUAL:\n{actual}"
+                    ),
+                },
+            ],
+            response_format=CorrectnessVerdict,
+        )
+        verdict = completion.choices[0].message.parsed
+        if verdict is None:
+            raise ValueError("Judge returned no parsed verdict.")
+        return verdict
 
