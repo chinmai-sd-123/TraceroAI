@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getJobStats, getTraces } from "@/lib/api";
+import { getEvalRuns, getJobStats, getTraces } from "@/lib/api";
 
 // "Healthy" outcomes are not failures: a healthy answer AND a correct refusal
 // (the model rightly declining when context lacks the answer) both count as good.
@@ -56,7 +56,16 @@ function calculateOpenFailures(traces: Awaited<ReturnType<typeof getTraces>>) {
 }
 
 export default async function DashboardPage() {
-  const [traces, jobStats] = await Promise.all([getTraces(), getJobStats()]);
+  const [traces, jobStats, evalRuns] = await Promise.all([
+    getTraces(),
+    getJobStats(),
+    getEvalRuns(),
+  ]);
+
+  // Most recent experiment (eval-run harness output), if any.
+  const latestExperiment = [...evalRuns.experimentRuns].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+  )[0];
 
   const totalTraces = traces.length;
   const healthyRate = calculateHealthyRate(traces);
@@ -220,6 +229,61 @@ export default async function DashboardPage() {
           <p className="mt-2 text-sm text-zinc-600">No traces yet.</p>
         )}
       </section>
+
+      {latestExperiment && (
+        <section className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold">Latest Experiment</h2>
+              <p className="mt-1 text-xs text-zinc-500">
+                Pipeline configs compared on a labeled dataset, graded by an LLM judge.
+              </p>
+            </div>
+            <Link
+              href={`/dashboard/eval-runs/${latestExperiment.id}`}
+              className="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-zinc-100"
+            >
+              View run →
+            </Link>
+          </div>
+
+          <div className="mt-4 rounded-md border border-cyan-500/30 bg-cyan-500/10 p-3 text-sm text-cyan-200">
+            <span className="font-medium">Recommended:</span>{" "}
+            {latestExperiment.recommendation.reason}
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {(() => {
+              // The winning variant is the highest accuracy (healthyRate). Computed
+              // here rather than parsed from the recommendation text, so it's robust.
+              const topRate = Math.max(
+                ...latestExperiment.values.map((v) => v.healthyRate),
+              );
+              return latestExperiment.values.map((variant) => {
+                const isWinner = variant.healthyRate === topRate;
+                return (
+                <div
+                  key={variant.value}
+                  className={`rounded-md border p-3 ${
+                    isWinner
+                      ? "border-cyan-500/40 bg-cyan-500/5"
+                      : "border-zinc-800 bg-zinc-950/40"
+                  }`}
+                >
+                  <p className="font-mono text-xs text-zinc-300">
+                    {latestExperiment.comparedParameter} = {variant.value}
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold">{variant.healthyRate}%</p>
+                  <p className="text-xs text-zinc-500">
+                    accuracy · {variant.avgLatencyMs}ms avg
+                  </p>
+                </div>
+                );
+              });
+            })()}
+          </div>
+        </section>
+      )}
     </section>
   );
 }
