@@ -73,59 +73,72 @@ onto the trace.
 
 ```mermaid
 flowchart TB
-    subgraph client["Your RAG application"]
+    subgraph client["Your RAG application + traceroai SDK"]
         SDK["traceroai SDK<br/>context-manager · decorator · low-level"]
+        RECOVERY["RecoveryAgent (optional extra)<br/>LangGraph self-healing loop"]
     end
 
     subgraph api["API service (FastAPI on Render)"]
         INGEST["POST /v1/traces<br/>auth · validate · stamp project"]
-        QUICK["Quick evaluators<br/>(deterministic, &lt;5ms)<br/>context · groundedness · relevance"]
+        QUICK["Quick evaluators (sync, ~100ms)<br/>embedding-cosine relevance + groundedness"]
         DIAG["Diagnosis reducer<br/>→ one of 6 labels"]
         WORKER["Worker<br/>(colocated process)"]
         DEEP["Deep evaluators<br/>LLM-as-judge"]
-        JUDGE{{"LLMJudge interface<br/>OpenAI · Gemini (swappable)"}}
+        JUDGE{{"LLMJudge + Embeddings<br/>OpenAI · Gemini (swappable)"}}
     end
 
-    PG[("Postgres / Neon<br/>traces as JSONB")]
-    REDIS[["Redis / Upstash<br/>deep-eval queue"]]
+    PG[("Postgres / Neon<br/>traces + eval runs as JSONB")]
+    REDIS[["Redis / Upstash<br/>deep-eval queue + rate limiter"]]
     WEB["Next.js dashboard + docs<br/>(Vercel)"]
 
     SDK -->|"HTTPS"| INGEST
+    RECOVERY -->|"trace each attempt"| SDK
+    RECOVERY -.->|"read diagnosis to route retry"| INGEST
     INGEST --> QUICK --> DIAG
+    QUICK -.->|"embed"| JUDGE
     DIAG -->|"persist + 202 Accepted"| PG
     INGEST -.->|"enqueue trace_id"| REDIS
 
     REDIS -.->|"dequeue"| WORKER
     WORKER --> DEEP --> JUDGE
-    JUDGE -.->|"LLM API"| EXT(["OpenAI / Gemini"])
+    JUDGE -.->|"LLM / embedding API"| EXT(["OpenAI / Gemini"])
     DEEP -->|"reconcile verdicts"| PG
 
-    WEB -->|"read traces / metrics"| PG
+    WEB -->|"read traces · metrics · experiments"| PG
 ```
 
 > Solid arrows are the synchronous request path; dotted arrows are the asynchronous
-> evaluation path.
+> evaluation path. The **RecoveryAgent** runs client-side: it traces each attempt and
+> reads back the diagnosis to decide whether (and how) to retry.
 
 ### Request lifecycle
 
 1. The SDK sends a trace (query, retrieved chunks, prompt, answer) to `POST /v1/traces`.
-2. The API authenticates the project key, runs the **deterministic quick evaluators**,
-   computes a **diagnosis**, persists the trace, and returns **`202 Accepted`** — the
-   caller is never blocked on evaluation.
+2. The API authenticates the project key, runs the **quick evaluators** (embedding-cosine
+   relevance + groundedness), computes a **diagnosis**, persists the trace, and returns
+   **`202 Accepted`** — the caller is never blocked on evaluation.
 3. The trace id is pushed onto a **Redis queue**.
 4. A **worker** dequeues it and runs the **LLM-as-judge** deep evaluators, then
    reconciles the richer verdicts back onto the stored trace.
-5. The **dashboard** reads traces and aggregate metrics for inspection.
+5. The **dashboard** reads traces, aggregate metrics, and experiment results.
+
+Beyond this core flow, two features build on it: the **experiment harness**
+(`python -m app.eval_runner`) replays a labeled dataset across pipeline configs and
+recommends a winner, and the **RecoveryAgent** uses the per-attempt diagnosis to drive a
+self-healing retry loop.
 
 ### Design decisions & trade-offs
 
 | Decision | Why | Trade-off accepted |
 |---|---|---|
-| **Two-tier evaluation** (deterministic → LLM judge) | Cheap checks cover most traces in <5ms at zero cost; the judge only does the semantic work the cheap layer gets wrong | The deterministic label can be briefly "stale" until the judge reconciles |
+| **Two-tier evaluation** (embedding similarity → LLM judge) | Fast embedding-cosine relevance catches most cases semantically in ~100ms; the LLM judge does the claim-level reasoning the cheap layer can't | The quick label can be briefly "stale" until the judge reconciles |
+| **Hosted embeddings, not local** | Embedding relevance runs via a hosted API (reusing the judge config), so the lean API process never has to load PyTorch / a model into memory | A network call + tiny per-trace cost vs. a local model |
 | **Async deep eval via Redis queue** | LLM calls are slow and rate-limited; keeping them off the ingest path keeps `POST /v1/traces` fast and resilient | Eventual consistency — a trace is diagnosed twice (quick, then deep) |
-| **`LLMJudge` interface behind config** | Provider is a one-line swap (OpenAI ↔ Gemini's OpenAI-compatible endpoint); makes the judge unit-testable with a stub | A thin abstraction layer over the provider SDK |
+| **`LLMJudge` / embeddings behind config** | Provider is a one-line swap (OpenAI ↔ Gemini's OpenAI-compatible endpoint); makes eval unit-testable with stubs | A thin abstraction layer over the provider SDK |
+| **Self-healing recovery as an opt-in extra** (`traceroai[recovery]`) | A LangGraph loop turns the eval pipeline into a feedback signal that *fixes* answers, not just observes them; shipped as an extra so the base SDK stays lean | Pulls langgraph only for users who want it; bounded by max-attempts to prevent infinite loops |
+| **Eval-runs harness grades correctness with an LLM** | A/B-comparing pipeline configs needs a correctness signal; grading failures are tracked as *ungradeable*, not silently counted as wrong | Cost of one LLM call per case; mitigated by small datasets |
 | **Traces stored as JSONB** | The trace schema evolves fast; JSONB avoids migrations per field while still being queryable | Less rigid than fully normalized columns |
-| **Fail-open everywhere** | No judge key, a 429 from the provider, or an unreachable Redis must never break ingest or the public demo | A degraded path silently falls back to the deterministic result |
+| **Fail-open everywhere** | No key, a 429 from the provider, or an unreachable Redis must never break ingest or the public demo | A degraded path silently falls back to the cheaper result |
 | **Per-IP rate limit on the public demo** | The `/playground` endpoint is unauthenticated and burns shared LLM quota; a fixed-window Redis counter caps abuse | Fixed-window is coarser than a sliding window (acceptable for a demo) |
 
 See [`docs/traceroai-system-plan.md`](docs/traceroai-system-plan.md) for the full design.
@@ -173,9 +186,9 @@ A complete, runnable example is in [`examples/simple-rag-monitored/`](examples/s
 | Layer | Stack |
 |---|---|
 | **API** | FastAPI · Pydantic · SQLAlchemy |
-| **Storage** | Postgres (JSONB) · Redis (async deep-eval queue) |
-| **Evaluation** | Deterministic evaluators · LLM-as-judge (OpenAI / Gemini, swappable) |
-| **SDK** | Python (`httpx`), context-manager + decorator + low-level APIs |
+| **Storage** | Postgres (JSONB) · Redis (async deep-eval queue + rate limiter) |
+| **Evaluation** | Embedding-cosine relevance · LLM-as-judge (OpenAI / Gemini, swappable) · experiment harness |
+| **SDK** | Python (`httpx`), context-manager + decorator + low-level APIs; optional `[recovery]` extra (LangGraph) |
 | **Web** | Next.js · Tailwind CSS |
 | **Deploy** | Render (API + colocated worker) · Vercel (web) · Neon (Postgres) · Upstash (Redis) |
 
@@ -186,13 +199,15 @@ TraceroAI/
 ├── services/api/          FastAPI backend — ingest, evaluators, LLM judge, worker
 │   └── app/
 │       ├── api/routes/     traces · playground · eval_runs · jobs · health
-│       ├── evaluators/     quick (deterministic) + deep (LLM judge) + diagnosis
-│       └── services/       repositories · queue · rate limiter · judge
-├── sdks/python/           the `traceroai` package published to PyPI
+│       ├── evaluators/     quick (embedding + groundedness) + deep (LLM judge) + diagnosis
+│       ├── eval_runner/    experiment harness — replay a dataset across configs, pick a winner
+│       └── services/       repositories · queue · rate limiter · judge · embeddings
+├── sdks/python/           the `traceroai` package (PyPI) — client, tracing, recovery agent
 ├── traceroai-web/         Next.js dashboard + interactive docs
-├── examples/              a runnable, monitored RAG app
+├── examples/              langchain-rag · recovery-agent · simple-rag-monitored · rag-demo
 ├── infra/                 docker-compose for local Postgres/Redis
-└── docs/                  system design plan + media
+├── docs/                  system design plan + screenshots
+└── USAGE.md               complete SDK usage guide
 ```
 
 ## Running locally
