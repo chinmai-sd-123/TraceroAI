@@ -1,18 +1,36 @@
+import type { TraceDiagnosis } from "@/lib/mock-traces";
 import { getProjects, getTraces } from "@/lib/api";
 
 import { ProjectSelector } from "./project-selector";
 import { TraceList } from "./trace-list";
 
+const DIAGNOSIS_LABELS = new Set<TraceDiagnosis>([
+  "healthy_answer",
+  "correct_refusal",
+  "retrieval_miss",
+  "unsupported_claim",
+  "wrong_answer",
+  "low_context_relevance",
+  "needs_review",
+]);
+
 export default async function TracesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string }>;
+  searchParams: Promise<{ project?: string; diagnosis?: string }>;
 }) {
-  const { project } = await searchParams;
+  const { project, diagnosis } = await searchParams;
   const [traces, projects] = await Promise.all([
     getTraces(project),
     getProjects(),
   ]);
+
+  // Only honor a diagnosis filter that is a real label (links from the dashboard
+  // Failure Mix pass these); anything else falls back to showing all.
+  const initialDiagnosis =
+    diagnosis && DIAGNOSIS_LABELS.has(diagnosis as TraceDiagnosis)
+      ? (diagnosis as TraceDiagnosis)
+      : "all";
 
   return (
     <section>
@@ -39,7 +57,7 @@ export default async function TracesPage({
         </div>
       </div>
 
-      <TraceList traces={traces} />
+      <TraceList traces={traces} initialDiagnosis={initialDiagnosis} />
     </section>
   );
 }

@@ -57,6 +57,7 @@ type ApiTrace = {
   evaluations: {
     quick?: Array<{
       evaluator_name: string;
+      evaluator_version?: string | null;
       label: string;
       score?: number | null;
       reason?: string | null;
@@ -420,6 +421,15 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
             reason: deepAnswerRelevance.reason || "No reason provided.",
           }
         : undefined,
+    },
+    evalMethods: {
+      embedding: (trace.evaluations.quick ?? []).some((e) =>
+        e.evaluator_version?.startsWith("embedding"),
+      ),
+      lexical: (trace.evaluations.quick ?? []).some((e) =>
+        e.evaluator_version?.startsWith("deterministic"),
+      ),
+      llmJudge: (trace.evaluations.deep ?? []).length > 0,
     },
     diagnosis: {
       label: normalizeDiagnosis(trace.diagnosis.label),

@@ -85,6 +85,13 @@ export type MockTrace = {
       reason: string;
     };
   };
+  // Which evaluation methods actually ran on this trace. Derived from the
+  // evaluator_version of the quick evals + presence of deep (LLM-judge) evals.
+  evalMethods?: {
+    embedding: boolean; // embedding-based relevance ran
+    lexical: boolean; // term-overlap fallback ran
+    llmJudge: boolean; // deep LLM-judge evals present
+  };
   diagnosis: {
     label: TraceDiagnosis;
     reason: string;
