@@ -208,26 +208,58 @@ export default async function DashboardPage() {
       </div>
 
       <section className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
-        <h2 className="text-lg font-semibold">Groundedness Distribution</h2>
-        <p className="mt-1 text-xs text-zinc-500">
-          How answer groundedness scores spread across evaluated traces — most
-          should cluster high.
-        </p>
-        <div className="mt-6 flex items-end gap-3" style={{ height: "140px" }}>
-          {getGroundednessDistribution(traces).map((bin) => (
-            <div key={bin.range} className="flex flex-1 flex-col items-center justify-end">
-              <span className="mb-1 font-mono text-xs text-zinc-500">{bin.count}</span>
-              <div
-                className="w-full rounded-t bg-emerald-400/80"
-                style={{ height: `${bin.heightPct}%`, minHeight: bin.count > 0 ? "4px" : "0" }}
-              />
-              <span className="mt-2 font-mono text-[10px] text-zinc-600">{bin.range}</span>
-            </div>
-          ))}
-        </div>
-        {traces.length === 0 && (
-          <p className="mt-2 text-sm text-zinc-600">No traces yet.</p>
-        )}
+        {(() => {
+          const g = getGroundednessDistribution(traces);
+          return (
+            <>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold">Groundedness</h2>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    How well answers are supported by their retrieved context, across
+                    evaluated traces.
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-semibold text-emerald-300">{g.avg}%</p>
+                  <p className="text-xs text-zinc-500">avg score</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 text-xs text-zinc-400">
+                <span className="rounded bg-emerald-500/10 px-2 py-1 text-emerald-300">
+                  {g.groundedShare}% well grounded
+                </span>
+                <span className="text-zinc-600">·</span>
+                <span>{g.evaluated} evaluated traces</span>
+              </div>
+
+              <div className="mt-6 flex items-end gap-3" style={{ height: "120px" }}>
+                {g.bins.map((bin) => (
+                  <div key={bin.range} className="flex flex-1 flex-col items-center justify-end">
+                    <span className="mb-1 font-mono text-xs text-zinc-400">{bin.count}</span>
+                    <div
+                      className={`w-full rounded-t ${bin.tone}`}
+                      style={{
+                        height: `${bin.heightPct}%`,
+                        minHeight: bin.count > 0 ? "4px" : "0",
+                      }}
+                    />
+                    <span className="mt-2 font-mono text-[10px] text-zinc-600">{bin.range}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 flex justify-between text-[10px] uppercase tracking-wide text-zinc-600">
+                <span>weak ←</span>
+                <span>→ well grounded</span>
+              </div>
+
+              {g.evaluated === 0 && (
+                <p className="mt-3 text-sm text-zinc-600">No evaluated traces yet.</p>
+              )}
+            </>
+          );
+        })()}
       </section>
 
       {latestExperiment && (
@@ -302,6 +334,15 @@ function MetricCard({ label, value }: { label: string; value: string }) {
 // "not_evaluated" traces are excluded so the histogram reflects real measurements.
 const SCORE_BINS = ["0.0–0.2", "0.2–0.4", "0.4–0.6", "0.6–0.8", "0.8–1.0"];
 
+// Per-bin color: low scores are a concern (red), high scores are good (emerald).
+const BIN_TONES = [
+  "bg-red-400/80",
+  "bg-orange-400/80",
+  "bg-amber-400/80",
+  "bg-lime-400/80",
+  "bg-emerald-400/80",
+];
+
 function getGroundednessDistribution(
   traces: Awaited<ReturnType<typeof getTraces>>,
 ) {
@@ -317,12 +358,23 @@ function getGroundednessDistribution(
     counts[idx] += 1;
   }
   const max = Math.max(1, ...counts);
-  return SCORE_BINS.map((range, i) => ({
+  const evaluated = scores.length;
+  const avg = evaluated
+    ? Math.round((scores.reduce((a, b) => a + b, 0) / evaluated) * 100)
+    : 0;
+  // "Well grounded" = score >= 0.6 (top two bins).
+  const wellGrounded = counts[3] + counts[4];
+  const groundedShare = evaluated
+    ? Math.round((wellGrounded / evaluated) * 100)
+    : 0;
+
+  const bins = SCORE_BINS.map((range, i) => ({
     range,
     count: counts[i],
-    // bar height relative to the busiest bin
+    tone: BIN_TONES[i],
     heightPct: Math.round((counts[i] / max) * 100),
   }));
+  return { bins, evaluated, avg, groundedShare };
 }
 
 // Share of traces each evaluation method touched. Surfaces the two-tier eval

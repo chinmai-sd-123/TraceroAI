@@ -271,8 +271,14 @@ function toPercent(score: number | null | undefined) {
   return Math.round(score * 100);
 }
 
+// Internal bookkeeping keys that aren't real pipeline knobs — hidden from the
+// human-readable config string.
+const NON_CONFIG_KEYS = new Set(["ungradeable_cases"]);
+
 function formatConfig(config: Record<string, unknown>) {
-  const entries = Object.entries(config);
+  const entries = Object.entries(config).filter(
+    ([key]) => !NON_CONFIG_KEYS.has(key),
+  );
 
   if (entries.length === 0) {
     return "no config recorded";
