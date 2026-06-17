@@ -4,32 +4,32 @@ const features = [
   {
     title: "Trace every RAG answer",
     description:
-      "Capture the user question, retrieval step, selected context, prompt, model response, latency, and cost in one timeline.",
+      "Capture the question, retrieval step, selected context, prompt, model response, and latency in one timeline — via a drop-in Python SDK.",
   },
   {
-    title: "Inspect retrieved evidence",
+    title: "Two-tier evaluation",
     description:
-      "See which chunks were used, how relevant they were, and whether the answer was actually supported by the retrieved context.",
+      "Fast embedding-cosine relevance scores every trace; an LLM-as-judge runs claim-level groundedness asynchronously. Each answer is reduced to a single diagnosis.",
   },
   {
-    title: "Find hallucination causes",
+    title: "Self-healing recovery",
     description:
-      "Separate retrieval failures from unsupported generation, noisy context, stale documents, and prompt-level issues.",
+      "A LangGraph agent retries the stage that failed — re-retrieving on a retrieval miss, re-generating with a stricter prompt on an unsupported claim — until the answer is healthy.",
   },
   {
-    title: "Validate improvements",
+    title: "Experiment harness",
     description:
-      "Compare fixes across evaluation cases so better prompts, retrievers, and model settings can be tested before release.",
+      "Replay a labeled dataset across pipeline configs (top_k, prompt, model), grade each with an LLM judge, and get a recommended winner. A/B testing for RAG.",
   },
 ];
 
 const failureTypes = [
-  "Unsupported claim",
+  "Healthy answer",
+  "Correct refusal",
   "Retrieval miss",
-  "Noisy context",
-  "Stale source",
-  "Weak answer relevance",
-  "Latency spike",
+  "Unsupported claim",
+  "Wrong answer",
+  "Needs review",
 ];
 
 export default function Home() {
@@ -46,8 +46,9 @@ export default function Home() {
           </h1>
 
           <p className="mt-6 max-w-3xl text-xl leading-8 text-zinc-300">
-            TraceroAI helps AI teams trace, evaluate, and understand why
-            retrieval-augmented generation systems produce bad answers.
+            TraceroAI traces, evaluates, and diagnoses why retrieval-augmented
+            generation systems produce bad answers — and a recovery agent that
+            retries the stage that failed.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -74,16 +75,18 @@ export default function Home() {
 
         <div className="mt-16 grid gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-5">
-            <p className="text-sm text-zinc-500">Primary use case</p>
-            <p className="mt-2 text-lg font-medium">RAG debugging</p>
+            <p className="text-sm text-zinc-500">Evaluation</p>
+            <p className="mt-2 text-lg font-medium">Embedding + LLM-judge</p>
           </div>
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-5">
-            <p className="text-sm text-zinc-500">Core signal</p>
-            <p className="mt-2 text-lg font-medium">Groundedness failures</p>
+            <p className="text-sm text-zinc-500">Recovery</p>
+            <p className="mt-2 text-lg font-medium">LangGraph self-healing</p>
           </div>
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-5">
-            <p className="text-sm text-zinc-500">Status</p>
-            <p className="mt-2 text-lg font-medium">In active development</p>
+            <p className="text-sm text-zinc-500">SDK</p>
+            <p className="mt-2 text-lg font-medium">
+              <code className="text-cyan-300">pip install traceroai</code>
+            </p>
           </div>
         </div>
       </section>
@@ -190,25 +193,39 @@ with client.trace(user_question) as t:
       <section id="build" className="border-t border-zinc-800 px-6 py-20">
         <div className="mx-auto max-w-6xl">
           <p className="text-sm font-medium uppercase tracking-[0.18em] text-cyan-300">
-            Case Study
+            See it
           </p>
           <h2 className="mt-4 max-w-3xl text-3xl font-semibold md:text-4xl">
-            Built as an end-to-end AI engineering project.
+            Every answer becomes a debuggable trace.
           </h2>
           <p className="mt-5 max-w-3xl leading-8 text-zinc-300">
-            TraceroAI is being developed to demonstrate production-level AI
-            product engineering: tracing, evaluation, reliability workflows,
-            backend systems, and a focused developer experience for teams
-            working with RAG applications.
+            A wrong answer is a symptom. The trace view shows the per-stage
+            evaluation — retrieval, grounding, relevance — that explains the cause.
           </p>
 
-          <div className="mt-10 rounded-lg border border-zinc-800 bg-zinc-900/70 p-6">
-            <p className="text-sm text-zinc-500">Current build focus</p>
-            <p className="mt-3 text-xl font-medium">
-              Shipping the first working debugger flow: trace a RAG response,
-              inspect retrieved chunks, evaluate groundedness, and explain the
-              failure.
-            </p>
+          <div className="mt-10 grid gap-5 lg:grid-cols-2">
+            <figure className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/70">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/trace-detail.png"
+                alt="TraceroAI trace detail showing the diagnosis and per-stage evaluation"
+                className="w-full"
+              />
+              <figcaption className="border-t border-zinc-800 px-4 py-3 text-sm text-zinc-400">
+                Trace detail — answer, diagnosis, and per-evaluator scores.
+              </figcaption>
+            </figure>
+            <figure className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/70">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/dashboard.png"
+                alt="TraceroAI reliability dashboard with metrics and failure mix"
+                className="w-full"
+              />
+              <figcaption className="border-t border-zinc-800 px-4 py-3 text-sm text-zinc-400">
+                Reliability dashboard — healthy rate, latency, failure mix, experiments.
+              </figcaption>
+            </figure>
           </div>
         </div>
       </section>
