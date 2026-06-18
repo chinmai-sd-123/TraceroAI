@@ -1,6 +1,0 @@
-traceroai>=0.2.0
-langchain-core>=0.3.0
-langchain-openai>=0.2.0
-langchain-text-splitters>=0.3.0
-python-dotenv>=1.0.0
-numpy>=1.26.0

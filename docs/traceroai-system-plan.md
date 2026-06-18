@@ -747,7 +747,7 @@ security_policy.md
 > graded by the server-side judge (`POST /v1/eval/grade`), and the best variant is
 > recommended. Surfaced on the dashboard overview as the "Latest Experiment" card.
 > (The platform owns grading + storage; the RAG pipeline lives in the client, e.g.
-> `examples/eval-experiment/`.)
+> `examples/recovery-agent/` via `python app.py --eval`.)
 
 Compare:
 

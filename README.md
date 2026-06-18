@@ -211,7 +211,7 @@ TraceroAI/
 ├── sdks/python/           the `traceroai` package (PyPI) — client, tracing,
 │                          recovery agent (traceroai.recovery), eval harness (traceroai.eval)
 ├── traceroai-web/         Next.js dashboard + interactive docs
-├── examples/              langchain-rag · recovery-agent · eval-experiment · simple-rag-monitored
+├── examples/              langchain-rag · recovery-agent (recovery + eval) · simple-rag-monitored
 ├── infra/                 docker-compose for local Postgres/Redis
 ├── docs/                  system design plan + screenshots
 └── USAGE.md               complete SDK usage guide

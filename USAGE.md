@@ -235,7 +235,8 @@ run_experiment(
 The run appears under **Eval Runs** in the dashboard, filterable by project. Each
 variant reports **accuracy** (correct vs. expected answers, judged server-side) and
 **average latency**; the highest-accuracy variant is recommended. A complete runnable
-example is in [`examples/eval-experiment/`](examples/eval-experiment/).
+example is in [`examples/recovery-agent/`](examples/recovery-agent/) — run it with
+`python app.py --eval`.
 
 ---
 
