@@ -1,10 +1,8 @@
 import {
-  experimentRuns,
-  regressionRuns,
   type ExperimentEvalRun,
   type RegressionEvalRun,
 } from "./mock-eval-runs";
-import { mockTraces, type MockTrace, type TraceDiagnosis } from "./mock-traces";
+import { type MockTrace, type TraceDiagnosis } from "./mock-traces";
 
 type ApiTrace = {
   trace_id: string;
@@ -87,6 +85,7 @@ type ApiTrace = {
     comment?: string | null;
     created_at?: string | null;
   }>;
+  metadata?: Record<string, unknown> | null;
 };
 export type ApiEvalRun = {
   eval_run_id: string;
@@ -155,13 +154,14 @@ export async function getTraces(projectId?: string): Promise<MockTrace[]> {
     const response = await fetch(url, { cache: "no-store" });
 
     if (!response.ok) {
-      return mockTraces;
+      return [];
     }
 
     const traces = (await response.json()) as ApiTrace[];
     return traces.map(mapApiTraceToUiTrace);
   } catch {
-    return mockTraces;
+    // No fabricated data — an unreachable API shows an honest empty state.
+    return [];
   }
 }
 
@@ -268,18 +268,14 @@ export async function getTrace(traceId: string): Promise<MockTrace | null> {
       cache: "no-store",
     });
 
-    if (response.status === 404) {
-      return mockTraces.find((trace) => trace.traceId === traceId) || null;
-    }
-
     if (!response.ok) {
-      return mockTraces.find((trace) => trace.traceId === traceId) || null;
+      return null;
     }
 
     const trace = (await response.json()) as ApiTrace;
     return mapApiTraceToUiTrace(trace);
   } catch {
-    return mockTraces.find((trace) => trace.traceId === traceId) || null;
+    return null;
   }
 }
 
@@ -296,10 +292,7 @@ export async function getEvalRuns(projectId?: string): Promise<{
     });
 
     if (!response.ok) {
-      return {
-        regressionRuns,
-        experimentRuns,
-      };
+      return { regressionRuns: [], experimentRuns: [] };
     }
 
     const evalRuns = (await response.json()) as ApiEvalRun[];
@@ -313,10 +306,7 @@ export async function getEvalRuns(projectId?: string): Promise<{
         .map(mapApiEvalRunToExperimentRun),
     };
   } catch {
-    return {
-      regressionRuns,
-      experimentRuns,
-    };
+    return { regressionRuns: [], experimentRuns: [] };
   }
 }
 
@@ -326,17 +316,13 @@ export async function getEvalRun(evalRunId: string): Promise<ApiEvalRun | null> 
       cache: "no-store",
     });
 
-    if (response.status === 404) {
-      return findMockEvalRunAsApi(evalRunId);
-    }
-
     if (!response.ok) {
-      return findMockEvalRunAsApi(evalRunId);
+      return null;
     }
 
     return (await response.json()) as ApiEvalRun;
   } catch {
-    return findMockEvalRunAsApi(evalRunId);
+    return null;
   }
 }
 
@@ -456,6 +442,11 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
       ),
       llmJudge: (trace.evaluations.deep ?? []).length > 0,
     },
+    // A RecoveryAgent attempt tags itself via metadata {agent:"recovery", attempt:N}.
+    recovery:
+      trace.metadata?.agent === "recovery"
+        ? { attempt: Number(trace.metadata?.attempt) || 1 }
+        : undefined,
     diagnosis: {
       label: normalizeDiagnosis(trace.diagnosis.label),
       reason: trace.diagnosis.reason || "No diagnosis available.",
@@ -579,95 +570,4 @@ function safeDivide(numerator: number, denominator: number) {
   }
 
   return numerator / denominator;
-}
-
-function findMockEvalRunAsApi(evalRunId: string): ApiEvalRun | null {
-  const regressionRun = regressionRuns.find((run) => run.id === evalRunId);
-
-  if (regressionRun) {
-    return {
-      eval_run_id: regressionRun.id,
-      timestamp: regressionRun.timestamp,
-      run_type: "regression",
-      status: "completed",
-      dataset: {
-        dataset_id: regressionRun.datasetName,
-        name: regressionRun.datasetName,
-      },
-      pipeline: {
-        pipeline_version: regressionRun.pipelineVersion,
-      },
-      summary: {
-        total_cases: regressionRun.summary.totalCases,
-        passed_cases: regressionRun.summary.passedCases,
-        failed_cases: regressionRun.summary.failedCases,
-        pass_rate: regressionRun.summary.overallAccuracy / 100,
-      },
-      metrics: [
-        {
-          metric_name: "overall_accuracy",
-          score: regressionRun.summary.overallAccuracy / 100,
-        },
-        {
-          metric_name: "retrieval_accuracy",
-          score: regressionRun.summary.retrievalAccuracy / 100,
-        },
-        {
-          metric_name: "failure_label_accuracy",
-          score: regressionRun.summary.failureLabelAccuracy / 100,
-        },
-      ],
-      cases: [],
-      variants: [],
-    };
-  }
-
-  const experimentRun = experimentRuns.find((run) => run.id === evalRunId);
-
-  if (!experimentRun) {
-    return null;
-  }
-
-  return {
-    eval_run_id: experimentRun.id,
-    timestamp: experimentRun.timestamp,
-    run_type: "experiment",
-    status: "completed",
-    dataset: {
-      dataset_id: "demo-experiment-set",
-      name: "Demo Experiment Set",
-    },
-    pipeline: {
-      pipeline_version: experimentRun.experimentName,
-    },
-    summary: {
-      total_cases: 0,
-      passed_cases: 0,
-      failed_cases: 0,
-      pass_rate: null,
-      recommendation: experimentRun.recommendation.reason,
-    },
-    metrics: [],
-    cases: [],
-    variants: experimentRun.values.map((value) => ({
-      variant_id: `${experimentRun.comparedParameter}-${value.value}`,
-      name: `${experimentRun.comparedParameter}=${value.value}`,
-      config: {
-        [experimentRun.comparedParameter]: value.value,
-      },
-      passed_cases: value.healthyRate,
-      failed_cases: 100 - value.healthyRate,
-      average_latency_ms: value.avgLatencyMs,
-      metrics: [
-        {
-          metric_name: "source_recall",
-          score: value.sourceRecallRate / 100,
-        },
-        {
-          metric_name: "context_precision",
-          score: value.contextPrecision / 100,
-        },
-      ],
-    })),
-  };
 }

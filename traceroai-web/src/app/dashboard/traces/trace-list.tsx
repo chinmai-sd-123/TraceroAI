@@ -116,6 +116,11 @@ export function TraceList({
                     {trace.query.original}
                   </p>
                   <p className="mt-1 line-clamp-1 text-xs text-zinc-500">
+                    {trace.recovery && (
+                      <span className="mr-2 rounded bg-violet-500/15 px-1.5 py-0.5 font-medium text-violet-300">
+                        recovery · attempt {trace.recovery.attempt}
+                      </span>
+                    )}
                     {trace.retrieval.strategy}
                   </p>
                 </div>

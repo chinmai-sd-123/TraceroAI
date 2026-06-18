@@ -94,6 +94,11 @@ export default async function TraceDetailPage({
         </div>
 
         <div className="flex items-center gap-2">
+          {trace.recovery && (
+            <span className="inline-flex rounded-md border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm font-medium text-violet-300">
+              Recovery · attempt {trace.recovery.attempt}
+            </span>
+          )}
           {trace.status && (
             <span className="inline-flex rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-300">
               {formatLabel(trace.status)}
@@ -110,13 +115,16 @@ export default async function TraceDetailPage({
       <div className="mt-8 grid gap-4 md:grid-cols-4">
         <MetricCard label="Model" value={trace.generation.model} />
         <MetricCard label="Total latency" value={`${trace.latency.totalMs}ms`} />
-        {/* Cost shown only when known (tokens were logged + model is priced). */}
-        {typeof trace.generation.costUsd === "number" && trace.generation.costUsd > 0 && (
-          <MetricCard
-            label="Cost"
-            value={`$${trace.generation.costUsd.toFixed(5)}`}
-          />
-        )}
+        {/* Cost shown only when known (tokens logged + model priced) and not
+            disabled via NEXT_PUBLIC_SHOW_COST. */}
+        {process.env.NEXT_PUBLIC_SHOW_COST !== "false" &&
+          typeof trace.generation.costUsd === "number" &&
+          trace.generation.costUsd > 0 && (
+            <MetricCard
+              label="Cost"
+              value={`$${trace.generation.costUsd.toFixed(5)}`}
+            />
+          )}
         {typeof trace.generation.totalTokens === "number" && trace.generation.totalTokens > 0 && (
           <MetricCard
             label="Tokens"

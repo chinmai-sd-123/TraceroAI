@@ -13,8 +13,9 @@ EVALUATOR_NAME = "answer_relevance"
 EVALUATOR_VERSION_EMBEDDING = "embedding_v1"
 EVALUATOR_VERSION_LEXICAL = "deterministic_v1"
 
-PASS_THRESHOLD = 0.65
-REVIEW_THRESHOLD = 0.50
+# Calibrated for text-embedding-3-small (see context_relevance for the data).
+PASS_THRESHOLD = 0.45
+REVIEW_THRESHOLD = 0.30
 
 
 def evaluate_answer_relevance(

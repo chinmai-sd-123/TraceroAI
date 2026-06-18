@@ -94,6 +94,8 @@ export type MockTrace = {
     lexical: boolean; // term-overlap fallback ran
     llmJudge: boolean; // deep LLM-judge evals present
   };
+  // Set when this trace is one attempt of a self-healing RecoveryAgent run.
+  recovery?: { attempt: number };
   diagnosis: {
     label: TraceDiagnosis;
     reason: string;

@@ -65,6 +65,13 @@ function calculateCost(traces: Awaited<ReturnType<typeof getTraces>>) {
   };
 }
 
+// Map a "NN%" healthy-rate string to a status tone (>=80 good, >=50 warn, else bad).
+function healthyRateTone(rate: string): "good" | "warn" | "bad" | undefined {
+  const n = parseInt(rate, 10);
+  if (Number.isNaN(n)) return undefined;
+  return n >= 80 ? "good" : n >= 50 ? "warn" : "bad";
+}
+
 function calculateOpenFailures(traces: Awaited<ReturnType<typeof getTraces>>) {
   return traces.filter((trace) => !HEALTHY_LABELS.has(trace.diagnosis.label))
     .length;
@@ -88,6 +95,10 @@ export default async function DashboardPage() {
   const p95Latency = calculatePercentileLatency(traces, 95);
   const openFailures = calculateOpenFailures(traces);
   const cost = calculateCost(traces);
+  // Cost is shown only when (a) not disabled by env flag and (b) real cost data
+  // exists. Per-project access control is a future concern (needs auth).
+  const showCost =
+    process.env.NEXT_PUBLIC_SHOW_COST !== "false" && cost.avg !== "--";
 
   return (
     <section>
@@ -102,13 +113,25 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div
+        className={`mt-8 grid gap-4 md:grid-cols-3 ${
+          showCost ? "lg:grid-cols-6" : "lg:grid-cols-5"
+        }`}
+      >
         <MetricCard label="Total traces" value={String(totalTraces)} />
-        <MetricCard label="Healthy rate" value={healthyRate} />
+        <MetricCard
+          label="Healthy rate"
+          value={healthyRate}
+          tone={healthyRateTone(healthyRate)}
+        />
         <MetricCard label="Avg latency" value={averageLatency} />
         <MetricCard label="p95 latency" value={p95Latency} />
-        <MetricCard label="Open failures" value={String(openFailures)} />
-        <MetricCard label="Avg cost / trace" value={cost.avg} />
+        <MetricCard
+          label="Open failures"
+          value={String(openFailures)}
+          tone={openFailures === 0 ? "good" : "bad"}
+        />
+        {showCost && <MetricCard label="Avg cost / trace" value={cost.avg} />}
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
@@ -337,11 +360,40 @@ export default async function DashboardPage() {
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "good" | "warn" | "bad";
+}) {
+  const valueTone =
+    tone === "good"
+      ? "text-emerald-300"
+      : tone === "warn"
+        ? "text-amber-300"
+        : tone === "bad"
+          ? "text-red-300"
+          : "text-zinc-100";
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-5">
-      <p className="text-sm text-zinc-500">{label}</p>
-      <p className="mt-2 text-2xl font-semibold">{value}</p>
+    <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-5 transition hover:border-zinc-700">
+      <div className="flex items-center gap-2">
+        {tone && (
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${
+              tone === "good"
+                ? "bg-emerald-400"
+                : tone === "warn"
+                  ? "bg-amber-400"
+                  : "bg-red-400"
+            }`}
+          />
+        )}
+        <p className="text-sm text-zinc-500">{label}</p>
+      </div>
+      <p className={`mt-2 text-2xl font-semibold ${valueTone}`}>{value}</p>
     </div>
   );
 }
