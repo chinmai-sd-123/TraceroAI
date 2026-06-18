@@ -7,6 +7,7 @@ from app.core.config import get_settings
 from app.core.tenancy import project_for_api_key
 from app.db.session import get_db
 from app.schemas.traces import TraceIngestRequest, TraceIngestResponse, FeedbackEntry
+from app.services.cost import compute_cost_usd
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.trace_repository import TraceRepository
 from app.services.deep_evaluation import run_deep_evaluation
@@ -36,6 +37,16 @@ def ingest_trace(
 
     if project_id:
         payload.project.project_id = project_id
+
+    # Cost is server-owned: fill total_tokens + cost_usd from the price table when
+    # the client sent token counts but no cost (or none at all).
+    usage = payload.generation.usage
+    if usage.total_tokens is None and (
+        usage.prompt_tokens is not None or usage.completion_tokens is not None
+    ):
+        usage.total_tokens = (usage.prompt_tokens or 0) + (usage.completion_tokens or 0)
+    if usage.cost_usd is None:
+        usage.cost_usd = compute_cost_usd(payload.generation.model, usage)
 
     payload = run_quick_evaluation(payload)
 

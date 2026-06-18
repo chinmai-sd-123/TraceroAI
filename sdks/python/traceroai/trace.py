@@ -73,6 +73,8 @@ class TraceContext:
         model: str,
         provider: str | None = None,
         temperature: float | None = None,
+        prompt_tokens: int | None = None,
+        completion_tokens: int | None = None,
     ) -> None:
         self._generation = {
             "answer": answer,
@@ -81,6 +83,13 @@ class TraceContext:
             "provider": provider,
             "temperature": temperature,
         }
+        # Token counts feed server-side cost tracking. Cost itself is computed by
+        # the server from its price table.
+        if prompt_tokens is not None or completion_tokens is not None:
+            self._generation["usage"] = {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+            }
 
     # --- context manager protocol ---
 

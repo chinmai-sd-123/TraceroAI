@@ -110,6 +110,19 @@ export default async function TraceDetailPage({
       <div className="mt-8 grid gap-4 md:grid-cols-4">
         <MetricCard label="Model" value={trace.generation.model} />
         <MetricCard label="Total latency" value={`${trace.latency.totalMs}ms`} />
+        {/* Cost shown only when known (tokens were logged + model is priced). */}
+        {typeof trace.generation.costUsd === "number" && trace.generation.costUsd > 0 && (
+          <MetricCard
+            label="Cost"
+            value={`$${trace.generation.costUsd.toFixed(5)}`}
+          />
+        )}
+        {typeof trace.generation.totalTokens === "number" && trace.generation.totalTokens > 0 && (
+          <MetricCard
+            label="Tokens"
+            value={String(trace.generation.totalTokens)}
+          />
+        )}
         {/* Show per-stage latency only when it was actually measured (> 0). */}
         {trace.latency.retrievalMs > 0 && (
           <MetricCard label="Retrieval" value={`${trace.latency.retrievalMs}ms`} />
