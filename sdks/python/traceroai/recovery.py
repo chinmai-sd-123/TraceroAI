@@ -36,10 +36,13 @@ class RecoveryState(TypedDict, total=False):
     top_k: int             # current retrieval depth (raised on retrieval_miss)
     prompt_style: str      # "normal" | "strict" (strict on unsupported_claim)
     chunks: list[dict[str, Any]]
+    prompt: str            # the prompt context the generator was given this attempt
     answer: str
     diagnosis: str         # the server's quick-eval diagnosis for the last attempt
     attempt: int           # how many attempts so far
     trace_ids: list[str]   # the trace id of every attempt (the retry chain)
+    retrieval_ms: int      # timing of the last retrieve step
+    generation_ms: int     # timing of the last generate step
 
 def _format_context(chunks: list[dict[str, Any]]) -> str:
     """Join retrieved chunks into a single context string with [n] citations."""
@@ -60,8 +63,9 @@ def _make_nodes(
     def retrieve_node(state: RecoveryState) -> dict[str, Any]:
         query = state.get("query") or state["question"]
         top_k = state.get("top_k", 3)
+        start = time.perf_counter()
         chunks = retrieve(query, top_k)
-        return {"chunks": chunks}
+        return {"chunks": chunks, "retrieval_ms": int((time.perf_counter() - start) * 1000)}
 
     def generate_node(state: RecoveryState) -> dict[str, Any]:
         query = state.get("query") or state["question"]
@@ -73,20 +77,37 @@ def _make_nodes(
                 f"{query}\n\n(Answer ONLY from the provided context. "
                 f"If it is not enough, say you don't know.)"
             )
+        # Record the prompt the generator saw this attempt (context + question).
+        prompt = f"Context:\n{context}\n\nQuestion: {query}"
+        start = time.perf_counter()
         answer = generate(query, context)
-        return {"answer": answer}
+        return {
+            "answer": answer,
+            "prompt": prompt,
+            "generation_ms": int((time.perf_counter() - start) * 1000),
+        }
 
     def evaluate_node(state: RecoveryState) -> dict[str, Any]:
         # Send the attempt as a trace; the server runs quick eval synchronously,
         # so the diagnosis is ready when we read it back. This is the eval that
         # drives recovery routing.
-        trace_id = client.log_trace(
-            query={"original": state["question"]},
-            retrieval={"strategy": "recovery", "chunks": state.get("chunks", [])},
-            generation={"model": "recovery-agent", "answer": state.get("answer", "")},
-            metadata={"attempt": state.get("attempt", 0) + 1, "agent": "recovery"},
-            project={"project_id": project_id},
-        )
+        retrieval_ms = state.get("retrieval_ms", 0)
+        generation_ms = state.get("generation_ms", 0)
+        trace_kwargs: dict[str, Any] = {
+            "query": {"original": state["question"]},
+            "retrieval": {"strategy": "recovery", "chunks": state.get("chunks", [])},
+            "generation": {"model": "recovery-agent", "answer": state.get("answer", "")},
+            "latency": {
+                "retrieval_ms": retrieval_ms,
+                "generation_ms": generation_ms,
+                "total_ms": retrieval_ms + generation_ms,
+            },
+            "metadata": {"attempt": state.get("attempt", 0) + 1, "agent": "recovery"},
+            "project": {"project_id": project_id},
+        }
+        if state.get("prompt"):
+            trace_kwargs["prompt"] = {"content": state["prompt"], "version": "recovery_v1"}
+        trace_id = client.log_trace(**trace_kwargs)
         diagnosis = "needs_review"
         try:
             trace = client.get_trace(trace_id)

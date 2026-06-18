@@ -143,6 +143,7 @@ pipeline.
 | **`LLMJudge` / embeddings behind config** | Provider is a one-line swap (OpenAI ↔ Gemini's OpenAI-compatible endpoint); makes eval unit-testable with stubs | A thin abstraction layer over the provider SDK |
 | **Self-healing recovery as an opt-in extra** (`traceroai[recovery]`) | A LangGraph loop turns the eval pipeline into a feedback signal that *fixes* answers, not just observes them; shipped as an extra so the base SDK stays lean | Pulls langgraph only for users who want it; bounded by max-attempts to prevent infinite loops |
 | **Eval-runs harness grades correctness with an LLM** | A/B-comparing pipeline configs needs a correctness signal; grading failures are tracked as *ungradeable*, not silently counted as wrong | Cost of one LLM call per case; mitigated by small datasets |
+| **Cost priced from a live source** | The SDK sends token counts; the server prices them from the community-maintained LiteLLM map (~thousands of models, cached) with a small built-in table as fallback — so prices stay current without hand-maintenance | One cached fetch on startup; unknown models return no cost (never guessed) |
 | **Traces stored as JSONB** | The trace schema evolves fast; JSONB avoids migrations per field while still being queryable | Less rigid than fully normalized columns |
 | **Fail-open everywhere** | No key, a 429 from the provider, or an unreachable Redis must never break ingest or the public demo | A degraded path silently falls back to the cheaper result |
 | **Per-IP rate limit on the public demo** | The `/playground` endpoint is unauthenticated and burns shared LLM quota; a fixed-window Redis counter caps abuse | Fixed-window is coarser than a sliding window (acceptable for a demo) |
@@ -210,7 +211,7 @@ TraceroAI/
 ├── sdks/python/           the `traceroai` package (PyPI) — client, tracing,
 │                          recovery agent (traceroai.recovery), eval harness (traceroai.eval)
 ├── traceroai-web/         Next.js dashboard + interactive docs
-├── examples/              langchain-rag · recovery-agent · eval-experiment · simple-rag-monitored
+├── examples/              langchain-rag · recovery-agent (recovery + eval) · simple-rag-monitored
 ├── infra/                 docker-compose for local Postgres/Redis
 ├── docs/                  system design plan + screenshots
 └── USAGE.md               complete SDK usage guide

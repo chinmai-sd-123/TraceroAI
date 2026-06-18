@@ -356,6 +356,41 @@ export default async function DashboardPage() {
           </div>
         </section>
       )}
+
+      {(() => {
+        const r = getRecoveryInsights(traces);
+        if (!r) return null;
+        return (
+          <section className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
+            <h2 className="text-lg font-semibold">Self-healing recovery</h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              How the RecoveryAgent is performing (grouped by question, judged on the
+              final attempt) — use this to decide whether to raise default top_k,
+              tighten prompts, or fill KB gaps.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-md border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-2xl font-semibold text-violet-300">{r.recoveredPct}%</p>
+                <p className="text-xs text-zinc-500">ultimately recovered</p>
+              </div>
+              <div className="rounded-md border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-2xl font-semibold">{r.avgAttempts}</p>
+                <p className="text-xs text-zinc-500">avg attempts / question</p>
+              </div>
+              <div className="rounded-md border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-2xl font-semibold">{r.retried}</p>
+                <p className="text-xs text-zinc-500">needed a retry (&gt; 1 attempt)</p>
+              </div>
+              <div className="rounded-md border border-zinc-800 bg-zinc-950/40 p-4">
+                <p className="text-2xl font-semibold">{r.runs}</p>
+                <p className="text-xs text-zinc-500">
+                  recovery runs ({r.attemptsTraced} attempts)
+                </p>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
     </section>
   );
 }
@@ -465,6 +500,44 @@ function getEvalMethodMix(traces: Awaited<ReturnType<typeof getTraces>>) {
     ...r,
     percentage: Math.round((r.count / total) * 100),
   }));
+}
+
+// Insight into the self-healing RecoveryAgent. Recovery sends ONE trace per
+// attempt, so we group attempts into "runs" by question (the best proxy without a
+// shared run-id) and judge each run by its FINAL (highest-attempt) outcome — so
+// "recovered %" reflects whether the question was ultimately answered, not a raw
+// per-attempt rate.
+function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
+  const recoveryTraces = traces.filter((t) => t.recovery);
+  if (recoveryTraces.length === 0) {
+    return null;
+  }
+
+  // Group by question; keep the highest-attempt trace as the run's final state.
+  const runs = new Map<string, { attempts: number; finalLabel: string }>();
+  for (const t of recoveryTraces) {
+    const key = t.query.original;
+    const attempt = t.recovery!.attempt;
+    const existing = runs.get(key);
+    if (!existing || attempt >= existing.attempts) {
+      runs.set(key, { attempts: attempt, finalLabel: t.diagnosis.label });
+    }
+  }
+
+  const runList = [...runs.values()];
+  const recovered = runList.filter((r) => HEALTHY_LABELS.has(r.finalLabel)).length;
+  const recoveredPct = Math.round((recovered / runList.length) * 100);
+  const retried = runList.filter((r) => r.attempts > 1).length;
+  const avgAttempts =
+    runList.reduce((sum, r) => sum + r.attempts, 0) / runList.length;
+
+  return {
+    runs: runList.length,
+    recoveredPct,
+    avgAttempts: avgAttempts.toFixed(1),
+    retried,
+    attemptsTraced: recoveryTraces.length,
+  };
 }
 
 function getFailureMix(traces: Awaited<ReturnType<typeof getTraces>>) {

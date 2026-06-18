@@ -44,3 +44,7 @@ venv/
 docs/reference-traces/
 # Python packaging
 *.egg-info/
+
+# Local ops/scratch utilities (not product code)
+services/api/clear_tables.py
+sdks/python/manual_smoke_send.py

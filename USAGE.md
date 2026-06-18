@@ -138,7 +138,34 @@ Every trace is scored on two tiers and reduced to **one diagnosis**:
 
 ---
 
-## 5. Self-healing recovery (optional extra)
+## 5. Cost & token tracking
+
+Pass token counts to `log_generation` and the server computes cost for you:
+
+```python
+t.log_generation(
+    answer,
+    model="gpt-4o-mini",
+    prompt_tokens=resp.usage.prompt_tokens,        # from your LLM response
+    completion_tokens=resp.usage.completion_tokens,
+)
+```
+
+The server prices the tokens from the community-maintained **LiteLLM pricing map**
+(thousands of models, cached), falling back to a small built-in table if that's
+unreachable. Cost + tokens appear on the trace detail page, and an average cost
+metric on the dashboard. Notes:
+
+- **You can override:** send an exact `cost_usd` on the trace and it takes
+  precedence over the computed price.
+- **Unknown models cost nothing** — if a model isn't priced, `cost_usd` is null
+  (never a guessed number).
+- **Display gate:** cost is hidden when no trace has a cost, or via
+  `NEXT_PUBLIC_SHOW_COST=false` on the web app.
+
+---
+
+## 6. Self-healing recovery (optional extra)
 
 ```bash
 pip install "traceroai[recovery]"
@@ -184,7 +211,7 @@ demo that loads `.md`/`.txt` documents, splits them, and recovers across attempt
 
 ---
 
-## 6. Experiment runs (A/B-test pipeline configs)
+## 7. Experiment runs (A/B-test pipeline configs)
 
 Compare pipeline configurations against a labeled dataset and get a recommended
 winner — using `traceroai.eval`. You bring your own `retrieve`/`generate` and cases;
@@ -208,11 +235,12 @@ run_experiment(
 The run appears under **Eval Runs** in the dashboard, filterable by project. Each
 variant reports **accuracy** (correct vs. expected answers, judged server-side) and
 **average latency**; the highest-accuracy variant is recommended. A complete runnable
-example is in [`examples/eval-experiment/`](examples/eval-experiment/).
+example is in [`examples/recovery-agent/`](examples/recovery-agent/) — run it with
+`python app.py --eval`.
 
 ---
 
-## 7. Loading your own documents (any format)
+## 8. Loading your own documents (any format)
 
 TraceroAI does **not** load documents — that's your retriever's job, which is why the
 SDK works with any source (text files, markdown, PDFs, a vector DB, an API). Use a
@@ -230,7 +258,7 @@ files, split with `RecursiveCharacterTextSplitter`, embed, and retrieve top-k.
 
 ---
 
-## 8. Examples in this repo
+## 9. Examples in this repo
 
 | Example | Shows |
 |---|---|
