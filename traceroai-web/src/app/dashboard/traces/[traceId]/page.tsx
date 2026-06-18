@@ -110,13 +110,16 @@ export default async function TraceDetailPage({
       <div className="mt-8 grid gap-4 md:grid-cols-4">
         <MetricCard label="Model" value={trace.generation.model} />
         <MetricCard label="Total latency" value={`${trace.latency.totalMs}ms`} />
-        {/* Cost shown only when known (tokens were logged + model is priced). */}
-        {typeof trace.generation.costUsd === "number" && trace.generation.costUsd > 0 && (
-          <MetricCard
-            label="Cost"
-            value={`$${trace.generation.costUsd.toFixed(5)}`}
-          />
-        )}
+        {/* Cost shown only when known (tokens logged + model priced) and not
+            disabled via NEXT_PUBLIC_SHOW_COST. */}
+        {process.env.NEXT_PUBLIC_SHOW_COST !== "false" &&
+          typeof trace.generation.costUsd === "number" &&
+          trace.generation.costUsd > 0 && (
+            <MetricCard
+              label="Cost"
+              value={`$${trace.generation.costUsd.toFixed(5)}`}
+            />
+          )}
         {typeof trace.generation.totalTokens === "number" && trace.generation.totalTokens > 0 && (
           <MetricCard
             label="Tokens"

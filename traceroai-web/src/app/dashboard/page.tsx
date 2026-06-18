@@ -88,6 +88,10 @@ export default async function DashboardPage() {
   const p95Latency = calculatePercentileLatency(traces, 95);
   const openFailures = calculateOpenFailures(traces);
   const cost = calculateCost(traces);
+  // Cost is shown only when (a) not disabled by env flag and (b) real cost data
+  // exists. Per-project access control is a future concern (needs auth).
+  const showCost =
+    process.env.NEXT_PUBLIC_SHOW_COST !== "false" && cost.avg !== "--";
 
   return (
     <section>
@@ -102,13 +106,17 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div
+        className={`mt-8 grid gap-4 md:grid-cols-3 ${
+          showCost ? "lg:grid-cols-6" : "lg:grid-cols-5"
+        }`}
+      >
         <MetricCard label="Total traces" value={String(totalTraces)} />
         <MetricCard label="Healthy rate" value={healthyRate} />
         <MetricCard label="Avg latency" value={averageLatency} />
         <MetricCard label="p95 latency" value={p95Latency} />
         <MetricCard label="Open failures" value={String(openFailures)} />
-        <MetricCard label="Avg cost / trace" value={cost.avg} />
+        {showCost && <MetricCard label="Avg cost / trace" value={cost.avg} />}
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
