@@ -9,6 +9,7 @@ returns the question, answer, retrieved chunks, and diagnosis. No LLM/key needed
 from __future__ import annotations
 
 import re
+import time
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
@@ -134,14 +135,17 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
             detail="Rate limit reached for the live demo — please wait a minute and try again.",
         )
 
+    started = time.perf_counter()
     query = payload.question.strip()
     q = _terms(query)
 
+    retrieval_start = time.perf_counter()
     scored = sorted(
         ((title, text, (len(q & _terms(text)) / len(q) if q else 0.0)) for title, text in _DOCS),
         key=lambda x: x[2],
         reverse=True,
     )[:3]
+    retrieval_ms = int((time.perf_counter() - retrieval_start) * 1000)
 
     chunks = [
         {
@@ -158,10 +162,28 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
     top_score = scored[0][2] if scored else 0.0
     answer = scored[0][1] if top_score > 0 else "I don't know based on the provided context."
 
+    # The prompt that a real RAG app would send to the LLM — shown so the demo
+    # exposes the full "prompt sent to LLM" stage of the trace.
+    prompt_start = time.perf_counter()
+    context = "\n\n".join(f"[{c['rank']}] {c['text']}" for c in chunks)
+    prompt_text = (
+        "Answer the question using ONLY the context below. Cite sources like [1]. "
+        "If the context does not contain the answer, say you don't know.\n\n"
+        f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"
+    )
+    prompt_build_ms = int((time.perf_counter() - prompt_start) * 1000)
+
+    total_ms = int((time.perf_counter() - started) * 1000)
     trace = TraceIngestRequest(
         query={"original": query},
         retrieval={"strategy": "lexical_top_k", "config": {"final_top_k": 3}, "chunks": chunks},
+        prompt={"content": prompt_text, "version": "playground_v1", "template_name": "grounded_answer"},
         generation={"model": "extractive-demo", "answer": answer},
+        latency={
+            "retrieval_ms": retrieval_ms,
+            "prompt_build_ms": prompt_build_ms,
+            "total_ms": total_ms,
+        },
         project={"project_id": "playground"},
         metadata={"source": "docs_playground"},
     )
@@ -196,7 +218,9 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
     return {
         "trace_id": str(trace.trace_id),
         "query": query,
+        "prompt": prompt_text,
         "answer": answer,
+        "latency_ms": total_ms,
         "judged_by": judged_by,
         "diagnosis": {"label": trace.diagnosis.label, "reason": trace.diagnosis.reason},
         "chunks": [{"title": c["document_title"], "score": c["final_score"], "text": c["text"]} for c in chunks],

@@ -84,6 +84,13 @@ export function Playground() {
 
       {result && (
         <div className="mt-6 space-y-4">
+          <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
+            <p className="line-clamp-1">
+              Query: <span className="text-zinc-300">{result.query}</span>
+            </p>
+            <span className="shrink-0 font-mono">{result.latency_ms}ms</span>
+          </div>
+
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-zinc-400">
               Answer:{" "}
@@ -112,6 +119,15 @@ export function Playground() {
             </span>
             <p className="text-xs leading-5 text-zinc-500">{result.diagnosis.reason}</p>
           </div>
+
+          <details className="rounded-md border border-zinc-800 bg-zinc-950/40">
+            <summary className="cursor-pointer px-3 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:text-zinc-300">
+              Prompt sent to LLM
+            </summary>
+            <pre className="overflow-auto border-t border-zinc-800 p-3 text-xs leading-5 text-zinc-400">
+              {result.prompt}
+            </pre>
+          </details>
 
           <div>
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
