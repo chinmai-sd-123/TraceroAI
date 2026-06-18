@@ -19,6 +19,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -26,6 +27,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from traceroai import TraceroClient
 from traceroai.recovery import RecoveryAgent
+
+# Load this example's own .env (OPENAI_API_KEY, TRACEROAI_API_URL, ...).
+load_dotenv(Path(__file__).parent / ".env")
 
 # Knowledge base = real files (.md and .txt) under docs/. This is the realistic
 # ingestion flow: load files -> split into chunks -> embed. Add more files (or
@@ -94,14 +98,52 @@ def generate(query: str, context: str) -> str:
     return _llm.invoke(prompt).content
 
 
+def _build_prompt(query: str, chunks: list[dict]) -> str:
+    context = "\n\n".join(f"[{i + 1}] {c['text']}" for i, c in enumerate(chunks))
+    return (
+        f"Answer the question using ONLY the context. Cite like [1].\n\n"
+        f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"
+    )
+
+
 if __name__ == "__main__":
     if not os.getenv("OPENAI_API_KEY"):
-        raise SystemExit("Set OPENAI_API_KEY to run this example.")
+        raise SystemExit("Set OPENAI_API_KEY (or fill .env) to run this example.")
 
     client = TraceroClient(
         base_url=os.getenv("TRACEROAI_API_URL", "https://traceroai.onrender.com"),
         api_key=os.getenv("TRACEROAI_API_KEY"),
     )
+
+    # --- 1) Context manager: log each stage by hand (trace / log_retrieval /
+    #        log_prompt / log_generation), then read the trace back. -----------
+    print("=== Context-manager trace ===")
+    q = "How long does a refund take?"
+    with client.trace(q, project={"project_id": "recovery-agent"},
+                      metadata={"style": "context_manager"}) as t:
+        chunks = retrieve(q, 3)
+        t.log_retrieval(chunks, strategy="vector", config={"top_k": 3})
+        prompt = _build_prompt(q, chunks)
+        t.log_prompt(prompt, version="grounded_v1", template_name="rag_qa")
+        answer = generate(q, "\n\n".join(c["text"] for c in chunks))
+        t.log_generation(answer, model="gpt-4o-mini", provider="openai")
+    print(f"  trace: {t.trace_id}")
+    if t.trace_id:  # read it back (get_trace) to show the server's diagnosis
+        stored = client.get_trace(t.trace_id)
+        print(f"  server diagnosis: {stored.get('diagnosis', {}).get('label')}")
+
+    # --- 2) Decorator: wrap a function returning (answer, chunks). ------------
+    print("\n=== Decorator trace ===")
+
+    @client.traced(model="gpt-4o-mini", strategy="vector")
+    def answer_q(query: str):
+        ch = retrieve(query, 3)
+        return generate(query, "\n\n".join(c["text"] for c in ch)), ch
+
+    print(f"  answer: {answer_q('What plans do you offer?')[:80]}")
+
+    # --- 3) RecoveryAgent: self-healing loop, one trace per attempt. ----------
+    print("\n=== Self-healing recovery ===")
     agent = RecoveryAgent(
         client,
         retrieve=retrieve,
@@ -109,20 +151,19 @@ if __name__ == "__main__":
         max_attempts=3,
         project_id="recovery-agent",
     )
-
     questions = [
-        "How long does a refund take?",          # answerable -> should go healthy
+        "How long does a refund take?",             # answerable -> healthy
         "Can I change my workspace region later?",  # answerable
-        "What is your phone support number?",     # NOT in KB -> should end needs_review
+        "What is your phone support number?",       # NOT in KB -> needs_review
     ]
-    for q in questions:
-        result = agent.run(q)
-        status = "✓ healthy" if result["succeeded"] else "⚠ needs review"
-        print(f"\nQ: {q}")
-        print(f"  {status} after {result['attempts']} attempt(s) — {result['diagnosis']}")
+    for question in questions:
+        result = agent.run(question)
+        status = "[ok] healthy" if result["succeeded"] else "[!] needs review"
+        print(f"\nQ: {question}")
+        print(f"  {status} after {result['attempts']} attempt(s) -- {result['diagnosis']}")
         print(f"  answer: {result['answer'][:100]}")
         print(f"  retry chain (trace ids): {result['trace_ids']}")
         if result["deep_eval"]:
             print(f"  deep verdict: {[e.get('label') for e in result['deep_eval']]}")
 
-    print("\nOpen your TraceroAI dashboard (project 'recovery-agent') to see the retry chains.")
+    print("\nOpen your TraceroAI dashboard (project 'recovery-agent') to see the traces.")

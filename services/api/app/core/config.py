@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
 
@@ -36,6 +36,16 @@ class Settings(BaseSettings):
     # JSON list, e.g. TRACEROAI_CORS_ORIGINS='["https://traceroai.vercel.app"]'.
     cors_origins: list[str] = Field(default_factory=list)
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore")
+
+    @field_validator("judge_base_url", mode="before")
+    @classmethod
+    def _blank_base_url_is_none(cls, value: object) -> object:
+        # An empty/whitespace base URL (e.g. TRACEROAI_JUDGE_BASE_URL= in .env to
+        # switch from Gemini back to OpenAI) must become None — the OpenAI SDK
+        # treats "" as a malformed URL and raises a connection error otherwise.
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
 
 @lru_cache()

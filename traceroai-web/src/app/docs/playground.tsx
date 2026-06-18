@@ -136,8 +136,11 @@ export function Playground() {
           </div>
 
           <p className="text-xs text-zinc-600">
-            ↑ This is a real trace, evaluated live by the deterministic pipeline.
-            Send your own with the SDK and it appears in the dashboard.
+            ↑ A real trace, evaluated live by the{" "}
+            {result.judged_by === "llm_judge"
+              ? "LLM judge"
+              : "fast deterministic pipeline"}
+            . Send your own with the SDK and it appears in the dashboard.
           </p>
         </div>
       )}

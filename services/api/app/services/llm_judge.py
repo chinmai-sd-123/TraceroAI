@@ -38,33 +38,53 @@ class LLMJudge(Protocol):
 
 
 SYSTEM_PROMPT = (
-    "You are a strict groundedness judge for a RAG system. "
-    "You are given an ANSWER and the CONTEXT that was retrieved to support it. "
-    "Break the answer into distinct factual claims. For each claim, decide whether "
-    "the context directly supports it. Mark a claim supported ONLY if the context "
-    "entails it; do not rely on outside knowledge. Give a one-sentence reason per claim."
+    "You are a strict groundedness judge for a RAG system. You receive an ANSWER "
+    "and the CONTEXT retrieved to support it.\n"
+    "Decompose the answer into its distinct, atomic factual claims (ignore "
+    "filler, citations like [1], hedging, and questions). For EACH claim decide "
+    "if the CONTEXT directly supports it.\n"
+    "Rules:\n"
+    "- supported=true ONLY if the context explicitly states or unambiguously "
+    "entails the claim. Paraphrase is fine; inference beyond the text is not.\n"
+    "- Use ONLY the context. Never rely on outside or prior knowledge, even if "
+    "the claim is true in reality.\n"
+    "- If the answer is a refusal or contains no factual claims, return an empty "
+    "claims list.\n"
+    "Give a concise one-sentence reason per claim, quoting the supporting context "
+    "when relevant."
 )
 
 CONTEXT_RELEVANCE_PROMPT = (
-    "You judge retrieval quality for a RAG system. Given a QUERY and the "
-    "retrieved CONTEXT, decide whether the context contains information that "
-    "helps answer the query. Set relevant=true only if it does. Reason in one "
-    "sentence. Judge meaning, not word overlap."
-
+    "You judge RETRIEVAL quality for a RAG system. Given a QUERY and the retrieved "
+    "CONTEXT, decide whether the context contains information that would help "
+    "answer the query.\n"
+    "- relevant=true if any part of the context is on-topic and useful for "
+    "answering, even if incomplete.\n"
+    "- relevant=false if the context is about a different topic or lacks anything "
+    "usable.\n"
+    "Judge meaning and intent, not keyword overlap. Reason in one sentence."
 )
 
 ANSWER_RELEVANCE_PROMPT = (
-    "You judge whether an ANSWER addresses a QUERY for a RAG system. Set "
-    "relevant=true only if the answer directly addresses what the query asks. "
-    "Reason in one sentence. Judge meaning, not word overlap."
+    "You judge whether an ANSWER actually addresses a QUERY for a RAG system.\n"
+    "- relevant=true if the answer directly responds to what the query asks "
+    "(a correct refusal when information is genuinely unavailable also counts as "
+    "relevant).\n"
+    "- relevant=false if it is off-topic, answers a different question, or evades "
+    "the query.\n"
+    "Judge intent, not keyword overlap. Reason in one sentence."
 )
 
 CORRECTNESS_PROMPT = (
-    "You grade a RAG answer against a reference answer. Given the QUESTION, the "
-    "EXPECTED answer, and the ACTUAL answer, decide whether the actual answer is "
-    "correct — i.e. it conveys the same key facts as the expected answer and does "
-    "not contradict it. Allow different wording and extra correct detail. Set "
-    "correct=true only if it matches in substance. Reason in one sentence."
+    "You grade a RAG ANSWER against a reference EXPECTED answer for a QUESTION.\n"
+    "Judge whether the actual answer is correct in substance:\n"
+    "- correct=true if it conveys the same key fact(s) as expected and does not "
+    "contradict them. Different wording, ordering, or extra correct detail is fine.\n"
+    "- correct=false if it misses the key fact, states something contradictory, or "
+    "is vague/evasive where a specific answer was expected.\n"
+    "- If the expected answer is a refusal ('I don't know...'), then a refusal in "
+    "the actual answer is correct, and a confident made-up answer is incorrect.\n"
+    "Focus on factual substance, not style. Reason in one sentence."
 )
 
 class OpenAIJudge:
