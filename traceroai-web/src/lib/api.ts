@@ -167,7 +167,9 @@ export async function getTraces(projectId?: string): Promise<MockTrace[]> {
 
 export type PlaygroundResult = {
   query: string;
+  prompt: string;
   answer: string;
+  latency_ms: number;
   judged_by: "llm_judge" | "deterministic";
   diagnosis: { label: string; reason: string };
   chunks: Array<{ title: string; score: number; text: string }>;
