@@ -43,6 +43,7 @@ class RecoveryState(TypedDict, total=False):
     trace_ids: list[str]   # the trace id of every attempt (the retry chain)
     retrieval_ms: int      # timing of the last retrieve step
     generation_ms: int     # timing of the last generate step
+    recovery_action: str   # the lever taken before this attempt (bump_retrieval / tighten_generation)
 
 def _format_context(chunks: list[dict[str, Any]]) -> str:
     """Join retrieved chunks into a single context string with [n] citations."""
@@ -56,6 +57,7 @@ def _make_nodes(
     retrieve: RetrieveFn,
     generate: GenerateFn,
     project_id: str,
+    model: str = "unknown",
 ):
     """Build the graph's node functions, closing over the user's retrieve/generate
     and the TraceroAI client. Returns (retrieve_node, generate_node, evaluate_node)."""
@@ -96,13 +98,18 @@ def _make_nodes(
         trace_kwargs: dict[str, Any] = {
             "query": {"original": state["question"]},
             "retrieval": {"strategy": "recovery", "chunks": state.get("chunks", [])},
-            "generation": {"model": "recovery-agent", "answer": state.get("answer", "")},
+            "generation": {"model": model, "answer": state.get("answer", "")},
             "latency": {
                 "retrieval_ms": retrieval_ms,
                 "generation_ms": generation_ms,
                 "total_ms": retrieval_ms + generation_ms,
             },
-            "metadata": {"attempt": state.get("attempt", 0) + 1, "agent": "recovery"},
+            "metadata": {
+                "attempt": state.get("attempt", 0) + 1,
+                "agent": "recovery",
+                # the lever that led to THIS attempt (absent on the first attempt)
+                "recovery_action": state.get("recovery_action"),
+            },
             "project": {"project_id": project_id},
         }
         if state.get("prompt"):
@@ -147,16 +154,19 @@ def _route(state: RecoveryState, max_attempts: int) -> str:
     return "fix_retrieval"
 
 
-# State updates applied when we take a recovery branch (the "levers").
+# State updates applied when we take a recovery branch (the "levers"). Each records
+# the recovery_action it took, so the next attempt's trace shows WHY it was retried —
+# enabling the dashboard to suggest fixes (e.g. lots of bump_retrieval -> raise top_k).
 def _bump_retrieval(state: RecoveryState) -> dict[str, Any]:
     return {
         "top_k": state.get("top_k", 3) + 2,                 # retrieve more
         "query": f"{state['question']} (be specific and complete)",  # rewrite
+        "recovery_action": "bump_retrieval",
     }
 
 
 def _tighten_generation(state: RecoveryState) -> dict[str, Any]:
-    return {"prompt_style": "strict"}
+    return {"prompt_style": "strict", "recovery_action": "tighten_generation"}
 
 
 class RecoveryResult(TypedDict):
@@ -185,11 +195,12 @@ class RecoveryAgent:
         generate: GenerateFn,
         max_attempts: int = 3,
         project_id: str = "recovery-agent",
+        model: str = "unknown",
     ) -> None:
         self.client = client
         self._max_attempts = max_attempts
         retrieve_node, generate_node, evaluate_node = _make_nodes(
-            client, retrieve, generate, project_id
+            client, retrieve, generate, project_id, model
         )
         self._graph = self._build_graph(retrieve_node, generate_node, evaluate_node)
 
