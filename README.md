@@ -59,6 +59,10 @@ becomes a lookup instead of a guess.
   retries the stage TraceroAI diagnoses as broken: a retrieval miss re-retrieves with
   more context, an unsupported claim re-generates with a stricter prompt, and it escalates
   to human review after a bounded number of attempts. Every attempt is traced.
+- **Experiment evaluation** (`traceroai.eval`) — A/B-test pipeline configs against a
+  labeled dataset; each answer is graded by the server-side judge, the best variant is
+  recommended, and the run lands on your dashboard. Bring your own retrieve/generate.
+- **Cost & token tracking** — per-trace prompt/completion tokens and computed cost.
 - **Multi-tenant ingest** — project API keys attribute traces to a project; reads stay
   open so a recruiter can explore the demo without a key.
 
@@ -122,10 +126,12 @@ flowchart TB
    reconciles the richer verdicts back onto the stored trace.
 5. The **dashboard** reads traces, aggregate metrics, and experiment results.
 
-Beyond this core flow, two features build on it: the **experiment harness**
-(`python -m app.eval_runner`) replays a labeled dataset across pipeline configs and
-recommends a winner, and the **RecoveryAgent** uses the per-attempt diagnosis to drive a
-self-healing retry loop.
+Beyond this core flow, two SDK features build on it: the **experiment harness**
+(`traceroai.eval.run_experiment`) replays a labeled dataset across pipeline configs,
+grades via the server-side judge (`POST /v1/eval/grade`), and recommends a winner; and
+the **RecoveryAgent** uses the per-attempt diagnosis to drive a self-healing retry loop.
+Both inject your own retrieve/generate — the platform owns evaluation + storage, not the
+pipeline.
 
 ### Design decisions & trade-offs
 
@@ -198,13 +204,13 @@ A complete, runnable example is in [`examples/simple-rag-monitored/`](examples/s
 TraceroAI/
 ├── services/api/          FastAPI backend — ingest, evaluators, LLM judge, worker
 │   └── app/
-│       ├── api/routes/     traces · playground · eval_runs · jobs · health
+│       ├── api/routes/     traces · playground · eval_runs · eval/grade · jobs · health
 │       ├── evaluators/     quick (embedding + groundedness) + deep (LLM judge) + diagnosis
-│       ├── eval_runner/    experiment harness — replay a dataset across configs, pick a winner
-│       └── services/       repositories · queue · rate limiter · judge · embeddings
-├── sdks/python/           the `traceroai` package (PyPI) — client, tracing, recovery agent
+│       └── services/       repositories · queue · rate limiter · judge · embeddings · cost
+├── sdks/python/           the `traceroai` package (PyPI) — client, tracing,
+│                          recovery agent (traceroai.recovery), eval harness (traceroai.eval)
 ├── traceroai-web/         Next.js dashboard + interactive docs
-├── examples/              langchain-rag · recovery-agent · simple-rag-monitored · rag-demo
+├── examples/              langchain-rag · recovery-agent · eval-experiment · simple-rag-monitored
 ├── infra/                 docker-compose for local Postgres/Redis
 ├── docs/                  system design plan + screenshots
 └── USAGE.md               complete SDK usage guide

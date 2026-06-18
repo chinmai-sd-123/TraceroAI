@@ -187,22 +187,28 @@ demo that loads `.md`/`.txt` documents, splits them, and recovers across attempt
 ## 6. Experiment runs (A/B-test pipeline configs)
 
 Compare pipeline configurations against a labeled dataset and get a recommended
-winner. The harness replays every case across each variant, grades the answers with
-the LLM judge, and posts the result to the eval-runs API:
+winner — using `traceroai.eval`. You bring your own `retrieve`/`generate` and cases;
+each answer is graded by the server-side judge (single source of truth), the best
+variant is recommended, and the run is posted to the eval-runs API.
 
-```bash
-# from services/api
-python -m app.eval_runner \
-    --dataset support_faq_v1 \
-    --project my-app \
-    --post \
-    --api-url https://traceroai.onrender.com
+```python
+from traceroai import TraceroClient
+from traceroai.eval import run_experiment, Case, Variant
+
+run_experiment(
+    client=TraceroClient(base_url="https://traceroai.onrender.com", api_key="your_project_key"),
+    dataset=[Case("c1", "How long does a refund take?", "5-7 business days.")],
+    retrieve=my_retrieve,   # (query, top_k) -> list[chunk dict]
+    generate=my_generate,   # (query, context) -> answer str
+    variants=[Variant("k3", "top_k=3", top_k=3), Variant("k5", "top_k=5", top_k=5)],
+    project_id="my-app",
+)
 ```
 
 The run appears under **Eval Runs** in the dashboard, filterable by project. Each
-variant reports **accuracy** (correct vs. expected answers, judged by the LLM) and
-**average latency**; the highest-accuracy variant is recommended. Omit `--post` to
-print the results locally without sending them.
+variant reports **accuracy** (correct vs. expected answers, judged server-side) and
+**average latency**; the highest-accuracy variant is recommended. A complete runnable
+example is in [`examples/eval-experiment/`](examples/eval-experiment/).
 
 ---
 
