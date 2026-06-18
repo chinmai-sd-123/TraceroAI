@@ -388,6 +388,22 @@ export default async function DashboardPage() {
                 </p>
               </div>
             </div>
+
+            {r.suggestions.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  Suggested fixes
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {r.suggestions.map((s, i) => (
+                    <li key={i} className="flex gap-2 text-sm text-zinc-300">
+                      <span className="text-violet-400">→</span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </section>
         );
       })()}
@@ -531,12 +547,40 @@ function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
   const avgAttempts =
     runList.reduce((sum, r) => sum + r.attempts, 0) / runList.length;
 
+  // Count which recovery levers fired (across all attempts that recorded one),
+  // then turn the dominant ones into concrete "what to fix" suggestions.
+  const actionCounts = new Map<string, number>();
+  for (const t of recoveryTraces) {
+    const a = t.recovery!.action;
+    if (a) actionCounts.set(a, (actionCounts.get(a) || 0) + 1);
+  }
+  const suggestions: string[] = [];
+  const bump = actionCounts.get("bump_retrieval") || 0;
+  const tighten = actionCounts.get("tighten_generation") || 0;
+  if (bump > 0) {
+    suggestions.push(
+      `${bump} retrieval-miss recoveries — consider raising your default top_k or improving retrieval.`,
+    );
+  }
+  if (tighten > 0) {
+    suggestions.push(
+      `${tighten} grounding recoveries — consider tightening your base prompt to stay on the context.`,
+    );
+  }
+  const unrecovered = runList.length - recovered;
+  if (unrecovered > 0) {
+    suggestions.push(
+      `${unrecovered} question(s) never recovered — likely a knowledge-base gap; add the missing docs.`,
+    );
+  }
+
   return {
     runs: runList.length,
     recoveredPct,
     avgAttempts: avgAttempts.toFixed(1),
     retried,
     attemptsTraced: recoveryTraces.length,
+    suggestions,
   };
 }
 

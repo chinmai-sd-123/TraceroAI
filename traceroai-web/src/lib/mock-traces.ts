@@ -95,7 +95,8 @@ export type MockTrace = {
     llmJudge: boolean; // deep LLM-judge evals present
   };
   // Set when this trace is one attempt of a self-healing RecoveryAgent run.
-  recovery?: { attempt: number };
+  // `action` is the recovery lever that led to this attempt (absent on attempt 1).
+  recovery?: { attempt: number; action?: string };
   diagnosis: {
     label: TraceDiagnosis;
     reason: string;

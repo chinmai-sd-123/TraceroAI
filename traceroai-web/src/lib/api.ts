@@ -447,7 +447,13 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
     // A RecoveryAgent attempt tags itself via metadata {agent:"recovery", attempt:N}.
     recovery:
       trace.metadata?.agent === "recovery"
-        ? { attempt: Number(trace.metadata?.attempt) || 1 }
+        ? {
+            attempt: Number(trace.metadata?.attempt) || 1,
+            action:
+              typeof trace.metadata?.recovery_action === "string"
+                ? trace.metadata.recovery_action
+                : undefined,
+          }
         : undefined,
     diagnosis: {
       label: normalizeDiagnosis(trace.diagnosis.label),

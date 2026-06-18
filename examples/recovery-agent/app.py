@@ -234,6 +234,7 @@ if __name__ == "__main__":
         generate=generate,
         max_attempts=3,
         project_id="recovery-agent",
+        model="gpt-4o-mini",   # the real model behind generate() — recorded on traces
     )
     questions = [
         "How long does a refund take?",             # answerable -> healthy
