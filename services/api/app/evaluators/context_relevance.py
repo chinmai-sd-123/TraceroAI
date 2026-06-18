@@ -14,11 +14,11 @@ EVALUATOR_NAME = "context_relevance"
 EVALUATOR_VERSION_EMBEDDING = "embedding_v1"
 EVALUATOR_VERSION_LEXICAL = "deterministic_v1"
 
-# Cosine thresholds. Same-language text rarely scores near 0, so the floor for
-# "irrelevant" sits around 0.5 — these are calibrated above that and are tunable
-# (the eval-runs harness is the tool for tuning them).
-PASS_THRESHOLD = 0.65
-REVIEW_THRESHOLD = 0.50
+# Cosine thresholds, calibrated for text-embedding-3-small: relevant query/context
+# pairs score ~0.55-0.72, clearly-irrelevant pairs ~0.05-0.10 — a wide, clean gap.
+# Pass at 0.45 (above noise, below the lowest relevant), review down to 0.30.
+PASS_THRESHOLD = 0.45
+REVIEW_THRESHOLD = 0.30
 
 
 def evaluate_context_relevance(
