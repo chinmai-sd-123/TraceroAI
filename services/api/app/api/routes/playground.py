@@ -33,12 +33,57 @@ router = APIRouter(prefix="/v1/playground", tags=["playground"])
 
 # Small built-in KB so the demo is self-contained.
 _DOCS = [
-    ("Refund Policy", "Refunds are processed within 5 to 7 business days after the request is approved."),
+    # Refund Policy
+    ("Refund Policy", "Refund requests can be submitted within 30 days of purchase."),
+    ("Refund Policy", "Refunds are processed within 5 to 7 business days after approval."),
     ("Refund Policy", "Refunds are issued to the original payment method used for the purchase."),
+    ("Refund Policy", "Subscription renewals are generally non-refundable after the billing cycle begins."),
+    ("Refund Policy", "Enterprise customers should contact their account manager for refund inquiries."),
+
+    # Product FAQ
     ("Product FAQ", "We offer three plans: Free, Pro, and Enterprise."),
     ("Product FAQ", "The maximum file upload size is 100 megabytes per file."),
+    ("Product FAQ", "Users can create up to 10 projects on the Free plan."),
+    ("Product FAQ", "The Pro plan includes priority support and advanced analytics."),
+    ("Product FAQ", "Enterprise plans support custom integrations and dedicated account management."),
+    ("Product FAQ", "API access is available on Pro and Enterprise plans."),
+    ("Product FAQ", "Unused storage does not roll over between billing cycles."),
+
+    # Security Policy
     ("Security Policy", "To reset your password, click Forgot Password on the login page."),
     ("Security Policy", "Customer data is encrypted in transit using TLS and at rest using AES-256."),
+    ("Security Policy", "Multi-factor authentication is available for all user accounts."),
+    ("Security Policy", "Password requirements include at least 12 characters and one special symbol."),
+    ("Security Policy", "Access logs are retained for 90 days for security monitoring."),
+    ("Security Policy", "Regular penetration testing is conducted by third-party security auditors."),
+
+    # Billing
+    ("Billing", "Invoices are generated automatically on the first day of each billing cycle."),
+    ("Billing", "Customers can update payment methods from the billing settings page."),
+    ("Billing", "Failed payments trigger three automatic retry attempts."),
+    ("Billing", "Annual subscriptions receive a 15 percent discount compared to monthly plans."),
+    ("Billing", "Taxes are applied based on the customer's billing address."),
+
+    # Account Management
+    ("Account Management", "Users can change their email address from the profile settings page."),
+    ("Account Management", "Account deletion requests are processed within 14 days."),
+    ("Account Management", "Deleted accounts cannot be restored after 30 days."),
+    ("Account Management", "Users can export their data in CSV or JSON format."),
+    ("Account Management", "Team administrators can manage user permissions and roles."),
+
+    # Support
+    ("Support", "Support tickets are typically answered within 24 hours on business days."),
+    ("Support", "Enterprise customers receive a dedicated support channel."),
+    ("Support", "Live chat support is available from 9 AM to 6 PM UTC."),
+    ("Support", "Critical incidents are handled according to the priority escalation policy."),
+    ("Support", "Users can track ticket status from the support portal."),
+
+    # API Documentation
+    ("API Documentation", "API requests require authentication using bearer tokens."),
+    ("API Documentation", "Rate limits are set to 1000 requests per hour for Pro users."),
+    ("API Documentation", "Enterprise customers can request higher rate limits."),
+    ("API Documentation", "API responses are returned in JSON format."),
+    ("API Documentation", "Webhook events can be configured from the developer dashboard."),
 ]
 
 _STOP = {"the", "a", "an", "is", "are", "do", "does", "how", "what", "can", "i", "to", "of", "my", "you", "your"}
