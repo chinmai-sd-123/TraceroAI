@@ -52,12 +52,26 @@ class PromptTrace(BaseModel):
     template_name: str | None= None
     content: str | None = None
 
+class UsageTrace(BaseModel):
+    prompt_tokens: int | None = Field(default=None, ge=0)
+    completion_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+    # cost_usd is computed server-side from a price table (the SDK sends tokens,
+    # the server owns pricing), but is accepted if a client provides it.
+    cost_usd: float | None = Field(default=None, ge=0)
+
+
 class GenerationTrace(BaseModel):
     provider: str | None= None
     model: str= Field(..., min_length=1)
     temperature: float | None= None
+    # Any other tunable generation parameters (top_p, max_tokens, seed,
+    # frequency_penalty, presence_penalty, ...). Kept as a free-form dict so new
+    # knobs don't require a schema change, and experiments can compare on them.
+    parameters: dict[str, Any] = Field(default_factory=dict)
     answer: str= Field(..., min_length=1)
     answered: bool= True
+    usage: UsageTrace = Field(default_factory=UsageTrace)
 
 class LatencyTrace(BaseModel):
     retrieval_ms: int | None= Field(default=None, ge=0)

@@ -73,6 +73,9 @@ class TraceContext:
         model: str,
         provider: str | None = None,
         temperature: float | None = None,
+        parameters: dict[str, Any] | None = None,
+        prompt_tokens: int | None = None,
+        completion_tokens: int | None = None,
     ) -> None:
         self._generation = {
             "answer": answer,
@@ -81,6 +84,17 @@ class TraceContext:
             "provider": provider,
             "temperature": temperature,
         }
+        # Any other tunable knobs (top_p, max_tokens, seed, penalties, ...) so the
+        # full generation config is recorded with the trace.
+        if parameters:
+            self._generation["parameters"] = parameters
+        # Token counts feed server-side cost tracking. Cost itself is computed by
+        # the server from its price table.
+        if prompt_tokens is not None or completion_tokens is not None:
+            self._generation["usage"] = {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+            }
 
     # --- context manager protocol ---
 

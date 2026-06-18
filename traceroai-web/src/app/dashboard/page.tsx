@@ -50,6 +50,21 @@ function calculatePercentileLatency(
   return `${sorted[index]}ms`;
 }
 
+// Sum + average of per-trace cost, over traces that actually have a cost.
+function calculateCost(traces: Awaited<ReturnType<typeof getTraces>>) {
+  const costs = traces
+    .map((t) => t.generation.costUsd)
+    .filter((c): c is number => typeof c === "number" && c > 0);
+  if (costs.length === 0) {
+    return { total: "--", avg: "--" };
+  }
+  const total = costs.reduce((sum, c) => sum + c, 0);
+  return {
+    total: `$${total.toFixed(4)}`,
+    avg: `$${(total / costs.length).toFixed(5)}`,
+  };
+}
+
 function calculateOpenFailures(traces: Awaited<ReturnType<typeof getTraces>>) {
   return traces.filter((trace) => !HEALTHY_LABELS.has(trace.diagnosis.label))
     .length;
@@ -72,6 +87,7 @@ export default async function DashboardPage() {
   const averageLatency = calculateAverageLatency(traces);
   const p95Latency = calculatePercentileLatency(traces, 95);
   const openFailures = calculateOpenFailures(traces);
+  const cost = calculateCost(traces);
 
   return (
     <section>
@@ -86,12 +102,13 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="mt-8 grid gap-4 md:grid-cols-5">
+      <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
         <MetricCard label="Total traces" value={String(totalTraces)} />
         <MetricCard label="Healthy rate" value={healthyRate} />
         <MetricCard label="Avg latency" value={averageLatency} />
         <MetricCard label="p95 latency" value={p95Latency} />
         <MetricCard label="Open failures" value={String(openFailures)} />
+        <MetricCard label="Avg cost / trace" value={cost.avg} />
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">

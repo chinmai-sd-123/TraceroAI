@@ -47,6 +47,8 @@ export type MockTrace = {
   generation: {
     model: string;
     answer: string;
+    costUsd?: number | null;
+    totalTokens?: number | null;
   };
   latency: {
     totalMs: number;

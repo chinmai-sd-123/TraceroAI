@@ -5,7 +5,13 @@ Needs the recovery extra:  pip install 'traceroai[recovery]'
 No live API/LLM — the client, retrieve, and generate are all stubbed.
 """
 
-from traceroai.recovery import RecoveryAgent
+import pytest
+
+# The recovery feature needs the optional [recovery] extra (langgraph). Skip the
+# whole module cleanly when it isn't installed, rather than erroring collection.
+pytest.importorskip("langgraph.graph")
+
+from traceroai.recovery import RecoveryAgent  # noqa: E402
 
 
 class _ScriptedClient:

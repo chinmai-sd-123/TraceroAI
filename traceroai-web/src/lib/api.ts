@@ -47,6 +47,12 @@ type ApiTrace = {
   generation: {
     model: string;
     answer: string;
+    usage?: {
+      prompt_tokens?: number | null;
+      completion_tokens?: number | null;
+      total_tokens?: number | null;
+      cost_usd?: number | null;
+    };
   };
   latency: {
     total_ms?: number | null;
@@ -395,6 +401,8 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
     generation: {
       model: trace.generation.model,
       answer: trace.generation.answer,
+      costUsd: trace.generation.usage?.cost_usd ?? null,
+      totalTokens: trace.generation.usage?.total_tokens ?? null,
     },
     latency: {
       totalMs: trace.latency.total_ms ?? 0,
