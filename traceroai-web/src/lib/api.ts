@@ -85,6 +85,7 @@ type ApiTrace = {
     comment?: string | null;
     created_at?: string | null;
   }>;
+  metadata?: Record<string, unknown> | null;
 };
 export type ApiEvalRun = {
   eval_run_id: string;
@@ -441,6 +442,11 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
       ),
       llmJudge: (trace.evaluations.deep ?? []).length > 0,
     },
+    // A RecoveryAgent attempt tags itself via metadata {agent:"recovery", attempt:N}.
+    recovery:
+      trace.metadata?.agent === "recovery"
+        ? { attempt: Number(trace.metadata?.attempt) || 1 }
+        : undefined,
     diagnosis: {
       label: normalizeDiagnosis(trace.diagnosis.label),
       reason: trace.diagnosis.reason || "No diagnosis available.",

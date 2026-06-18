@@ -94,6 +94,11 @@ export default async function TraceDetailPage({
         </div>
 
         <div className="flex items-center gap-2">
+          {trace.recovery && (
+            <span className="inline-flex rounded-md border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-sm font-medium text-violet-300">
+              Recovery · attempt {trace.recovery.attempt}
+            </span>
+          )}
           {trace.status && (
             <span className="inline-flex rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-300">
               {formatLabel(trace.status)}
