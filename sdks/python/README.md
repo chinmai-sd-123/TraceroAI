@@ -27,9 +27,23 @@ client = TraceroClient(
 with client.trace("How long does a refund take?") as t:
     t.log_retrieval(chunks, strategy="hybrid", config={"final_top_k": 3})
     t.log_prompt(prompt_text, version="grounded_v1")
-    t.log_generation(answer, model="gpt-4o-mini")
+    t.log_generation(
+        answer,
+        model="gpt-4o-mini",
+        temperature=0,
+        parameters={"top_p": 1, "max_tokens": 512},   # any tunable knobs
+        prompt_tokens=1200, completion_tokens=80,      # -> server computes cost
+    )
 
 print(t.trace_id)
+```
+
+Read a trace back (server-computed diagnosis + evaluations):
+
+```python
+trace = client.get_trace(t.trace_id)
+trace["diagnosis"]["label"]      # e.g. "healthy_answer"
+trace["generation"]["usage"]     # tokens + cost_usd
 ```
 
 ### Decorator
@@ -81,3 +95,28 @@ agent = RecoveryAgent(client, retrieve=my_retrieve, generate=my_generate, max_at
 result = agent.run("How long does a refund take?")
 # result["answer"], result["diagnosis"], result["attempts"], result["trace_ids"]
 ```
+
+## Experiment evaluation
+
+A/B-test pipeline configs against a labeled dataset. Bring your own
+`retrieve`/`generate` and cases; each answer is graded by TraceroAI's server-side
+judge, the best variant is recommended, and the run shows up on your dashboard.
+
+```python
+from traceroai.eval import run_experiment, Case, Variant
+
+run_experiment(
+    client=client,
+    dataset=[Case("c1", "How long does a refund take?", "5-7 business days.")],
+    retrieve=my_retrieve,   # (query, top_k) -> list[chunk dict]
+    generate=my_generate,   # (query, context) -> answer str
+    variants=[Variant("k3", "top_k=3", top_k=3), Variant("k5", "top_k=5", top_k=5)],
+    project_id="my-app",
+)
+```
+
+## Telemetry is best-effort
+
+If the API is unreachable, the SDK warns and continues — it never breaks your app
+or masks your own exceptions. Evaluations, diagnosis, and cost are computed
+server-side (the server is the source of truth).
