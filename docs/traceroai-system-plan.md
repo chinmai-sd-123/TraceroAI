@@ -742,10 +742,12 @@ security_policy.md
 
 ## Experiment Layer
 
-> **Built.** Implemented as the experiment harness in `services/api/app/eval_runner/`
-> (`python -m app.eval_runner`): it replays a labeled dataset across pipeline variant
-> configs, grades each answer with an LLM judge, and recommends a winner. Surfaced on
-> the dashboard overview as the "Latest Experiment" card.
+> **Built.** Implemented as a client-usable SDK harness (`traceroai.eval.run_experiment`):
+> the caller injects their own retrieve/generate + a labeled dataset; each answer is
+> graded by the server-side judge (`POST /v1/eval/grade`), and the best variant is
+> recommended. Surfaced on the dashboard overview as the "Latest Experiment" card.
+> (The platform owns grading + storage; the RAG pipeline lives in the client, e.g.
+> `examples/eval-experiment/`.)
 
 Compare:
 
@@ -803,7 +805,7 @@ The core RAG debugger is built and deployed. Progress against the original miles
 | 5 | Dashboard ↔ FastAPI integration | ✅ Done |
 | 6 | Evaluators — **embedding-cosine** relevance + groundedness + diagnosis | ✅ Done |
 | 7 | Sample monitored RAG apps (incl. LangChain) | ✅ Done |
-| 8 | Eval runs — datasets, variant comparison, **run generator + winner** | ✅ Done (`app/eval_runner/`) |
+| 8 | Eval runs — datasets, variant comparison, **run generator + winner** | ✅ Done (`traceroai.eval` SDK harness + `POST /v1/eval/grade`) |
 | 9 | LangGraph recovery workflow | ✅ Done (`traceroai[recovery]`) |
 | 10 | Portfolio polish (README, diagram, screenshots, demo, CI) | 🔶 README + diagram + screenshots + USAGE.md done; CI + demo video remain |
 
