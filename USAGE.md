@@ -202,8 +202,17 @@ result["deep_eval"]    # final LLM-judge verdict (or None if still pending)
 |---|---|
 | `retrieval_miss` | raise `top_k`, rewrite the query → re-retrieve |
 | `unsupported_claim` | inject a stricter grounding instruction → re-generate |
+| `wrong_answer` | tighten generation first (e.g. a wrong refusal despite good context); re-retrieve as a fallback |
+| `needs_review` | re-retrieve (cheapest lever) |
 | `healthy_answer` / `correct_refusal` | stop — success |
 | max attempts reached | stop — flag `needs_review` |
+
+**Routing uses the judge-driven diagnosis (SDK v0.4.0+).** Each attempt is scored by the
+server's LLM judge *synchronously*, so recovery decides its next move on a judge-quality
+diagnosis rather than the cheap deterministic quick eval — which can mislabel a good
+answer a `retrieval_miss` (low embedding cosine) or vice versa. If the judge is
+unavailable, recovery falls back to the quick diagnosis so it still progresses; it never
+hangs or breaks.
 
 The loop is bounded by `max_attempts` (plus a hard recursion limit), so it can never
 loop forever. See [`examples/recovery-agent/`](examples/recovery-agent/) for a runnable

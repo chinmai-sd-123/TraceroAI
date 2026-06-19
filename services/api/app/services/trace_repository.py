@@ -6,7 +6,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models import TraceRecord
-from app.schemas.traces import FeedbackEntry, TraceIngestRequest, EvaluationResult
+from app.schemas.traces import (
+    DiagnosisTrace,
+    EvaluationResult,
+    FeedbackEntry,
+    TraceIngestRequest,
+)
 
 
 class TraceRepository:
@@ -51,7 +56,10 @@ class TraceRepository:
         return self.db.get(TraceRecord, trace_id)
     
     def set_deep_evaluations(
-        self, trace_id: UUID, deep_results: list[EvaluationResult]
+        self,
+        trace_id: UUID,
+        deep_results: list[EvaluationResult],
+        diagnosis: DiagnosisTrace | None = None,
     ) -> TraceRecord | None:
             record = self.db.get(TraceRecord, trace_id)
             if record is None:
@@ -59,6 +67,12 @@ class TraceRepository:
 
             trace = TraceIngestRequest(**record.payload)
             trace.evaluations.deep = deep_results
+            # The LLM judge is more reliable than the deterministic quick eval, so when
+            # it produces a usable verdict we overwrite the diagnosis (and the indexed
+            # diagnosis_label column) with it. None -> keep the quick diagnosis.
+            if diagnosis is not None:
+                trace.diagnosis = diagnosis
+                record.diagnosis_label = diagnosis.label
             record.payload = trace.model_dump(mode="json")
 
             self.db.add(record)

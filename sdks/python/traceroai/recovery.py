@@ -54,12 +54,52 @@ def _format_context(chunks: list[dict[str, Any]]) -> str:
     )
 
 
+def _deep_eval_ready(trace: dict[str, Any]) -> bool:
+    """True once the async LLM judge has landed (and didn't just error). The server
+    re-diagnoses from the judge when this is present, so this is the signal that the
+    diagnosis we read is the reliable, judge-corrected one rather than the quick eval."""
+    deep = (trace.get("evaluations") or {}).get("deep") or []
+    if not deep:
+        return False
+    # A single "error" result means the judge failed — don't wait further; the quick
+    # diagnosis is the best we have.
+    return not (len(deep) == 1 and deep[0].get("label") == "error")
+
+
+def _read_diagnosis(
+    client: TraceroClient,
+    trace_id: str,
+    *,
+    attempts: int = 6,
+    interval: float = 1.5,
+) -> str:
+    """Read the diagnosis to route recovery on, preferring the judge-corrected one.
+
+    Polls briefly for the async deep eval (the server overwrites the diagnosis from the
+    LLM judge once it lands). Falls back to the synchronous quick diagnosis if the judge
+    doesn't arrive in time — recovery should retry on a cheap signal rather than hang.
+    """
+    last_diagnosis = "needs_review"
+    for i in range(attempts):
+        try:
+            trace = client.get_trace(trace_id)
+        except Exception:
+            return last_diagnosis  # read failed -> fail-safe to last known
+        last_diagnosis = trace.get("diagnosis", {}).get("label", "needs_review")
+        if _deep_eval_ready(trace):
+            return last_diagnosis  # judge-corrected diagnosis
+        if i < attempts - 1:
+            time.sleep(interval)
+    return last_diagnosis  # judge didn't land in time -> quick diagnosis
+
+
 def _make_nodes(
     client: TraceroClient,
     retrieve: RetrieveFn,
     generate: GenerateFn,
     project_id: str,
     model: str = "unknown",
+    diagnosis_poll_interval: float = 1.5,
 ):
     """Build the graph's node functions, closing over the user's retrieve/generate
     and the TraceroAI client. Returns (retrieve_node, generate_node, evaluate_node)."""
@@ -100,9 +140,10 @@ def _make_nodes(
         }
 
     def evaluate_node(state: RecoveryState) -> dict[str, Any]:
-        # Send the attempt as a trace; the server runs quick eval synchronously,
-        # so the diagnosis is ready when we read it back. This is the eval that
-        # drives recovery routing.
+        # Send the attempt as a trace and run the LLM judge SYNCHRONOUSLY, so we route
+        # on the judge-corrected diagnosis (far more reliable than the deterministic
+        # quick eval) without polling an async queue. If the sync call fails, fall back
+        # to a normal send + read of the quick diagnosis — recovery still progresses.
         retrieval_ms = state.get("retrieval_ms", 0)
         generation_ms = state.get("generation_ms", 0)
         generation: dict[str, Any] = {"model": model, "answer": state.get("answer", "")}
@@ -131,13 +172,24 @@ def _make_nodes(
         }
         if state.get("prompt"):
             trace_kwargs["prompt"] = {"content": state["prompt"], "version": "recovery_v1"}
-        trace_id = client.log_trace(**trace_kwargs)
+
         diagnosis = "needs_review"
         try:
-            trace = client.get_trace(trace_id)
-            diagnosis = trace.get("diagnosis", {}).get("label", "needs_review")
+            trace_id, verdict = client.log_trace_sync_eval(**trace_kwargs)
+            if verdict and verdict.get("label"):
+                diagnosis = verdict["label"]
+            else:
+                # server didn't return a judge diagnosis (judge unavailable) — fall
+                # back to the stored quick diagnosis so recovery still has a signal.
+                diagnosis = _read_diagnosis(client, trace_id, interval=diagnosis_poll_interval)
         except Exception:
-            pass  # if the read fails, treat as needs_review (fail-safe)
+            # Sync path failed entirely (older server / network). Fall back to a plain
+            # send + read of the quick diagnosis. Recovery degrades, never breaks.
+            try:
+                trace_id = client.log_trace(**trace_kwargs)
+                diagnosis = _read_diagnosis(client, trace_id, interval=diagnosis_poll_interval)
+            except Exception:
+                trace_id = None  # could not record the attempt; route on needs_review
 
         return {
             "diagnosis": diagnosis,
@@ -167,7 +219,16 @@ def _route(state: RecoveryState, max_attempts: int) -> str:
         return "fix_retrieval"      # -> retrieve again, with more/rewritten context
     if diagnosis == "unsupported_claim":
         return "fix_generation"     # -> generate again, stricter grounding
-    # wrong_answer / needs_review / anything else: try re-retrieving once more.
+    if diagnosis == "wrong_answer":
+        # The answer doesn't address the query — often a wrong refusal despite good
+        # context (the server diagnoses refused + relevant-context as wrong_answer).
+        # Re-retrieving the same good context won't help; the generator needs a
+        # clearer instruction. On the first wrong_answer tighten generation; if that
+        # still fails, fall through to re-retrieving in case context really was thin.
+        if state.get("prompt_style") != "strict":
+            return "fix_generation"
+        return "fix_retrieval"
+    # needs_review / anything else: re-retrieve once more (cheapest lever).
     return "fix_retrieval"
 
 
@@ -213,11 +274,13 @@ class RecoveryAgent:
         max_attempts: int = 3,
         project_id: str = "recovery-agent",
         model: str = "unknown",
+        diagnosis_poll_interval: float = 1.5,
     ) -> None:
         self.client = client
         self._max_attempts = max_attempts
         retrieve_node, generate_node, evaluate_node = _make_nodes(
-            client, retrieve, generate, project_id, model
+            client, retrieve, generate, project_id, model,
+            diagnosis_poll_interval=diagnosis_poll_interval,
         )
         self._graph = self._build_graph(retrieve_node, generate_node, evaluate_node)
 

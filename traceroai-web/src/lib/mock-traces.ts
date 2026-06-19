@@ -47,6 +47,9 @@ export type MockTrace = {
   generation: {
     model: string;
     answer: string;
+    provider?: string | null;
+    temperature?: number | null;
+    parameters?: Record<string, unknown> | null;
     costUsd?: number | null;
     totalTokens?: number | null;
   };

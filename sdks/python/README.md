@@ -85,8 +85,8 @@ pip install "traceroai[recovery]"
 
 `RecoveryAgent` (built on LangGraph) retries the RAG stage that TraceroAI diagnoses as
 broken — re-retrieving on a retrieval miss, re-generating with a stricter prompt on an
-unsupported claim — until the answer is healthy or it escalates to review. You supply
-your own `retrieve`/`generate`; every attempt is traced.
+unsupported claim or a wrong answer — until the answer is healthy or it escalates to
+review. You supply your own `retrieve`/`generate`; every attempt is traced.
 
 ```python
 from traceroai.recovery import RecoveryAgent
@@ -98,6 +98,13 @@ result = agent.run("How long does a refund take?")
 
 `generate` may return just the answer, or `(answer, {"prompt_tokens": ..., "completion_tokens": ...})` —
 return the token counts and each recovery attempt's trace gets a server-computed cost.
+
+**Routing is judge-driven (v0.4.0+).** Each attempt is evaluated by the server's LLM
+judge *synchronously*, so recovery routes on a judge-quality diagnosis — not the cheap
+deterministic quick eval — without polling. If the judge is unavailable, it falls back to
+the quick diagnosis so recovery still progresses (it never hangs or breaks). This needs a
+TraceroAI server with deep eval configured; against an older server it transparently
+falls back to the quick-eval routing.
 
 ## Experiment evaluation
 

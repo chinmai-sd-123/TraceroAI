@@ -542,16 +542,63 @@ function getEvalMethodMix(traces: Awaited<ReturnType<typeof getTraces>>) {
 // shared run-id) and judge each run by its FINAL (highest-attempt) outcome — so
 // "recovered %" reflects whether the question was ultimately answered, not a raw
 // per-attempt rate.
+type RunInsight = {
+  question: string;
+  firstLabel: string;
+  firstChunkCount: number;
+  contextFailed: boolean;
+  groundednessFailed: boolean;
+  fixAction?: string;
+};
+
+// Describe the fix that recovered a run, grounded in what actually failed first.
+function describeFix(r: RunInsight): string {
+  if (r.fixAction === "bump_retrieval") {
+    return `retrieval miss with ${r.firstChunkCount} chunk(s) — raising top_k surfaced the relevant context; consider top_k ≥ ${r.firstChunkCount + 2} or a better retriever`;
+  }
+  if (r.fixAction === "tighten_generation") {
+    return "answer drifted from the context — a stricter grounding prompt fixed it; tighten your generation prompt to answer only from retrieved text";
+  }
+  // Recovered without a known lever (e.g. healthy on a re-retrieve): describe the cause.
+  if (r.contextFailed) {
+    return `retrieval was the weak point (${r.firstChunkCount} chunk(s)) — improve retrieval / raise top_k`;
+  }
+  if (r.groundednessFailed) {
+    return "grounding was the weak point — tighten the prompt to stay on the context";
+  }
+  return `recovered from ${r.firstLabel.replaceAll("_", " ")} after a retry`;
+}
+
+// Describe a run that never reached a healthy answer — name the persistent failure.
+function describeUnrecovered(r: RunInsight): string {
+  if (r.firstLabel === "retrieval_miss" || r.contextFailed) {
+    return `retrieval never surfaced the answer (${r.firstChunkCount} chunk(s)) — the docs likely don't cover this; add the missing content or improve indexing`;
+  }
+  if (r.firstLabel === "unsupported_claim" || r.groundednessFailed) {
+    return "answer kept making unsupported claims — the context lacks the facts; add the missing docs";
+  }
+  return "never recovered — likely a knowledge-base gap; add the missing docs";
+}
+
 function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
   const recoveryTraces = traces.filter((t) => t.recovery);
   if (recoveryTraces.length === 0) {
     return null;
   }
 
-  // Build per-question chains (all attempts, in order). Each chain = one run.
+  // Build per-question chains (all attempts, in order). Each chain = one run. We carry
+  // the diagnosis, the lever taken, the chunk count, and the failing evaluator so we can
+  // describe the ACTUAL cause — not a generic action label.
   const chains = new Map<
     string,
-    Array<{ attempt: number; label: string; action?: string }>
+    Array<{
+      attempt: number;
+      label: string;
+      action?: string;
+      chunkCount: number;
+      contextFailed: boolean;
+      groundednessFailed: boolean;
+    }>
   >();
   for (const t of recoveryTraces) {
     const key = t.query.original;
@@ -560,21 +607,27 @@ function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
       attempt: t.recovery!.attempt,
       label: t.diagnosis.label,
       action: t.recovery!.action,
+      chunkCount: t.retrieval.chunks.length,
+      contextFailed: t.evaluations.contextRelevance.label === "fail",
+      groundednessFailed: t.evaluations.groundedness.label === "fail",
     });
   }
 
   const runList = [...chains.entries()].map(([question, atts]) => {
     const ordered = [...atts].sort((a, b) => a.attempt - b.attempt);
+    const first = ordered[0];
     const final = ordered[ordered.length - 1];
-    // The action that led to the (recovered) final attempt, if any.
-    const fixAction = final.action;
     return {
       question,
       attempts: final.attempt,
       finalLabel: final.label,
+      firstLabel: first.label, // what originally went wrong
+      firstChunkCount: first.chunkCount,
+      contextFailed: first.contextFailed,
+      groundednessFailed: first.groundednessFailed,
       recovered: HEALTHY_LABELS.has(final.label),
       retried: ordered.length > 1,
-      fixAction,
+      fixAction: final.action,
     };
   });
 
@@ -584,24 +637,21 @@ function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
   const avgAttempts =
     runList.reduce((sum, r) => sum + r.attempts, 0) / runList.length;
 
-  // Concrete, real "what fix improved this case" lines — each cites the ACTUAL
-  // question and the fix that recovered it. No generic/fake text.
-  const ACTION_FIX: Record<string, string> = {
-    bump_retrieval: "raise top_k / improve retrieval",
-    tighten_generation: "tighten the grounding prompt",
-  };
+  // Cause-specific suggestions — each names the ACTUAL failure (the first-attempt
+  // diagnosis, chunk count, which evaluator failed) and the fix that the recovery
+  // lever applied. No generic/fake text; all derived from the real retry chain.
   const suggestions: { question: string; fix: string; recovered: boolean }[] = [];
   for (const r of runList) {
-    if (r.recovered && r.retried && r.fixAction) {
+    if (r.recovered && r.retried) {
       suggestions.push({
         question: r.question,
-        fix: ACTION_FIX[r.fixAction] ?? r.fixAction,
+        fix: describeFix(r),
         recovered: true,
       });
     } else if (!r.recovered) {
       suggestions.push({
         question: r.question,
-        fix: "never recovered — likely a knowledge-base gap; add the missing docs",
+        fix: describeUnrecovered(r),
         recovered: false,
       });
     }

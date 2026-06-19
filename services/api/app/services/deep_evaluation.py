@@ -7,6 +7,7 @@ from app.evaluators.deep_relevance import (
     evaluate_deep_answer_relevance,
     evaluate_deep_context_relevance,
 )
+from app.evaluators.diagnosis import diagnose_from_deep, is_refusal
 from app.schemas.traces import EvaluationResult, TraceIngestRequest
 from app.services.llm_judge import LLMJudge, OpenAIJudge
 from app.services.trace_repository import TraceRepository
@@ -35,7 +36,15 @@ def run_deep_evaluation(trace_id: UUID, judge: LLMJudge | None = None) -> None:
 
         trace = TraceIngestRequest(**record.payload)
         results = _evaluate(trace, judge, settings)
-        repository.set_deep_evaluations(trace_id, results)
+
+        # Re-diagnose from the judge's verdict — it's more reliable than the quick
+        # (embedding + term-overlap) eval that produced the initial diagnosis. If the
+        # judge errored or yielded nothing usable, diagnose_from_deep returns None and
+        # we keep the quick diagnosis (set_deep_evaluations leaves it untouched).
+        refused = not trace.generation.answered or is_refusal(trace.generation.answer)
+        deep_diagnosis = diagnose_from_deep(results, refused=refused)
+
+        repository.set_deep_evaluations(trace_id, results, diagnosis=deep_diagnosis)
     finally:
         db.close()
 

@@ -45,6 +45,9 @@ type ApiTrace = {
   generation: {
     model: string;
     answer: string;
+    provider?: string | null;
+    temperature?: number | null;
+    parameters?: Record<string, unknown> | null;
     usage?: {
       prompt_tokens?: number | null;
       completion_tokens?: number | null;
@@ -389,6 +392,9 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
     generation: {
       model: trace.generation.model,
       answer: trace.generation.answer,
+      provider: trace.generation.provider ?? null,
+      temperature: trace.generation.temperature ?? null,
+      parameters: trace.generation.parameters ?? null,
       costUsd: trace.generation.usage?.cost_usd ?? null,
       totalTokens: trace.generation.usage?.total_tokens ?? null,
     },
