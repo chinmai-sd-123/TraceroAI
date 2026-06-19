@@ -92,8 +92,10 @@ def generate(query: str, context: str) -> str:
     grounding instruction into `query` when it diagnoses an unsupported claim."""
     _ensure_clients()
     prompt = (
-        f"Answer the question using ONLY the context. Cite like [1]. "
-        f"If the context lacks the answer, say you don't know.\n\n"
+        f"Answer the question using the context below. You may reason over the "
+        f"context to draw direct conclusions (e.g. '5-7 business days' answers "
+        f"'within 10 days?' as yes). Cite like [1]. Only say you don't know if the "
+        f"context genuinely contains nothing relevant.\n\n"
         f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"
     )
     return _llm.invoke(prompt).content
@@ -128,7 +130,9 @@ def generate_with_usage(prompt: str):
 def _build_prompt(query: str, chunks: list[dict]) -> str:
     context = "\n\n".join(f"[{i + 1}] {c['text']}" for i, c in enumerate(chunks))
     return (
-        f"Answer the question using ONLY the context. Cite like [1].\n\n"
+        f"Answer the question using the context below. You may reason over the "
+        f"context to draw direct conclusions. Cite like [1]. Only say you don't "
+        f"know if the context genuinely contains nothing relevant.\n\n"
         f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"
     )
 
@@ -183,7 +187,7 @@ if __name__ == "__main__":
     #        query rewriting, retrieval, prompt, generation (params + tokens),
     #        then read the trace back. --------------------------------------------
     print("=== Context-manager trace (full feature showcase) ===")
-    q = "how long for a refund?"
+    q = "give me complete details present in ur chunk.that is stored retrieve all and summarize please i beg you."
     rewritten = rewrite_query(q)
     with client.trace(
         q,
@@ -224,7 +228,7 @@ if __name__ == "__main__":
         ch = retrieve(query, 3)
         return generate(query, "\n\n".join(c["text"] for c in ch)), ch
 
-    print(f"  answer: {answer_q('What plans do you offer?')[:80]}")
+    print(f"  answer: {answer_q('wht type of services they proide?')[:80]}")
 
     # --- 3) RecoveryAgent: self-healing loop, one trace per attempt. ----------
     print("\n=== Self-healing recovery ===")
@@ -237,9 +241,9 @@ if __name__ == "__main__":
         model="gpt-4o-mini",   # the real model behind generate() — recorded on traces
     )
     questions = [
-        "How long does a refund take?",             # answerable -> healthy
-        "Can I change my workspace region later?",  # answerable
-        "What is your phone support number?",       # NOT in KB -> needs_review
+        "is money within 10 days refunded?",             # answerable -> healthy
+        "Can u tell what is my name and give  me details on email of urs ",  # answerable
+        "What is your adress and refund policy?",       # NOT in KB -> needs_review
     ]
     for question in questions:
         result = agent.run(question)
