@@ -90,7 +90,12 @@ export default async function TraceDetailPage({
           <h1 className="mt-3 max-w-4xl text-3xl font-semibold leading-tight">
             {trace.query.original}
           </h1>
-          <p className="mt-3 font-mono text-xs text-zinc-500">{trace.traceId}</p>
+          <p className="mt-3 font-mono text-xs text-zinc-500">
+            {trace.traceId}
+            <span className="ml-3 font-sans text-zinc-600">
+              {new Date(trace.timestamp).toLocaleString()}
+            </span>
+          </p>
         </div>
 
         <div className="flex items-center gap-2">

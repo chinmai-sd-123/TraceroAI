@@ -38,6 +38,9 @@ export default async function EvalRunDetailPage({
           </h1>
           <p className="mt-3 font-mono text-xs text-zinc-500">
             {run.eval_run_id}
+            <span className="ml-3 font-sans text-zinc-600">
+              {new Date(run.timestamp).toLocaleString()}
+            </span>
           </p>
         </div>
 

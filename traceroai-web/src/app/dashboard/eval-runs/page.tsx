@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { getEvalRunProjects, getEvalRuns } from "@/lib/api";
 
-import { EvalProjectSelector } from "./eval-project-selector";
+import { ProjectSelector } from "../traces/project-selector";
 
 export default async function EvalRunsPage({
   searchParams,
@@ -30,7 +30,11 @@ export default async function EvalRunsPage({
           </p>
         </div>
         {projects.length > 0 && (
-          <EvalProjectSelector projects={projects} selected={project} />
+          <ProjectSelector
+            projects={projects}
+            selected={project}
+            basePath="/dashboard/eval-runs"
+          />
         )}
       </div>
 
