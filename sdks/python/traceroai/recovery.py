@@ -26,7 +26,8 @@ from traceroai.client import TraceroClient
 
 # The shape of the user's injected functions.
 RetrieveFn = Callable[[str, int], list[dict[str, Any]]]  # (query, top_k) -> chunks
-GenerateFn = Callable[[str, str], str]                    # (query, context) -> answer
+# (query, context) -> answer, OR (answer, {"prompt_tokens", "completion_tokens"})
+GenerateFn = Callable[[str, str], "str | tuple[str, dict[str, Any]]"]
 
 
 class RecoveryState(TypedDict, total=False):
@@ -37,6 +38,7 @@ class RecoveryState(TypedDict, total=False):
     prompt_style: str      # "normal" | "strict" (strict on unsupported_claim)
     chunks: list[dict[str, Any]]
     prompt: str            # the prompt context the generator was given this attempt
+    usage: dict[str, Any]  # optional token usage from generate() -> cost
     answer: str
     diagnosis: str         # the server's quick-eval diagnosis for the last attempt
     attempt: int           # how many attempts so far
@@ -82,9 +84,17 @@ def _make_nodes(
         # Record the prompt the generator saw this attempt (context + question).
         prompt = f"Context:\n{context}\n\nQuestion: {query}"
         start = time.perf_counter()
-        answer = generate(query, context)
+        result = generate(query, context)
+        # generate() may return just the answer, or (answer, usage) where usage is
+        # {"prompt_tokens": int, "completion_tokens": int} — so recovery traces can
+        # carry token usage for server-side cost computation.
+        if isinstance(result, tuple):
+            answer, usage = result[0], result[1] or {}
+        else:
+            answer, usage = result, {}
         return {
             "answer": answer,
+            "usage": usage,
             "prompt": prompt,
             "generation_ms": int((time.perf_counter() - start) * 1000),
         }
@@ -95,10 +105,17 @@ def _make_nodes(
         # drives recovery routing.
         retrieval_ms = state.get("retrieval_ms", 0)
         generation_ms = state.get("generation_ms", 0)
+        generation: dict[str, Any] = {"model": model, "answer": state.get("answer", "")}
+        usage = state.get("usage") or {}
+        if usage.get("prompt_tokens") is not None or usage.get("completion_tokens") is not None:
+            generation["usage"] = {
+                "prompt_tokens": usage.get("prompt_tokens"),
+                "completion_tokens": usage.get("completion_tokens"),
+            }
         trace_kwargs: dict[str, Any] = {
             "query": {"original": state["question"]},
             "retrieval": {"strategy": "recovery", "chunks": state.get("chunks", [])},
-            "generation": {"model": model, "answer": state.get("answer", "")},
+            "generation": generation,
             "latency": {
                 "retrieval_ms": retrieval_ms,
                 "generation_ms": generation_ms,
@@ -260,9 +277,10 @@ class RecoveryAgent:
         *,
         confirm_with_deep_eval: bool = True,
         deep_eval_interval: float = 1.5,
+        start_top_k: int = 3,
     ) -> RecoveryResult:
         final = self._graph.invoke(
-            {"question": question, "query": question, "top_k": 3, "attempt": 0},
+            {"question": question, "query": question, "top_k": start_top_k, "attempt": 0},
             {"recursion_limit": self._max_attempts * 4 + 5},
         )
         trace_ids = final.get("trace_ids", [])

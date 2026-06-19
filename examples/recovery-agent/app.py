@@ -87,18 +87,34 @@ def retrieve(query: str, top_k: int) -> list[dict]:
     ]
 
 
-def generate(query: str, context: str) -> str:
-    """Generate an answer from the retrieved context. The agent injects a stricter
-    grounding instruction into `query` when it diagnoses an unsupported claim."""
+_GEN_PROMPT = (
+    "Answer the question using the context below. You may reason over the context "
+    "to draw direct conclusions (e.g. '5-7 business days' answers 'within 10 days?' "
+    "as yes). Cite like [1]. Only say you don't know if the context genuinely "
+    "contains nothing relevant.\n\nContext:\n{context}\n\nQuestion: {query}\nAnswer:"
+)
+
+
+def _invoke(query: str, context: str):
+    """Run the LLM; return (answer, usage_dict)."""
     _ensure_clients()
-    prompt = (
-        f"Answer the question using the context below. You may reason over the "
-        f"context to draw direct conclusions (e.g. '5-7 business days' answers "
-        f"'within 10 days?' as yes). Cite like [1]. Only say you don't know if the "
-        f"context genuinely contains nothing relevant.\n\n"
-        f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"
-    )
-    return _llm.invoke(prompt).content
+    resp = _llm.invoke(_GEN_PROMPT.format(context=context, query=query))
+    usage = getattr(resp, "usage_metadata", None) or {}
+    return resp.content, {
+        "prompt_tokens": usage.get("input_tokens"),
+        "completion_tokens": usage.get("output_tokens"),
+    }
+
+
+def generate(query: str, context: str) -> str:
+    """Answer from context (string-only) — used by the eval harness and decorator."""
+    return _invoke(query, context)[0]
+
+
+def generate_for_recovery(query: str, context: str):
+    """Like generate() but returns (answer, usage) so the RecoveryAgent records token
+    usage -> the trace gets a server-computed cost."""
+    return _invoke(query, context)
 
 
 def rewrite_query(question: str) -> str:
@@ -235,7 +251,7 @@ if __name__ == "__main__":
     agent = RecoveryAgent(
         client,
         retrieve=retrieve,
-        generate=generate,
+        generate=generate_for_recovery,  # returns (answer, usage) -> traces get cost
         max_attempts=3,
         project_id="recovery-agent",
         model="gpt-4o-mini",   # the real model behind generate() — recorded on traces
