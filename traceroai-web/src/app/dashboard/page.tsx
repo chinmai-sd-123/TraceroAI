@@ -394,6 +394,10 @@ export default async function DashboardPage() {
                 <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                   What would improve these cases
                 </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {r.suggestions.length} of {r.runs} run(s) needed a fix; the rest
+                  were healthy on the first attempt.
+                </p>
                 <ul className="mt-2 space-y-2">
                   {r.suggestions.map((s, i) => (
                     <li

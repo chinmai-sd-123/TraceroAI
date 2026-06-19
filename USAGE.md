@@ -258,10 +258,9 @@ files, split with `RecursiveCharacterTextSplitter`, embed, and retrieve top-k.
 
 ---
 
-## 9. Examples in this repo
+## 9. Example in this repo
 
-| Example | Shows |
-|---|---|
-| [`examples/langchain-rag/`](examples/langchain-rag/) | A LangChain LCEL pipeline traced three ways (context manager, decorator, callback handler) |
-| [`examples/recovery-agent/`](examples/recovery-agent/) | Self-healing recovery with real `.md`/`.txt` document ingestion |
-| [`examples/simple-rag-monitored/`](examples/simple-rag-monitored/) | A minimal monitored RAG app |
+[`examples/recovery-agent/`](examples/recovery-agent/) is a complete LangChain RAG
+app that exercises every TraceroAI feature: query rewriting, full traces (retrieval,
+prompt, generation with tokens/cost), self-healing recovery over real `.md`/`.txt`
+documents, and an experiment eval run (`python app.py --eval`).

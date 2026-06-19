@@ -22,9 +22,27 @@ export function SectionNav({ items }: { items: [string, string][] }) {
       },
       { rootMargin: "-10% 0px -70% 0px", threshold: 0 },
     );
-
     sections.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+
+    // The last section often can't scroll high enough to enter the observer's
+    // band, so it would never become active. When the page is scrolled to the
+    // bottom, force the last item active.
+    const onScroll = () => {
+      const atBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - 2;
+      if (atBottom) {
+        const last = items[items.length - 1]?.[0];
+        if (last) setActive(last);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+    };
   }, [items]);
 
   return (

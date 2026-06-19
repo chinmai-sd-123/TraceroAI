@@ -186,7 +186,8 @@ with client.trace("How long does a refund take?") as t:
 Then open the [dashboard](https://www.traceroai.tech) to inspect the trace — or
 [try the live playground](https://www.traceroai.tech/docs) with no signup.
 
-A complete, runnable example is in [`examples/simple-rag-monitored/`](examples/simple-rag-monitored/).
+A complete, runnable example is in [`examples/recovery-agent/`](examples/recovery-agent/) —
+it showcases tracing, self-healing recovery, and an eval run (`python app.py --eval`).
 
 ## Tech stack
 
@@ -211,7 +212,7 @@ TraceroAI/
 ├── sdks/python/           the `traceroai` package (PyPI) — client, tracing,
 │                          recovery agent (traceroai.recovery), eval harness (traceroai.eval)
 ├── traceroai-web/         Next.js dashboard + interactive docs
-├── examples/              langchain-rag · recovery-agent (recovery + eval) · simple-rag-monitored
+├── examples/recovery-agent/   full showcase — tracing, query rewrite, cost, self-healing recovery, eval run
 ├── infra/                 docker-compose for local Postgres/Redis
 ├── docs/                  system design plan + screenshots
 └── USAGE.md               complete SDK usage guide

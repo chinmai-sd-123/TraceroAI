@@ -96,6 +96,9 @@ result = agent.run("How long does a refund take?")
 # result["answer"], result["diagnosis"], result["attempts"], result["trace_ids"]
 ```
 
+`generate` may return just the answer, or `(answer, {"prompt_tokens": ..., "completion_tokens": ...})` —
+return the token counts and each recovery attempt's trace gets a server-computed cost.
+
 ## Experiment evaluation
 
 A/B-test pipeline configs against a labeled dataset. Bring your own
