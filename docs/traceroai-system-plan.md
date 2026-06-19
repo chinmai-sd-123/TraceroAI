@@ -170,11 +170,10 @@ TraceroAI/
       pyproject.toml
 
   examples/
-    rag-demo/
-      documents/
-      app.py
-      rag_pipeline.py
-      seed_traces.py
+    recovery-agent/
+      docs/              # .md/.txt knowledge base
+      app.py             # traces + recovery + eval (--eval)
+      dataset.py
 
   infra/
     docker-compose.yml
