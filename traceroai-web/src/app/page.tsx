@@ -1,5 +1,29 @@
 import Link from "next/link";
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "TraceroAI",
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Any",
+  description:
+    "Debug RAG failures before they reach users. TraceroAI traces, evaluates, and diagnoses retrieval-augmented generation pipelines with an LLM-as-judge and a self-healing recovery agent.",
+  url: "https://www.traceroai.tech",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+    description: "Open-source RAG observability platform",
+  },
+  featureList: [
+    "RAG trace capture (query, retrieval, generation, latency)",
+    "Two-tier evaluation: embedding cosine + LLM-as-judge groundedness",
+    "Self-healing recovery agent (LangGraph)",
+    "A/B experiment harness for RAG pipeline configs",
+    "Python SDK: pip install traceroai",
+  ],
+};
+
 const features = [
   {
     title: "Trace every RAG answer",
@@ -35,6 +59,10 @@ const failureTypes = [
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#050505] text-zinc-100">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-6 py-20">
         <div className="max-w-4xl">
           <p className="text-sm font-medium uppercase tracking-[0.22em] text-cyan-300">
