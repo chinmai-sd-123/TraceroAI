@@ -1,6 +1,16 @@
 import Link from "next/link";
 
-import { getEvalRuns, getJobStats, getTraces } from "@/lib/api";
+import { getEvalRuns, getJobStats, getProjects, getTraces } from "@/lib/api";
+
+import { ProjectSelector } from "./traces/project-selector";
+
+// Append the active project to a dashboard link so navigating from the overview
+// (failure mix, recent traces) keeps the same project scope.
+function withProject(href: string, project?: string) {
+  if (!project) return href;
+  const sep = href.includes("?") ? "&" : "?";
+  return `${href}${sep}project=${encodeURIComponent(project)}`;
+}
 
 // "Healthy" outcomes are not failures: a healthy answer AND a correct refusal
 // (the model rightly declining when context lacks the answer) both count as good.
@@ -77,11 +87,17 @@ function calculateOpenFailures(traces: Awaited<ReturnType<typeof getTraces>>) {
     .length;
 }
 
-export default async function DashboardPage() {
-  const [traces, jobStats, evalRuns] = await Promise.all([
-    getTraces(),
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>;
+}) {
+  const { project } = await searchParams;
+  const [traces, jobStats, evalRuns, projects] = await Promise.all([
+    getTraces(project),
     getJobStats(),
-    getEvalRuns(),
+    getEvalRuns(project),
+    getProjects(),
   ]);
 
   // Most recent experiment (eval-run harness output), if any.
@@ -102,15 +118,25 @@ export default async function DashboardPage() {
 
   return (
     <section>
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.18em] text-cyan-300">
-          Dashboard
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold">RAG Reliability Overview</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-          Monitor trace volume, failure patterns, evaluation quality, and latency
-          across RAG pipeline runs.
-        </p>
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.18em] text-cyan-300">
+            Dashboard
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold">RAG Reliability Overview</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
+            {project
+              ? `Metrics scoped to the “${project}” project.`
+              : "Monitor trace volume, failure patterns, evaluation quality, and latency across RAG pipeline runs."}
+          </p>
+        </div>
+        {projects.length > 0 && (
+          <ProjectSelector
+            projects={projects}
+            selected={project}
+            basePath="/dashboard"
+          />
+        )}
       </div>
 
       <div
@@ -144,12 +170,14 @@ export default async function DashboardPage() {
                 href={`/dashboard/traces/${trace.traceId}`}
                 className="block rounded-md border border-zinc-800 bg-zinc-950/60 p-4 transition hover:border-zinc-600 hover:bg-zinc-900/60"
               >
+                {/* Recent trace links go straight to the trace by id; no project
+                    qualifier needed (a trace id is globally unique). */}
                 <p className="line-clamp-1 text-sm font-medium">
                   {trace.query.original}
                 </p>
                 <p className="mt-2 text-xs text-zinc-500">
-                  {trace.diagnosis.label.replaceAll("_", " ")} /{" "}
-                  {trace.latency.totalMs}ms
+                  {trace.diagnosis.label.replaceAll("_", " ")}
+                  {trace.latency.totalMs > 0 ? ` / ${trace.latency.totalMs}ms` : ""}
                 </p>
               </Link>
             ))}
@@ -222,7 +250,10 @@ export default async function DashboardPage() {
               {getFailureMix(traces).map((item) => (
                 <Link
                   key={item.label}
-                  href={`/dashboard/traces?diagnosis=${encodeURIComponent(item.label)}`}
+                  href={withProject(
+                    `/dashboard/traces?diagnosis=${encodeURIComponent(item.label)}`,
+                    project,
+                  )}
                   className="group block rounded-md p-1 transition hover:bg-zinc-800/40"
                 >
                   <div className="flex items-center justify-between text-sm">

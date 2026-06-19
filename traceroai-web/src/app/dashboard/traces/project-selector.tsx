@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 export function ProjectSelector({
   projects,
   selected,
+  basePath = "/dashboard/traces",
 }: {
   projects: string[];
   selected?: string;
+  // Where to navigate on change. Both the Overview and Traces pages use this
+  // selector; each passes its own path so the filter stays on the current page.
+  basePath?: string;
 }) {
   const router = useRouter();
 
@@ -18,7 +22,7 @@ export function ProjectSelector({
         value={selected ?? ""}
         onChange={(event) => {
           const value = event.target.value;
-          router.push(value ? `/dashboard/traces?project=${encodeURIComponent(value)}` : "/dashboard/traces");
+          router.push(value ? `${basePath}?project=${encodeURIComponent(value)}` : basePath);
         }}
         className="mt-1 bg-transparent text-sm font-medium text-zinc-100 focus:outline-none"
       >

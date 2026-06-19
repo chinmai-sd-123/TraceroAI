@@ -89,8 +89,8 @@ export function TraceList({
         Showing {filtered.length} of {traces.length} traces
       </p>
 
-      <div className="mt-3 overflow-hidden rounded-lg border border-zinc-800">
-        <div className="grid grid-cols-[1.4fr_120px_150px_110px_110px_110px] border-b border-zinc-800 bg-zinc-950 px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+      <div className="mt-3 overflow-x-auto rounded-lg border border-zinc-800">
+        <div className="grid min-w-[760px] grid-cols-[1.4fr_120px_150px_110px_110px_110px] border-b border-zinc-800 bg-zinc-950 px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
           <div>Query</div>
           <div>Status</div>
           <div>Diagnosis</div>
@@ -99,7 +99,7 @@ export function TraceList({
           <div>Time</div>
         </div>
 
-        <div className="divide-y divide-zinc-800">
+        <div className="min-w-[760px] divide-y divide-zinc-800">
           {filtered.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-zinc-500">
               No traces match your filters.
@@ -140,7 +140,7 @@ export function TraceList({
                 <div className="text-sm text-zinc-400">{trace.generation.model}</div>
 
                 <div className="font-mono text-sm text-zinc-300">
-                  {trace.latency.totalMs}ms
+                  {trace.latency.totalMs > 0 ? `${trace.latency.totalMs}ms` : "—"}
                 </div>
 
                 <div className="text-sm text-zinc-500">

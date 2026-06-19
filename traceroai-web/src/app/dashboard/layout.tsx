@@ -1,10 +1,6 @@
 import Link from "next/link";
 
-const navItems = [
-  { label: "Overview", href: "/dashboard" },
-  { label: "Traces", href: "/dashboard/traces" },
-  { label: "Eval Runs", href: "/dashboard/eval-runs" },
-];
+import { DashboardNav } from "./nav";
 
 export default function DashboardLayout({
   children,
@@ -19,17 +15,7 @@ export default function DashboardLayout({
             TraceroAI
           </Link>
 
-          <nav className="flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-md px-3 py-2 text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-zinc-100"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <DashboardNav />
         </div>
       </div>
 
