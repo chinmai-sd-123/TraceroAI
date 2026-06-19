@@ -71,9 +71,15 @@ def diagnose_trace(
     groundedness = by_name.get("groundedness")
     answer_relevance = by_name.get("answer_relevance")
 
-    # A correct refusal short-circuits: declining when the context doesn't
-    # support an answer is desired behavior, not a failure.
+    # A refusal is only CORRECT when the context genuinely lacked the answer.
+    # If the model refused but the retrieved context was relevant (the answer was
+    # there), that's a WRONG refusal — the model gave up on an answerable question.
     if refused:
+        if context_relevance and context_relevance.label == "pass":
+            return DiagnosisTrace(
+                label="wrong_answer",
+                reason="The model refused, but the retrieved context was relevant — the question was answerable.",
+            )
         return DiagnosisTrace(
             label="correct_refusal",
             reason="The model declined to answer because the context did not support a confident answer.",
