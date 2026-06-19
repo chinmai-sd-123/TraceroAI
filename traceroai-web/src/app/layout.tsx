@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   creator: "TraceroAI",
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "en_IN",
     url: SITE_URL,
     siteName: "TraceroAI",
     title: "TraceroAI — Debug RAG Failures Before They Reach Users",
