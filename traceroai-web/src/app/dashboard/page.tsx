@@ -220,8 +220,9 @@ export default async function DashboardPage({
           <section className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
             <h2 className="text-lg font-semibold">Evaluation Methods</h2>
             <p className="mt-1 text-xs text-zinc-500">
-              Share of traces touched by each evaluator (two-tier: fast quick pass
-              + LLM-judge deep pass).
+              Which path scored each trace: relevance prefers embeddings and falls
+              back to lexical only when embeddings are unavailable; the LLM judge is
+              the deep pass.
             </p>
             <div className="mt-4 space-y-3">
               {getEvalMethodMix(traces).map((item) => (

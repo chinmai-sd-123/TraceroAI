@@ -442,11 +442,18 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
         : undefined,
     },
     evalMethods: {
-      embedding: (trace.evaluations.quick ?? []).some((e) =>
-        e.evaluator_version?.startsWith("embedding"),
+      // "Embedding" vs "Lexical" describe which path the RELEVANCE scorers took:
+      // they prefer embeddings and fall back to term-overlap only when embeddings
+      // are unavailable. Groundedness is excluded here because it is always
+      // deterministic by design (claim/term based, no embedding path) — counting
+      // it would peg "Lexical (fallback)" near 100% on every trace and wrongly
+      // imply the fallback fired. So we derive these flags from the relevance
+      // evaluators, which actually have both paths.
+      embedding: (trace.evaluations.quick ?? []).some(
+        (e) => isRelevanceEval(e) && e.evaluator_version?.startsWith("embedding"),
       ),
-      lexical: (trace.evaluations.quick ?? []).some((e) =>
-        e.evaluator_version?.startsWith("deterministic"),
+      lexical: (trace.evaluations.quick ?? []).some(
+        (e) => isRelevanceEval(e) && e.evaluator_version?.startsWith("deterministic"),
       ),
       llmJudge: (trace.evaluations.deep ?? []).length > 0,
     },
@@ -477,6 +484,18 @@ function findEval(trace: ApiTrace, evaluatorName: string) {
   return trace.evaluations.quick?.find(
     (item) => item.evaluator_name === evaluatorName,
   );
+}
+
+// The relevance scorers (context + answer) are the only quick evaluators with
+// BOTH an embedding path and a lexical fallback. Groundedness is always
+// deterministic by design, so it is excluded from the embedding/lexical mix.
+const RELEVANCE_EVALUATORS = new Set([
+  "context_relevance",
+  "answer_relevance",
+]);
+
+function isRelevanceEval(e: { evaluator_name: string }) {
+  return RELEVANCE_EVALUATORS.has(e.evaluator_name);
 }
 
 function normalizeDiagnosis(label: string): TraceDiagnosis {
