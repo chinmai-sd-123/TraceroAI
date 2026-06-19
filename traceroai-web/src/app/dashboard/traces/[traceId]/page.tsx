@@ -188,6 +188,27 @@ export default async function TraceDetailPage({
         </Panel>
       </div>
 
+      {hasGenerationParams(trace.generation) && (
+        <Panel title="Generation parameters" className="mt-6">
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <Field label="Model" value={trace.generation.model} />
+            {trace.generation.provider && (
+              <Field label="Provider" value={trace.generation.provider} />
+            )}
+            {typeof trace.generation.temperature === "number" && (
+              <Field
+                label="Temperature"
+                value={String(trace.generation.temperature)}
+              />
+            )}
+            {trace.generation.parameters &&
+              Object.entries(trace.generation.parameters).map(([k, v]) => (
+                <Field key={k} label={formatLabel(k)} value={String(v)} />
+              ))}
+          </div>
+        </Panel>
+      )}
+
       {trace.evaluations.deepGroundedness && (
         <Panel title="Claim Support — LLM Judge" className="mt-6">
           <div className="flex items-center justify-between gap-4">
@@ -371,6 +392,16 @@ export default async function TraceDetailPage({
         </Panel>
       </div>
     </section>
+  );
+}
+
+function hasGenerationParams(
+  generation: MockTrace["generation"],
+): boolean {
+  return Boolean(
+    generation.provider ||
+      typeof generation.temperature === "number" ||
+      (generation.parameters && Object.keys(generation.parameters).length > 0),
   );
 }
 

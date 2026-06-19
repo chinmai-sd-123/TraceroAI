@@ -144,12 +144,33 @@ def run_experiment(
 
     results = [_run_variant(client, dataset, v, retrieve, generate) for v in variants]
 
-    # Winner: highest accuracy, tie-break on lower latency.
-    winner = max(results, key=lambda r: (r["_accuracy"], -r["average_latency_ms"]))
-    recommendation = (
-        f"Variant '{winner['name']}' ({winner['variant_id']}) wins with "
-        f"accuracy={winner['_accuracy']:.2f} over {len(dataset)} cases."
-    )
+    # Guard the all-ungradeable case: if NO variant had a single gradeable case (judge
+    # down for the whole run), there's no honest winner — don't fabricate one.
+    gradeable_per_variant = [
+        r["passed_cases"] + r["failed_cases"] for r in results
+    ]
+    if not any(gradeable_per_variant):
+        recommendation = (
+            "No variant could be scored — the grading judge was unavailable for every "
+            "case. Configure the judge (TRACEROAI_OPENAI_API_KEY) and re-run."
+        )
+        winner = results[0]  # arbitrary; recommendation makes the situation explicit
+    else:
+        # Winner: highest accuracy, tie-break on lower latency. Variants with zero
+        # gradeable cases sort last (accuracy 0.0) so they can't win over a scored one.
+        winner = max(
+            results,
+            key=lambda r: (
+                (r["passed_cases"] + r["failed_cases"]) > 0,  # scored variants first
+                r["_accuracy"],
+                -r["average_latency_ms"],
+            ),
+        )
+        recommendation = (
+            f"Variant '{winner['name']}' ({winner['variant_id']}) wins with "
+            f"accuracy={winner['_accuracy']:.2f} over "
+            f"{winner['passed_cases'] + winner['failed_cases']} graded case(s)."
+        )
 
     # Strip internal fields before sending.
     variants_payload = [{k: v for k, v in r.items() if not k.startswith("_")} for r in results]

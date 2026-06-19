@@ -29,12 +29,19 @@ class _ScriptedClient:
         self.posted.append(payload)
         return f"trace-{len(self.posted)}"
 
+    def log_trace_sync_eval(self, **payload):
+        # Recovery routes on the synchronous judge diagnosis returned here.
+        self.posted.append(payload)
+        trace_id = f"trace-{len(self.posted)}"
+        idx = min(len(self.posted) - 1, len(self._diagnoses) - 1)
+        return trace_id, {"label": self._diagnoses[idx], "reason": "scripted"}
+
     def get_trace(self, trace_id: str) -> dict:
         n = int(str(trace_id).split("-")[1])
         idx = min(n - 1, len(self._diagnoses) - 1)
         return {
             "diagnosis": {"label": self._diagnoses[idx]},
-            "evaluations": {"deep": []},
+            "evaluations": {"deep": [{"evaluator_name": "claim_groundedness", "label": "grounded"}]},
         }
 
 
@@ -48,7 +55,7 @@ def _generate(query: str, context: str) -> str:
 
 def test_succeeds_immediately_when_first_attempt_is_healthy() -> None:
     client = _ScriptedClient(["healthy_answer"])
-    agent = RecoveryAgent(client, retrieve=_retrieve, generate=_generate)
+    agent = RecoveryAgent(client, retrieve=_retrieve, generate=_generate, diagnosis_poll_interval=0)
 
     result = agent.run("How long does a refund take?", confirm_with_deep_eval=False)
 
@@ -67,7 +74,7 @@ def test_recovers_after_retrieval_miss() -> None:
         seen_top_k.append(top_k)
         return [{"text": "x"}]
 
-    agent = RecoveryAgent(client, retrieve=retrieve, generate=_generate)
+    agent = RecoveryAgent(client, retrieve=retrieve, generate=_generate, diagnosis_poll_interval=0)
     result = agent.run("How long does a refund take?", confirm_with_deep_eval=False)
 
     assert result["succeeded"] is True
@@ -84,7 +91,7 @@ def test_unsupported_claim_triggers_stricter_generation() -> None:
         seen_queries.append(query)
         return "grounded answer"
 
-    agent = RecoveryAgent(client, retrieve=_retrieve, generate=generate)
+    agent = RecoveryAgent(client, retrieve=_retrieve, generate=generate, diagnosis_poll_interval=0)
     result = agent.run("How long does a refund take?", confirm_with_deep_eval=False)
 
     assert result["succeeded"] is True
@@ -94,13 +101,59 @@ def test_unsupported_claim_triggers_stricter_generation() -> None:
 
 def test_gives_up_after_max_attempts() -> None:
     client = _ScriptedClient(["unsupported_claim"])  # never healthy
-    agent = RecoveryAgent(client, retrieve=_retrieve, generate=_generate, max_attempts=3)
+    agent = RecoveryAgent(client, retrieve=_retrieve, generate=_generate, max_attempts=3, diagnosis_poll_interval=0)
 
     result = agent.run("impossible question", confirm_with_deep_eval=False)
 
     assert result["succeeded"] is False
     assert result["attempts"] == 3  # bounded — no infinite loop
     assert len(result["trace_ids"]) == 3
+
+
+def test_wrong_answer_tightens_generation_before_re_retrieving() -> None:
+    # A wrong_answer (e.g. a wrong refusal despite good context) should first try a
+    # stricter generation prompt, NOT re-retrieve the same context.
+    client = _ScriptedClient(["wrong_answer", "healthy_answer"])
+    seen_queries: list[str] = []
+
+    def generate(query: str, context: str) -> str:
+        seen_queries.append(query)
+        return "answer"
+
+    agent = RecoveryAgent(
+        client, retrieve=_retrieve, generate=generate, diagnosis_poll_interval=0
+    )
+    result = agent.run("Is money refunded within 10 days?", confirm_with_deep_eval=False)
+
+    assert result["succeeded"] is True
+    # the retry injected the strict-grounding instruction (fix_generation), not a re-retrieve
+    assert "ONLY from the provided context" in seen_queries[1]
+
+
+class _SyncJudgeUnavailableClient:
+    """sync deep eval returns no verdict (judge down) -> recovery falls back to the
+    stored quick diagnosis from get_trace. Proves the production fallback path."""
+
+    def __init__(self, quick_label: str) -> None:
+        self._quick = quick_label
+
+    def log_trace_sync_eval(self, **payload):
+        return "trace-1", None  # judge unavailable
+
+    def get_trace(self, trace_id: str) -> dict:
+        return {"diagnosis": {"label": self._quick}, "evaluations": {"deep": []}}
+
+
+def test_falls_back_to_quick_diagnosis_when_sync_judge_unavailable() -> None:
+    client = _SyncJudgeUnavailableClient("healthy_answer")
+    agent = RecoveryAgent(
+        client, retrieve=_retrieve, generate=_generate, diagnosis_poll_interval=0
+    )
+
+    result = agent.run("How long does a refund take?", confirm_with_deep_eval=False)
+
+    assert result["diagnosis"] == "healthy_answer"   # read from the quick fallback
+    assert result["attempts"] == 1
 
 
 class _DeepEvalClient:
@@ -113,7 +166,12 @@ class _DeepEvalClient:
     def log_trace(self, **payload) -> str:
         return "trace-1"
 
+    def log_trace_sync_eval(self, **payload):
+        # In-loop routing: judge says healthy on the (only) attempt.
+        return "trace-1", {"label": "healthy_answer", "reason": "ok"}
+
     def get_trace(self, trace_id: str) -> dict:
+        # Used by the POST-LOOP confirm_with_deep_eval poll (separate from routing).
         self._gets += 1
         landed = self._deep_after is not None and self._gets >= self._deep_after
         deep = [{"evaluator_name": "claim_groundedness", "label": "grounded"}] if landed else []
@@ -121,9 +179,12 @@ class _DeepEvalClient:
 
 
 def test_deep_eval_verdict_is_returned_when_it_lands() -> None:
-    # get #1 = quick diagnosis (loop); deep lands by get #2 (the poll).
-    client = _DeepEvalClient(deep_after=2)
-    agent = RecoveryAgent(client, retrieve=_retrieve, generate=_generate)
+    # Deep eval lands on the first get, so both the in-loop diagnosis read and the
+    # post-loop verdict poll see it. poll intervals 0 -> no real sleeps in tests.
+    client = _DeepEvalClient(deep_after=1)
+    agent = RecoveryAgent(
+        client, retrieve=_retrieve, generate=_generate, diagnosis_poll_interval=0
+    )
 
     result = agent.run("How long does a refund take?", deep_eval_interval=0)
 
@@ -132,9 +193,12 @@ def test_deep_eval_verdict_is_returned_when_it_lands() -> None:
 
 
 def test_deep_eval_fails_open_to_none_when_pending() -> None:
-    # deep eval never lands -> poll times out -> deep_eval is None, no crash.
+    # deep eval never lands -> in-loop read falls back to the quick diagnosis, and the
+    # post-loop verdict poll times out -> deep_eval is None, no crash, no hang.
     client = _DeepEvalClient(deep_after=None)
-    agent = RecoveryAgent(client, retrieve=_retrieve, generate=_generate)
+    agent = RecoveryAgent(
+        client, retrieve=_retrieve, generate=_generate, diagnosis_poll_interval=0
+    )
 
     result = agent.run("How long does a refund take?", deep_eval_interval=0)
 

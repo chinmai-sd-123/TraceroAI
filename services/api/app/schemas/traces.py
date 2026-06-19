@@ -124,4 +124,8 @@ class TraceIngestResponse(BaseModel):
     trace_id: UUID
     status: str
     message: str
+    # Present when the caller requested synchronous deep eval (e.g. the recovery
+    # agent): the judge-corrected diagnosis, available immediately in the response
+    # so the caller doesn't have to poll for the async deep eval to land.
+    diagnosis: DiagnosisTrace | None = None
 

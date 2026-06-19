@@ -22,6 +22,7 @@ def ingest_trace(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     authorization: str | None = Header(default=None),
+    sync_deep_eval: bool = False,
 ) -> TraceIngestResponse:
     # Multi-tenant lite: resolve the API key to a project. When enforcement is on,
     # a missing/unknown key is rejected; otherwise it falls back to the client's
@@ -53,13 +54,30 @@ def ingest_trace(
     repository = TraceRepository(db)
     repository.save(payload)
 
-    if not enqueue_deep_eval_request(payload.trace_id):
+    # Synchronous deep eval (e.g. for the recovery agent, which must route on a
+    # judge-quality diagnosis NOW rather than poll an async queue). Run the judge
+    # inline and return the corrected diagnosis in the response. If it fails for any
+    # reason, fall back to the async path and return the quick diagnosis — never hang
+    # or break the caller.
+    diagnosis = payload.diagnosis
+    if sync_deep_eval:
+        try:
+            run_deep_evaluation(payload.trace_id)
+            record = repository.get(payload.trace_id)
+            if record is not None:
+                diagnosis = TraceIngestRequest(**record.payload).diagnosis
+        except Exception:
+            # inline judge failed — leave the quick diagnosis and let async retry
+            if not enqueue_deep_eval_request(payload.trace_id):
+                background_tasks.add_task(run_deep_evaluation, payload.trace_id)
+    elif not enqueue_deep_eval_request(payload.trace_id):
         background_tasks.add_task(run_deep_evaluation, payload.trace_id)
 
     return TraceIngestResponse(
         trace_id=payload.trace_id,
         status="accepted",
         message="Trace accepted for ingestion.",
+        diagnosis=diagnosis,
     )
 
 
