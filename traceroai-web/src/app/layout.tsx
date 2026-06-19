@@ -63,6 +63,9 @@ export const metadata: Metadata = {
       "Debug RAG failures before they reach users. LLM-as-judge evaluation, self-healing recovery, and experiment harness.",
     images: ["/dashboard.png"],
   },
+  verification: {
+    google: "AE23jg8KjzUiTGdL2J1rXNCubATMZVbo4o5hDlyb4t8",
+  },
   alternates: {
     canonical: SITE_URL,
   },
