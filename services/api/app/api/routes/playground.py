@@ -167,8 +167,9 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
     prompt_start = time.perf_counter()
     context = "\n\n".join(f"[{c['rank']}] {c['text']}" for c in chunks)
     prompt_text = (
-        "Answer the question using ONLY the context below. Cite sources like [1]. "
-        "If the context does not contain the answer, say you don't know.\n\n"
+        "Answer the question using the context below. You may reason over the "
+        "context to draw direct conclusions. Cite sources like [1]. Only say you "
+        "don't know if the context genuinely contains nothing relevant.\n\n"
         f"Context:\n{context}\n\nQuestion: {query}\nAnswer:"
     )
     prompt_build_ms = int((time.perf_counter() - prompt_start) * 1000)
