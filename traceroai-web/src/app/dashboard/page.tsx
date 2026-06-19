@@ -389,20 +389,35 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {r.suggestions.length > 0 && (
+            {r.suggestions.length > 0 ? (
               <div className="mt-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                  Suggested fixes
+                  What would improve these cases
                 </p>
-                <ul className="mt-2 space-y-1.5">
+                <ul className="mt-2 space-y-2">
                   {r.suggestions.map((s, i) => (
-                    <li key={i} className="flex gap-2 text-sm text-zinc-300">
-                      <span className="text-violet-400">→</span>
-                      <span>{s}</span>
+                    <li
+                      key={i}
+                      className="rounded-md border border-zinc-800 bg-zinc-950/40 p-3 text-sm"
+                    >
+                      <span className="text-zinc-300">“{s.question}”</span>
+                      <span
+                        className={`ml-2 ${
+                          s.recovered ? "text-violet-300" : "text-amber-300"
+                        }`}
+                      >
+                        → {s.recovered ? "recovered by: " : ""}
+                        {s.fix}
+                      </span>
                     </li>
                   ))}
                 </ul>
               </div>
+            ) : (
+              <p className="mt-4 rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-sm text-emerald-300">
+                ✓ No recovery action needed — answers were healthy on the first
+                attempt. Per-case fixes appear here when the agent has to retry.
+              </p>
             )}
           </section>
         );
@@ -529,49 +544,63 @@ function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
     return null;
   }
 
-  // Group by question; keep the highest-attempt trace as the run's final state.
-  const runs = new Map<string, { attempts: number; finalLabel: string }>();
+  // Build per-question chains (all attempts, in order). Each chain = one run.
+  const chains = new Map<
+    string,
+    Array<{ attempt: number; label: string; action?: string }>
+  >();
   for (const t of recoveryTraces) {
     const key = t.query.original;
-    const attempt = t.recovery!.attempt;
-    const existing = runs.get(key);
-    if (!existing || attempt >= existing.attempts) {
-      runs.set(key, { attempts: attempt, finalLabel: t.diagnosis.label });
-    }
+    if (!chains.has(key)) chains.set(key, []);
+    chains.get(key)!.push({
+      attempt: t.recovery!.attempt,
+      label: t.diagnosis.label,
+      action: t.recovery!.action,
+    });
   }
 
-  const runList = [...runs.values()];
-  const recovered = runList.filter((r) => HEALTHY_LABELS.has(r.finalLabel)).length;
+  const runList = [...chains.entries()].map(([question, atts]) => {
+    const ordered = [...atts].sort((a, b) => a.attempt - b.attempt);
+    const final = ordered[ordered.length - 1];
+    // The action that led to the (recovered) final attempt, if any.
+    const fixAction = final.action;
+    return {
+      question,
+      attempts: final.attempt,
+      finalLabel: final.label,
+      recovered: HEALTHY_LABELS.has(final.label),
+      retried: ordered.length > 1,
+      fixAction,
+    };
+  });
+
+  const recovered = runList.filter((r) => r.recovered).length;
   const recoveredPct = Math.round((recovered / runList.length) * 100);
-  const retried = runList.filter((r) => r.attempts > 1).length;
+  const retried = runList.filter((r) => r.retried).length;
   const avgAttempts =
     runList.reduce((sum, r) => sum + r.attempts, 0) / runList.length;
 
-  // Count which recovery levers fired (across all attempts that recorded one),
-  // then turn the dominant ones into concrete "what to fix" suggestions.
-  const actionCounts = new Map<string, number>();
-  for (const t of recoveryTraces) {
-    const a = t.recovery!.action;
-    if (a) actionCounts.set(a, (actionCounts.get(a) || 0) + 1);
-  }
-  const suggestions: string[] = [];
-  const bump = actionCounts.get("bump_retrieval") || 0;
-  const tighten = actionCounts.get("tighten_generation") || 0;
-  if (bump > 0) {
-    suggestions.push(
-      `${bump} retrieval-miss recoveries — consider raising your default top_k or improving retrieval.`,
-    );
-  }
-  if (tighten > 0) {
-    suggestions.push(
-      `${tighten} grounding recoveries — consider tightening your base prompt to stay on the context.`,
-    );
-  }
-  const unrecovered = runList.length - recovered;
-  if (unrecovered > 0) {
-    suggestions.push(
-      `${unrecovered} question(s) never recovered — likely a knowledge-base gap; add the missing docs.`,
-    );
+  // Concrete, real "what fix improved this case" lines — each cites the ACTUAL
+  // question and the fix that recovered it. No generic/fake text.
+  const ACTION_FIX: Record<string, string> = {
+    bump_retrieval: "raise top_k / improve retrieval",
+    tighten_generation: "tighten the grounding prompt",
+  };
+  const suggestions: { question: string; fix: string; recovered: boolean }[] = [];
+  for (const r of runList) {
+    if (r.recovered && r.retried && r.fixAction) {
+      suggestions.push({
+        question: r.question,
+        fix: ACTION_FIX[r.fixAction] ?? r.fixAction,
+        recovered: true,
+      });
+    } else if (!r.recovered) {
+      suggestions.push({
+        question: r.question,
+        fix: "never recovered — likely a knowledge-base gap; add the missing docs",
+        recovered: false,
+      });
+    }
   }
 
   return {
