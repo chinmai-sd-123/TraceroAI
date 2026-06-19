@@ -30,6 +30,18 @@ def test_refusal_diagnoses_as_correct_refusal_not_unsupported_claim() -> None:
     assert diagnose_trace(evals, refused=True).label == "correct_refusal"
 
 
+def test_refusal_when_context_relevant_is_wrong_answer_not_correct_refusal() -> None:
+    # A refusal is only "correct" if the context genuinely lacked the answer. If
+    # the context was relevant (the answer was there) but the model refused, that's
+    # a WRONG refusal — an answerable question the model gave up on.
+    relevant = _all("pass", "fail", "fail")  # context relevant, but refused
+    assert diagnose_trace(relevant, refused=True).label == "wrong_answer"
+
+    # Context genuinely irrelevant + refused -> still a correct refusal.
+    irrelevant = _all("fail", "fail", "fail")
+    assert diagnose_trace(irrelevant, refused=True).label == "correct_refusal"
+
+
 def test_healthy_when_all_pass_and_not_refused() -> None:
     evals = _all("pass", "pass", "pass")
     assert diagnose_trace(evals).label == "healthy_answer"
