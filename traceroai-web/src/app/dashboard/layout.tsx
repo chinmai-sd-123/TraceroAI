@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { DashboardNav } from "./nav";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  robots: { index: false, follow: false },
+};
 
 export default function DashboardLayout({
   children,
