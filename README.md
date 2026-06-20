@@ -13,7 +13,8 @@ retrieval, the context, grounding, or the generated answer.
 
 **[Live demo →](https://www.traceroai.tech)** &nbsp;·&nbsp;
 **[Interactive docs →](https://www.traceroai.tech/docs)** &nbsp;·&nbsp;
-**[PyPI →](https://pypi.org/project/traceroai/)**
+**[PyPI →](https://pypi.org/project/traceroai/)**&nbsp;·&nbsp;
+**[DEV.to →](https://dev.to/chinmai_sd/building-traceroai-a-better-way-to-debug-rag-applications-bhn)**
 
 </div>
 
@@ -67,6 +68,13 @@ becomes a lookup instead of a guess.
   open so a recruiter can explore the demo without a key.
 
 See **[USAGE.md](USAGE.md)** for a complete guide to every SDK feature.
+## Articles
+
+### Why I Built TraceroAI
+
+I wrote a short article about the motivation behind TraceroAI, the challenges of debugging RAG systems, and what I learned while building an AI evaluation and observability platform.
+
+**Read on DEV Community:** [Why I Built TraceroAI: Debugging RAG Applications Beyond Hallucinations](https://dev.to/chinmai_sd/building-traceroai-a-better-way-to-debug-rag-applications-bhn)
 
 ## Architecture
 
