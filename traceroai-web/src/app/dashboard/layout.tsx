@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { GitHubLink } from "@/components/github-link";
+
 import { DashboardNav } from "./nav";
 
 export const metadata: Metadata = {
@@ -21,7 +23,13 @@ export default function DashboardLayout({
             TraceroAI
           </Link>
 
-          <DashboardNav />
+          <div className="flex items-center gap-3">
+            <DashboardNav />
+            <GitHubLink
+              label=""
+              className="rounded-md p-2 text-zinc-400 transition hover:bg-zinc-900 hover:text-zinc-100"
+            />
+          </div>
         </div>
       </div>
 
