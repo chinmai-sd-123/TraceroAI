@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { GitHubLink } from "@/components/github-link";
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -98,6 +100,7 @@ export default function Home() {
             >
               Explore Product
             </a>
+            <GitHubLink className="rounded-md border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500" />
           </div>
         </div>
 
@@ -262,6 +265,7 @@ with client.trace(user_question) as t:
         <div className="mx-auto flex max-w-6xl flex-col gap-3 text-sm text-zinc-500 md:flex-row md:items-center md:justify-between">
           <p>TraceroAI</p>
           <p>RAG observability and evaluation infrastructure.</p>
+          <GitHubLink className="text-zinc-400 transition hover:text-zinc-100" />
         </div>
       </footer>
     </main>
