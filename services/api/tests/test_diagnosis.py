@@ -1,3 +1,5 @@
+import pytest
+
 from app.evaluators.diagnosis import diagnose_trace, is_refusal
 from app.schemas.traces import EvaluationResult
 
@@ -19,6 +21,38 @@ def test_is_refusal_detects_decline_phrases() -> None:
     assert is_refusal("I'm sorry, I cannot answer that.")
     assert not is_refusal("Refunds take 5 to 7 business days.")
     assert not is_refusal("")
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        "I don’t know based on the provided context.",  # curly apostrophe (common in LLM output)
+        "Based on the provided context, I can't determine the refund timeline.",
+        "The provided context does not contain information about office hours.",
+        "There is not enough information to answer this question.",
+        "I couldn't find anything about that in the documents.",
+        "Unfortunately, I am unable to answer that from the given sources.",
+        "This question cannot be answered from the context.",
+    ],
+)
+def test_is_refusal_detects_declines(answer: str) -> None:
+    assert is_refusal(answer)
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        # Hedged openers and apologies are not declines when an answer follows.
+        "Based on the provided context, refunds are processed within 5 to 7 business days.",
+        "I'm sorry for the trouble. Refunds are processed within 5 to 7 business days.",
+        # "no information" as part of a factual answer, not a decline.
+        "We store no information about your card after checkout.",
+        # A partial answer that declines only a sub-question still answers.
+        "Refunds take 5 to 7 business days. The context doesn't mention any fees.",
+    ],
+)
+def test_is_refusal_ignores_answers_that_merely_hedge(answer: str) -> None:
+    assert not is_refusal(answer)
 
 
 def test_refusal_diagnoses_as_correct_refusal_not_unsupported_claim() -> None:

@@ -2,7 +2,8 @@
 
 The SDK sends token counts (from the LLM response); the server owns *pricing* and
 computes cost here. Prices come from two sources, in order:
-  1. the live, community-maintained LiteLLM pricing map (fetched once + cached) —
+  1. the live, community-maintained LiteLLM pricing map (loaded in a background
+     thread at startup and refreshed daily, never fetched inside a request) —
      covers ~thousands of models and stays current as providers change prices, and
   2. a small built-in table (below) as a fail-open fallback if the map is
      unreachable.
@@ -17,11 +18,15 @@ Model ids are matched exact-first, then by longest prefix (so dated ids like
 
 from __future__ import annotations
 
+import logging
 import threading
+import time
 
 import httpx
 
 from app.schemas.traces import UsageTrace
+
+logger = logging.getLogger(__name__)
 
 # LiteLLM publishes a community-maintained pricing map as plain JSON (no need for
 # the heavy litellm library). We fetch it once, cache it, and use it as the primary
@@ -30,26 +35,23 @@ _LITELLM_PRICES_URL = (
     "https://raw.githubusercontent.com/BerriAI/litellm/main/"
     "model_prices_and_context_window.json"
 )
-_litellm_cache: dict[str, tuple[float, float]] | None = None
-_litellm_lock = threading.Lock()
+# Populated by refresh_litellm_prices() in a background thread (see
+# start_price_refresh). Reads never fetch: until the first refresh lands, pricing
+# uses the built-in table, so no request ever waits on GitHub.
+_litellm_cache: dict[str, tuple[float, float]] = {}
+_refresh_lock = threading.Lock()
+PRICE_REFRESH_INTERVAL_SECONDS = 24 * 60 * 60
 
 
-def _load_litellm_prices() -> dict[str, tuple[float, float]]:
-    """Fetch + cache the LiteLLM pricing map as {model: (input_per_1k, output_per_1k)}.
-
-    Cached for the process lifetime. On any failure returns {} so callers fall back
-    to the built-in table — pricing is best-effort, never a hard dependency.
-    """
+def refresh_litellm_prices() -> bool:
+    """Fetch the LiteLLM pricing map into the cache. Blocking — call it off the
+    request path. Returns False (keeping the previous cache) on any failure."""
     global _litellm_cache
-    if _litellm_cache is not None:
-        return _litellm_cache
-    with _litellm_lock:
-        if _litellm_cache is not None:
-            return _litellm_cache
-        prices: dict[str, tuple[float, float]] = {}
+    with _refresh_lock:
         try:
-            resp = httpx.get(_LITELLM_PRICES_URL, timeout=5.0)
+            resp = httpx.get(_LITELLM_PRICES_URL, timeout=10.0)
             resp.raise_for_status()
+            prices: dict[str, tuple[float, float]] = {}
             for model, info in resp.json().items():
                 if not isinstance(info, dict):
                     continue
@@ -60,9 +62,24 @@ def _load_litellm_prices() -> dict[str, tuple[float, float]]:
                     continue
                 prices[model] = ((inp or 0.0) * 1000, (out or 0.0) * 1000)
         except Exception:
-            prices = {}
-        _litellm_cache = prices
-        return _litellm_cache
+            logger.warning("LiteLLM price refresh failed; keeping current prices", exc_info=True)
+            return False
+        _litellm_cache = prices  # single assignment: readers see old or new, never partial
+        logger.info("Loaded %d model prices from LiteLLM", len(prices))
+        return True
+
+
+def start_price_refresh() -> threading.Thread:
+    """Refresh prices now and then daily, in a daemon thread."""
+
+    def _loop() -> None:
+        while True:
+            refresh_litellm_prices()
+            time.sleep(PRICE_REFRESH_INTERVAL_SECONDS)
+
+    thread = threading.Thread(target=_loop, name="price-refresh", daemon=True)
+    thread.start()
+    return thread
 
 # USD per 1K tokens: (input_price, output_price).
 _PRICES: dict[str, tuple[float, float]] = {
@@ -105,8 +122,8 @@ def _match(model: str, table: dict[str, tuple[float, float]]) -> tuple[float, fl
 def price_for(model: str | None) -> tuple[float, float] | None:
     if not model:
         return None
-    # Primary: the live LiteLLM pricing map (cached). Fallback: the built-in table.
-    return _match(model, _load_litellm_prices()) or _match(model, _PRICES)
+    # Primary: the LiteLLM map (once loaded). Fallback: the built-in table.
+    return _match(model, _litellm_cache) or _match(model, _PRICES)
 
 
 def compute_cost_usd(model: str | None, usage: UsageTrace) -> float | None:

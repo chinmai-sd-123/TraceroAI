@@ -22,13 +22,17 @@ def evaluate_answer_relevance(
     trace: TraceIngestRequest,
     embedder: EmbeddingClient | None = None,
     vectors: dict[str, list[float]] | None = None,
+    *,
+    semantic: bool = True,
 ) -> EvaluationResult:
+    """semantic=False skips embeddings entirely (no network), e.g. on the ingest path."""
     query = trace.query.rewritten or trace.query.original
     answer = trace.generation.answer
 
-    result = _embedding_relevance(query, answer, embedder, vectors)
-    if result is not None:
-        return result
+    if semantic:
+        result = _embedding_relevance(query, answer, embedder, vectors)
+        if result is not None:
+            return result
     return _lexical_relevance(query, answer)
 
 

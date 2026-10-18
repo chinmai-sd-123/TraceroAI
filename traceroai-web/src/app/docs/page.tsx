@@ -300,10 +300,12 @@ python -m app.eval_runner \\
           <section id="auth" className="mt-16 scroll-mt-12">
             <h2 className="text-2xl font-semibold">Auth &amp; projects</h2>
             <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-              Pass a project API key and the server stamps every trace with that
-              project, so the dashboard can filter to it. The key is optional — without
-              one, traces use whatever <code className="text-zinc-300">project_id</code> you
-              pass. Reads are open, so anyone can browse the demo.
+              Pass a project API key and the server stamps every trace, eval run, and
+              grading call with that project, so the dashboard can filter to it. Keys are
+              required in staging and production. In local development they&apos;re
+              optional: without one, traces use whatever{" "}
+              <code className="text-zinc-300">project_id</code> you pass. Reads are open,
+              so anyone can browse the demo.
             </p>
             <div className="mt-4 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/70">
               <pre className="overflow-auto p-5 text-sm leading-6 text-zinc-300">

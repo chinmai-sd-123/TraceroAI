@@ -1,14 +1,19 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Request, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
-from app.core.tenancy import project_for_api_key
+from app.core.tenancy import optional_project, write_project
 from app.db.session import get_db
-from app.schemas.traces import TraceIngestRequest, TraceIngestResponse, FeedbackEntry
+from app.schemas.traces import (
+    FeedbackEntry,
+    FeedbackRequest,
+    TraceIngestRequest,
+    TraceIngestResponse,
+)
 from app.services.cost import compute_cost_usd
 from app.services.quick_evaluation import run_quick_evaluation
+from app.services.rate_limiter import check_rate_limit, client_ip
 from app.services.trace_repository import TraceRepository
 from app.services.deep_evaluation import run_deep_evaluation
 from app.services.deep_eval_queue import enqueue_deep_eval_request
@@ -16,26 +21,21 @@ from app.services.deep_eval_queue import enqueue_deep_eval_request
 
 router = APIRouter(prefix="/v1/traces", tags=["traces"])
 
+# Keyless feedback (the public dashboard's thumbs widget) is rate-limited per IP.
+ANONYMOUS_FEEDBACK_LIMIT = 10
+ANONYMOUS_FEEDBACK_WINDOW_SECONDS = 60
+
+
 @router.post("", response_model=TraceIngestResponse, status_code=status.HTTP_202_ACCEPTED)
 def ingest_trace(
     payload: TraceIngestRequest,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    authorization: str | None = Header(default=None),
+    project_id: str | None = Depends(write_project),
     sync_deep_eval: bool = False,
 ) -> TraceIngestResponse:
-    # Multi-tenant lite: resolve the API key to a project. When enforcement is on,
-    # a missing/unknown key is rejected; otherwise it falls back to the client's
-    # project. Either way, a known key means the server owns the attribution.
-    project_id = project_for_api_key(authorization)
-
-    if get_settings().require_api_key and project_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="A valid project API key is required to send traces.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
+    # A known key means the server owns the attribution; without one (allowed only
+    # when keys aren't required) the client-provided project is kept.
     if project_id:
         payload.project.project_id = project_id
 
@@ -49,7 +49,10 @@ def ingest_trace(
     if usage.cost_usd is None:
         usage.cost_usd = compute_cost_usd(payload.generation.model, usage)
 
-    payload = run_quick_evaluation(payload)
+    # Lexical-only on the request path: no network call, so a slow or down
+    # embeddings provider can't slow ingest. The background pass re-runs the quick
+    # evaluators with embeddings, then the LLM judge.
+    payload = run_quick_evaluation(payload, semantic=False)
 
     repository = TraceRepository(db)
     repository.save(payload)
@@ -118,11 +121,28 @@ def get_trace(
 @router.post("/{trace_id}/feedback", status_code=status.HTTP_201_CREATED)
 def add_feedback(
     trace_id: UUID,
-    entry: FeedbackEntry,
+    body: FeedbackRequest,
+    request: Request,
     db: Session = Depends(get_db),
+    project_id: str | None = Depends(optional_project),
 ) -> FeedbackEntry:
+    # Feedback costs no LLM calls, so the dashboard widget may send it without a
+    # key (browsers can't hold one) — but keyless calls are rate-limited per IP.
+    # With a key, feedback is scoped to that key's project.
+    if project_id is None and not check_rate_limit(
+        bucket="feedback",
+        identity=client_ip(request),
+        limit=ANONYMOUS_FEEDBACK_LIMIT,
+        window_seconds=ANONYMOUS_FEEDBACK_WINDOW_SECONDS,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too much feedback from this address — please wait a minute.",
+        )
+
+    entry = FeedbackEntry(rating=body.rating, comment=body.comment)
     repository = TraceRepository(db)
-    record = repository.add_feedback(trace_id, entry)
+    record = repository.add_feedback(trace_id, entry, project_id=project_id)
 
     if record is None:
         raise HTTPException(

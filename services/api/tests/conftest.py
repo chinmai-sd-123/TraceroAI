@@ -12,6 +12,8 @@ def _isolate_external_services(monkeypatch):
     settings = get_settings()
     monkeypatch.setattr(settings, "openai_api_key", None)
     monkeypatch.setattr(settings, "redis_url", None)
+    # Unauthenticated writes allowed by default; auth tests opt in explicitly.
+    monkeypatch.setattr(settings, "require_api_key", False)
 
     from app.services import cost
     monkeypatch.setattr(cost, "_litellm_cache", {})

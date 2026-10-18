@@ -6,22 +6,31 @@ from app.schemas.traces import TraceIngestRequest
 from app.services.embeddings import EmbeddingClient
 
 
-def run_quick_evaluation(trace: TraceIngestRequest) -> TraceIngestRequest:
-    """Run the deterministic quick evaluators and diagnosis on a trace.
+def run_quick_evaluation(
+    trace: TraceIngestRequest,
+    *,
+    semantic: bool = True,
+    embedder: EmbeddingClient | None = None,
+) -> TraceIngestRequest:
+    """Run the quick evaluators and diagnosis on a trace.
 
     The server is the source of truth for evaluations, so any quick
     evaluations or diagnosis sent by the client are overwritten.
+
+    semantic=False is the lexical-only pass used on the ingest path: no network
+    call, so ingest latency never depends on an embeddings provider. The
+    background evaluation re-runs this with semantic=True.
     """
     # Embed query, context, and answer in ONE call and share the vectors with both
     # relevance evaluators — the query is embedded once instead of twice, and we
     # make one API round-trip per trace instead of two. If embeddings are
     # unavailable the evaluators fall back to lexical scoring on their own.
-    vectors = _embed_relevance_inputs(trace)
+    vectors = _embed_relevance_inputs(trace, embedder) if semantic else None
 
     quick_results = [
-        evaluate_context_relevance(trace, vectors=vectors),
+        evaluate_context_relevance(trace, embedder, vectors=vectors, semantic=semantic),
         evaluate_groundedness(trace),
-        evaluate_answer_relevance(trace, vectors=vectors),
+        evaluate_answer_relevance(trace, embedder, vectors=vectors, semantic=semantic),
     ]
 
     trace.evaluations.quick = quick_results
