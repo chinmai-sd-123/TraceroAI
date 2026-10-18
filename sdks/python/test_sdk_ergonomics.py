@@ -61,7 +61,7 @@ def test_failed_generation_still_sends_a_valid_trace() -> None:
     client = _client_capturing(captured)
 
     try:
-        with client.trace("boom") as t:
+        with client.trace("boom"):
             raise RuntimeError("429 quota exceeded")
     except RuntimeError:
         pass

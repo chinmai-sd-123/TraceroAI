@@ -235,8 +235,8 @@ docker compose -f infra/docker-compose.yml up -d
 # 2. API (+ tests)
 cd services/api
 python -m venv .venv && .venv/Scripts/activate     # or source .venv/bin/activate
-pip install -r requirements.txt
-pytest -q
+pip install -r requirements.txt pytest
+pytest -q          # uses a local traceroai_test database, never the one in .env
 uvicorn app.main:app --reload
 
 # 3. Web
@@ -246,6 +246,10 @@ npm install && npm run dev
 
 Copy [`.env.example`](.env.example) to `.env` and fill in the connection strings and
 (optionally) a judge API key.
+
+Tests create and use a `traceroai_test` database on the local Postgres. To point them
+somewhere else, set `TRACEROAI_TEST_DATABASE_URL`; non-local hosts are refused so a
+test run can't write into a hosted database by accident.
 
 ## License
 

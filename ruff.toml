@@ -1,0 +1,7 @@
+target-version = "py311"
+extend-exclude = ["traceroai-web"]
+
+[lint]
+# Ruff's defaults: syntax errors, undefined names, unused imports/variables.
+# Kept explicit so a global ruff config can't change what CI checks.
+select = ["E4", "E7", "E9", "F"]
