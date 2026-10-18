@@ -1,6 +1,55 @@
+import os
+from urllib.parse import urlsplit
+
 import pytest
 
-from app.core.config import get_settings
+# Tests write traces, eval runs and feedback, so they must never run against the
+# database in .env (which may be production). Point the app at a dedicated test
+# database before any app module builds its engine. Environment variables take
+# precedence over .env in pydantic-settings.
+TEST_DATABASE_URL = os.environ.get(
+    "TRACEROAI_TEST_DATABASE_URL",
+    "postgresql+psycopg://traceroai:traceroai@localhost:5432/traceroai_test",
+)
+# Loopback only. A service name like "postgres" can resolve to a shared database
+# inside a Docker or Kubernetes network, so it isn't accepted.
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+if urlsplit(TEST_DATABASE_URL).hostname not in _LOCAL_HOSTS:
+    pytest.exit(
+        f"Refusing to run tests against non-local database host "
+        f"{urlsplit(TEST_DATABASE_URL).hostname!r}. Set TRACEROAI_TEST_DATABASE_URL "
+        "to a local or CI Postgres.",
+        returncode=2,
+    )
+os.environ["TRACEROAI_DATABASE_URL"] = TEST_DATABASE_URL
+
+from sqlalchemy import create_engine, text  # noqa: E402
+from sqlalchemy.engine import make_url  # noqa: E402
+
+from app.core.config import get_settings  # noqa: E402
+from app.db.init_db import init_db  # noqa: E402
+
+
+def _ensure_database_exists(url: str) -> None:
+    """Create the test database on first run (docker compose only creates
+    `traceroai`). CI's Postgres service creates it up front."""
+    target = make_url(url)
+    admin = create_engine(target.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    with admin.connect() as conn:
+        exists = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :name"),
+            {"name": target.database},
+        ).scalar()
+        if not exists:
+            conn.execute(text(f'CREATE DATABASE "{target.database}"'))
+    admin.dispose()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _create_tables() -> None:
+    _ensure_database_exists(TEST_DATABASE_URL)
+    init_db()
 
 
 @pytest.fixture(autouse=True)

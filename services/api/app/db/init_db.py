@@ -1,4 +1,4 @@
-from app.db import models
+from app.db import models  # noqa: F401 (registers the models on Base.metadata)
 from app.db.base import Base
 from app.db.session import engine
 
