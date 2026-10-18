@@ -11,7 +11,9 @@ TEST_DATABASE_URL = os.environ.get(
     "TRACEROAI_TEST_DATABASE_URL",
     "postgresql+psycopg://traceroai:traceroai@localhost:5432/traceroai_test",
 )
-_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "postgres"}
+# Loopback only. A service name like "postgres" can resolve to a shared database
+# inside a Docker or Kubernetes network, so it isn't accepted.
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
 
 if urlsplit(TEST_DATABASE_URL).hostname not in _LOCAL_HOSTS:
     pytest.exit(
