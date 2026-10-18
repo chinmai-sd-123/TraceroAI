@@ -1,6 +1,17 @@
 import redis
+from fastapi import Request
 
 from app.core.config import get_settings
+
+
+def client_ip(request: Request) -> str:
+    # Behind Render's proxy, request.client.host is the proxy. The original
+    # visitor IP is the FIRST entry in X-Forwarded-For. Fall back to the
+    # socket peer for local/dev where there's no proxy.
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 def _client() -> redis.Redis | None:

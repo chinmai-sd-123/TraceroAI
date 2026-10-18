@@ -89,6 +89,14 @@ class FeedbackEntry(BaseModel):
     comment: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
+
+class FeedbackRequest(BaseModel):
+    """What a client may send. The timestamp is server-owned, and the comment is
+    capped because the endpoint is reachable without a key."""
+
+    rating: Literal["thumbs_up", "thumbs_down"]
+    comment: str | None = Field(default=None, max_length=2000)
+
 class EvaluationResult(BaseModel):
     evaluator_name: str
     evaluator_version: str | None = None

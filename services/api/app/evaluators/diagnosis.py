@@ -1,26 +1,43 @@
+import re
+
 from app.schemas.traces import DiagnosisTrace, EvaluationResult
 
-# Phrases that indicate the model declined to answer (e.g. context lacked the
-# answer). A refusal is correct behavior, not an unsupported claim, so it must
-# be diagnosed before the groundedness/relevance checks.
-REFUSAL_MARKERS = (
-    "i don't know",
-    "i do not know",
-    "i'm sorry",
-    "i am sorry",
-    "cannot answer",
-    "can't answer",
-    "not enough information",
-    "no information",
-    "based on the provided context",
+# Patterns for an explicit decline (e.g. the context lacked the answer). A refusal
+# is correct behavior, not an unsupported claim, so it must be diagnosed before the
+# groundedness/relevance checks.
+#
+# Each pattern is a decline *statement*, not a hedge: "Based on the provided
+# context, ..." and "I'm sorry, ..." usually open a real answer, so on their own
+# they are deliberately not refusals.
+REFUSAL_PATTERNS = (
+    r"\bi (?:do not|don't) know\b",
+    r"\bi (?:cannot|can't|am unable to|'m unable to|am not able to|'m not able to) "
+    r"(?:answer|find|determine|say|tell|provide|help)\b",
+    r"\b(?:cannot|can't|could not|couldn't) be (?:answered|determined)\b",
+    r"\b(?:i|we) (?:could not|couldn't|did not|didn't) find\b",
+    r"\bnot enough (?:information|context|detail)",
+    r"\b(?:there is|there's) no (?:relevant )?information\b",
+    r"\bi (?:do not|don't) have (?:enough |any |the )?(?:relevant )?information\b",
+    r"\b(?:context|documents?|sources?) (?:does not|doesn't|do not|don't) "
+    r"(?:contain|include|mention|provide|specify|say|cover)\b",
 )
+_REFUSAL_RE = re.compile("|".join(REFUSAL_PATTERNS))
+_FIRST_SENTENCE_RE = re.compile(r"(?<=[.!?])\s+")
 
 
 def is_refusal(answer: str) -> bool:
-    text = answer.strip().lower()
+    """True if the answer declines to answer.
+
+    Only the first sentence is checked: a model that declines leads with it,
+    while "Refunds take 5-7 days. The context doesn't mention fees." is a real
+    (partial) answer that should be evaluated like any other.
+    """
+    # LLMs often emit curly apostrophes (don’t); normalize so patterns match.
+    text = answer.strip().lower().replace("’", "'")
     if not text:
         return False
-    return any(marker in text for marker in REFUSAL_MARKERS)
+    first_sentence = _FIRST_SENTENCE_RE.split(text, maxsplit=1)[0]
+    return _REFUSAL_RE.search(first_sentence) is not None
 
 
 # Maps deep (LLM-judge) evaluator names+labels onto the deterministic

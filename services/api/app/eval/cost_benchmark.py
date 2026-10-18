@@ -29,7 +29,7 @@ from app.evaluators.deep_relevance import (
 )
 from app.evaluators.groundedness import evaluate_groundedness
 from app.schemas.traces import TraceIngestRequest
-from app.services.cost import price_for
+from app.services.cost import price_for, refresh_litellm_prices
 from app.services.embeddings import EmbeddingClient
 from app.services.llm_judge import OpenAIJudge
 from app.services.quick_evaluation import _embed_relevance_inputs
@@ -110,6 +110,9 @@ DEEP_EVALUATORS = (
 
 def main() -> None:
     settings = get_settings()
+    # Standalone script: no API startup hook, so load live prices here (falls back
+    # to the built-in table if the fetch fails).
+    refresh_litellm_prices()
     if not settings.openai_api_key:
         print(
             "Cost benchmark SKIPPED — no key configured (TRACEROAI_OPENAI_API_KEY). "

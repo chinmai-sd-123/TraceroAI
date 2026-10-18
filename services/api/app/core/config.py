@@ -13,6 +13,7 @@ ENV_FILE = Path(__file__).resolve().parents[4] / ".env"
 class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://traceroai:traceroai@localhost:5432/traceroai"
     app_env: Literal["development", "testing", "staging", "production"] = "development"
+    log_level: str = "INFO"
     openai_api_key: str | None = None
     judge_model: str = "gpt-4o-mini"
     embedding_model: str = "gemini-embedding-001"
@@ -28,10 +29,11 @@ class Settings(BaseSettings):
     # An ingest request authenticated with a known key is stamped with that
     # project; unknown/absent keys fall back to the client-provided project.
     project_api_keys: dict[str, str] = Field(default_factory=dict)
-    # When True, POST /v1/traces requires a valid key from project_api_keys (else 401).
-    # Reads (the dashboard) are NEVER gated, so visitors/recruiters can browse freely.
-    # Default False so local dev/tests and unauthenticated demos keep working.
-    require_api_key: bool = False
+    # Whether writes (traces, eval runs, grading) require a valid key from
+    # project_api_keys (else 401). Unset = required in staging/production, optional
+    # in development/testing (see core/tenancy.api_key_required). Reads (the
+    # dashboard) aren't gated yet — that comes with real user login.
+    require_api_key: bool | None = None
     # Extra browser origins allowed by CORS (the deployed frontend URL).
     # JSON list, e.g. TRACEROAI_CORS_ORIGINS='["https://traceroai.vercel.app"]'.
     cors_origins: list[str] = Field(default_factory=list)

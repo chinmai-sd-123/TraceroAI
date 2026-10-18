@@ -6,10 +6,11 @@ judge as everything else (single source of truth). Keeps the grading judge off t
 client; the client only orchestrates.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
+from app.core.tenancy import write_project
 from app.services.llm_judge import OpenAIJudge
 
 router = APIRouter(prefix="/v1/eval", tags=["eval"])
@@ -26,7 +27,13 @@ class GradeResponse(BaseModel):
     reason: str
 
 
-@router.post("/grade", response_model=GradeResponse)
+@router.post(
+    "/grade",
+    response_model=GradeResponse,
+    # Every call is a paid LLM request, so it's never open to anonymous callers
+    # when keys are required.
+    dependencies=[Depends(write_project)],
+)
 def grade_answer(payload: GradeRequest) -> GradeResponse:
     settings = get_settings()
     if not (settings.deep_eval_enabled and settings.openai_api_key):

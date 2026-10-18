@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 from app.core.config import get_settings
 
+JUDGE_TIMEOUT_SECONDS = 60.0
+
 
 class JudgedClaim(BaseModel):
     claim: str
@@ -96,6 +98,9 @@ class OpenAIJudge:
         self._client = OpenAI(
             api_key=settings.openai_api_key,
             base_url=settings.judge_base_url,  # None -> OpenAI default; set for Gemini
+            # The SDK default is 600s; cap it so a hung provider can't stall the
+            # worker (or a sync_deep_eval request) for ten minutes.
+            timeout=JUDGE_TIMEOUT_SECONDS,
         )
         self._model = settings.judge_model
 

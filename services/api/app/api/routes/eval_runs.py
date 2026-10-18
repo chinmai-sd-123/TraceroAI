@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.tenancy import write_project
 from app.db.session import get_db
 from app.schemas.eval_runs import EvalRunIngestRequest, EvalRunIngestResponse
 from app.services.eval_run_repository import EvalRunRepository, DuplicateEvalRunError
@@ -19,7 +20,12 @@ router = APIRouter(prefix="/v1/eval-runs", tags=["eval-runs"])
 def ingest_eval_run(
     payload: EvalRunIngestRequest,
     db: Session = Depends(get_db),
+    project_id: str | None = Depends(write_project),
 ) -> EvalRunIngestResponse:
+    # Same rule as traces: a known key owns the project attribution.
+    if project_id:
+        payload.project.project_id = project_id
+
     repository = EvalRunRepository(db)
     try:
         repository.save(payload)

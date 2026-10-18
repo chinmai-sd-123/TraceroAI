@@ -25,13 +25,17 @@ def evaluate_context_relevance(
     trace: TraceIngestRequest,
     embedder: EmbeddingClient | None = None,
     vectors: dict[str, list[float]] | None = None,
+    *,
+    semantic: bool = True,
 ) -> EvaluationResult:
+    """semantic=False skips embeddings entirely (no network), e.g. on the ingest path."""
     query = trace.query.rewritten or trace.query.original
     context = " ".join(chunk.text for chunk in trace.retrieval.chunks)
 
-    result = _embedding_relevance(query, context, embedder, vectors)
-    if result is not None:
-        return result
+    if semantic:
+        result = _embedding_relevance(query, context, embedder, vectors)
+        if result is not None:
+            return result
     return _lexical_relevance(query, context)
 
 

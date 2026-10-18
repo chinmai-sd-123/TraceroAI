@@ -11,4 +11,4 @@ def test_job_stats_shape_without_redis() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert body == {"redis_connected": False, "queued": 0}
+    assert body == {"redis_connected": False, "queued": 0, "pending": 0, "dead_lettered": 0}

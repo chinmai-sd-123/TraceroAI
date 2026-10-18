@@ -11,6 +11,8 @@ import math
 from openai import OpenAI
 from app.core.config import Settings, get_settings
 
+EMBEDDING_TIMEOUT_SECONDS = 15.0
+
 
 class EmbeddingClient:
     """Encodes text to vectors via a hosted embeddings API."""
@@ -20,6 +22,9 @@ class EmbeddingClient:
         self._client = OpenAI(
             api_key=self._settings.openai_api_key,
             base_url=self._settings.judge_base_url,
+            # The SDK default is 600s; one embedding batch should never take that.
+            timeout=EMBEDDING_TIMEOUT_SECONDS,
+            max_retries=1,
         )
 
     def embed(self, texts: list[str]) -> list[list[float]]:

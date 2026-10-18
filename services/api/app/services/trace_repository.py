@@ -55,36 +55,42 @@ class TraceRepository:
     def get(self, trace_id: UUID) -> TraceRecord | None:
         return self.db.get(TraceRecord, trace_id)
     
-    def set_deep_evaluations(
+    def set_evaluations(
         self,
         trace_id: UUID,
-        deep_results: list[EvaluationResult],
+        *,
+        quick: list[EvaluationResult] | None = None,
+        deep: list[EvaluationResult] | None = None,
         diagnosis: DiagnosisTrace | None = None,
     ) -> TraceRecord | None:
-            record = self.db.get(TraceRecord, trace_id)
-            if record is None:
-                return None
-
-            trace = TraceIngestRequest(**record.payload)
-            trace.evaluations.deep = deep_results
-            # The LLM judge is more reliable than the deterministic quick eval, so when
-            # it produces a usable verdict we overwrite the diagnosis (and the indexed
-            # diagnosis_label column) with it. None -> keep the quick diagnosis.
-            if diagnosis is not None:
-                trace.diagnosis = diagnosis
-                record.diagnosis_label = diagnosis.label
-            record.payload = trace.model_dump(mode="json")
-
-            self.db.add(record)
-            self.db.commit()
-            self.db.refresh(record)
-            return record
-    
-    def add_feedback(
-        self, trace_id: UUID, entry: FeedbackEntry
-    ) -> TraceRecord | None:
+        """Write background evaluation results. Each argument left as None keeps
+        what's stored (e.g. no judge configured -> the deep list is untouched)."""
         record = self.db.get(TraceRecord, trace_id)
         if record is None:
+            return None
+
+        trace = TraceIngestRequest(**record.payload)
+        if quick is not None:
+            trace.evaluations.quick = quick
+        if deep is not None:
+            trace.evaluations.deep = deep
+        if diagnosis is not None:
+            trace.diagnosis = diagnosis
+            record.diagnosis_label = diagnosis.label  # keep the indexed column in sync
+        record.payload = trace.model_dump(mode="json")
+
+        self.db.add(record)
+        self.db.commit()
+        self.db.refresh(record)
+        return record
+    
+    def add_feedback(
+        self, trace_id: UUID, entry: FeedbackEntry, *, project_id: str | None = None
+    ) -> TraceRecord | None:
+        """Append feedback. With project_id, a trace from another project is
+        treated as missing, so a key can't reveal or touch other tenants' traces."""
+        record = self.db.get(TraceRecord, trace_id)
+        if record is None or (project_id is not None and record.project_id != project_id):
             return None
 
         trace = TraceIngestRequest(**record.payload)
