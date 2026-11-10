@@ -41,9 +41,7 @@ becomes a lookup instead of a guess.
 
 A 30-second walkthrough: trace an answer, judge it, and let the recovery agent heal the failure.
 
-[![TraceroAI demo: trace, judge, and self-heal a failing RAG answer](docs/media/demo.webp)](docs/media/demo.mp4)
-
-<sub>▶ The preview above plays silently. Click it for the full video with sound ([`docs/media/demo.mp4`](docs/media/demo.mp4)).</sub>
+https://github.com/user-attachments/assets/15aa7ac3-3407-44b4-8936-4e4ba3c22fa2
 
 ## What it does
 
