@@ -41,7 +41,7 @@ becomes a lookup instead of a guess.
 
 A 30-second walkthrough: trace an answer, judge it, and let the recovery agent heal the failure.
 
-https://github.com/user-attachments/assets/15aa7ac3-3407-44b4-8936-4e4ba3c22fa2
+https://github.com/user-attachments/assets/9e94fdb2-fc38-4ef6-9288-69bd23c2ef73
 
 ## What it does
 
