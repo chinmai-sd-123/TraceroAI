@@ -22,6 +22,9 @@ DEEP_EVALUATORS = (
     evaluate_deep_groundedness,
     evaluate_deep_answer_relevance,
 )
+# Per judge call when a request is waiting (sync_deep_eval). Three calls, no
+# provider retries: the request waits at most about 45 seconds for the judge.
+INLINE_JUDGE_TIMEOUT_SECONDS = 15.0
 ERROR_EVALUATOR_NAME = "deep_evaluation"
 ERROR_EVALUATOR_VERSION = "llm_judge_openai_v1"
 
@@ -45,6 +48,7 @@ def run_deep_evaluation(
     embedder: EmbeddingClient | None = None,
     *,
     retry_transient: bool = False,
+    inline: bool = False,
 ) -> None:
     """Everything that evaluates a stored trace off the ingest path (run by the
     worker, or BackgroundTasks when there's no Redis):
@@ -60,44 +64,48 @@ def run_deep_evaluation(
     TransientEvaluationError on a rate limit / timeout instead of recording an
     error result, so the job can be retried. Otherwise any judge failure is
     recorded as an "error" deep result (fail-open).
+
+    inline=True (a request waiting on the result, i.e. sync_deep_eval) gives
+    each judge call a shorter timeout and no provider retries, so the caller
+    waits at most a bounded time.
+
+    No database connection is held while the providers are called: the trace is
+    read in one short session and the results written in another, as a single
+    UPDATE that leaves other parts of the trace (feedback) alone.
     """
     settings = get_settings()
     semantic = embedder is not None or bool(settings.openai_api_key)
     if not (semantic or settings.deep_eval_enabled):
         return
 
-    db = SessionLocal()
-    try:
-        repository = TraceRepository(db)
-        record = repository.get(trace_id)
+    with SessionLocal() as db:
+        record = TraceRepository(db).get(trace_id)
         if record is None:
             return
-
         trace = Trace(**record.payload)
 
-        quick: list[EvaluationResult] | None = None
-        diagnosis: DiagnosisTrace | None = None
-        if semantic:
-            refreshed = run_quick_evaluation(
-                trace.model_copy(deep=True), semantic=True, embedder=embedder
-            )
-            quick = refreshed.evaluations.quick
-            diagnosis = refreshed.diagnosis
+    quick: list[EvaluationResult] | None = None
+    diagnosis: DiagnosisTrace | None = None
+    if semantic:
+        refreshed = run_quick_evaluation(
+            trace.model_copy(deep=True), semantic=True, embedder=embedder
+        )
+        quick = refreshed.evaluations.quick
+        diagnosis = refreshed.diagnosis
 
-        deep: list[EvaluationResult] | None = None
-        if settings.deep_eval_enabled:
-            deep = _evaluate(trace, judge, settings, retry_transient=retry_transient)
-            # Re-diagnose from the judge's verdict — it's more reliable than the
-            # quick eval. If the judge errored or yielded nothing usable,
-            # diagnose_from_deep returns None and the quick diagnosis stands.
-            refused = not trace.generation.answered or is_refusal(trace.generation.answer)
-            deep_diagnosis = diagnose_from_deep(deep, refused=refused)
-            if deep_diagnosis is not None:
-                diagnosis = deep_diagnosis
+    deep: list[EvaluationResult] | None = None
+    if settings.deep_eval_enabled:
+        deep = _evaluate(trace, judge, settings, retry_transient=retry_transient, inline=inline)
+        # Re-diagnose from the judge's verdict — it's more reliable than the
+        # quick eval. If the judge errored or yielded nothing usable,
+        # diagnose_from_deep returns None and the quick diagnosis stands.
+        refused = not trace.generation.answered or is_refusal(trace.generation.answer)
+        deep_diagnosis = diagnose_from_deep(deep, refused=refused)
+        if deep_diagnosis is not None:
+            diagnosis = deep_diagnosis
 
-        repository.set_evaluations(trace_id, quick=quick, deep=deep, diagnosis=diagnosis)
-    finally:
-        db.close()
+    with SessionLocal() as db:
+        TraceRepository(db).set_evaluations(trace_id, quick=quick, deep=deep, diagnosis=diagnosis)
 
 
 def _evaluate(
@@ -106,9 +114,10 @@ def _evaluate(
     settings: Settings,
     *,
     retry_transient: bool = False,
+    inline: bool = False,
 ) -> list[EvaluationResult]:
     try:
-        active_judge = judge or _build_default_judge(settings)
+        active_judge = judge or _build_default_judge(settings, inline=inline)
         return [evaluator(trace, active_judge) for evaluator in DEEP_EVALUATORS]
     except Exception as exc:
         if retry_transient and isinstance(exc, TRANSIENT_JUDGE_ERRORS):
@@ -124,7 +133,9 @@ def _evaluate(
         ]
 
 
-def _build_default_judge(settings: Settings) -> LLMJudge:
+def _build_default_judge(settings: Settings, *, inline: bool = False) -> LLMJudge:
     if not settings.openai_api_key:
         raise RuntimeError("No OpenAI API key configured for deep evaluation.")
+    if inline:
+        return OpenAIJudge(timeout=INLINE_JUDGE_TIMEOUT_SECONDS, max_retries=0)
     return OpenAIJudge()

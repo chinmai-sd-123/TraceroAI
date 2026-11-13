@@ -93,14 +93,19 @@ class OpenAIJudge:
     """LLM judge over the OpenAI SDK. Works with OpenAI or any OpenAI-compatible
     endpoint (e.g. Gemini) by setting judge_base_url + the matching key/model."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, *, timeout: float = JUDGE_TIMEOUT_SECONDS, max_retries: int = 2
+    ) -> None:
         settings = get_settings()
         self._client = OpenAI(
             api_key=settings.openai_api_key,
             base_url=settings.judge_base_url,  # None -> OpenAI default; set for Gemini
             # The SDK default is 600s; cap it so a hung provider can't stall the
             # worker (or a sync_deep_eval request) for ten minutes.
-            timeout=JUDGE_TIMEOUT_SECONDS,
+            timeout=timeout,
+            # The SDK retries rate limits and 5xx itself (2 by default). A
+            # request waiting on the judge passes 0 to keep its wait bounded.
+            max_retries=max_retries,
         )
         self._model = settings.judge_model
 

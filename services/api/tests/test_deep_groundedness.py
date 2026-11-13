@@ -109,7 +109,7 @@ def test_sync_deep_eval_returns_judge_diagnosis_in_response(monkeypatch) -> None
     monkeypatch.setattr(
         traces_route,
         "run_deep_evaluation",
-        lambda trace_id: run_deep_evaluation(trace_id, judge=StubJudge()),
+        lambda trace_id, **kwargs: run_deep_evaluation(trace_id, judge=StubJudge(), **kwargs),
     )
 
     resp = client.post("/v1/traces?sync_deep_eval=true", json=make_trace_payload())

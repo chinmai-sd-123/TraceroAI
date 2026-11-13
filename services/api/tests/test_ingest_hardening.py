@@ -191,7 +191,7 @@ def test_sync_deep_eval_returns_the_judges_diagnosis(monkeypatch) -> None:
     monkeypatch.setattr(
         traces_route,
         "run_deep_evaluation",
-        lambda trace_id: run_deep_evaluation(trace_id, judge=StubJudge()),
+        lambda trace_id, **kwargs: run_deep_evaluation(trace_id, judge=StubJudge(), **kwargs),
     )
 
     quick = client.post("/v1/traces", json=_payload()).json()["diagnosis"]["label"]

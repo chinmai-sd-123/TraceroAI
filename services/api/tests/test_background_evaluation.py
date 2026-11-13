@@ -32,7 +32,7 @@ def test_ingest_never_calls_embeddings_even_with_a_key(monkeypatch) -> None:
     # A configured key used to mean an embeddings round-trip inside POST /v1/traces.
     monkeypatch.setattr(get_settings(), "openai_api_key", "sk-test")
     # Keep the post-response background pass out of this test (it would call out).
-    monkeypatch.setattr(traces_route, "run_deep_evaluation", lambda *args, **kwargs: None)
+    monkeypatch.setattr(traces_route, "submit_fallback_evaluation", lambda trace_id: None)
 
     calls: list[list[str]] = []
 

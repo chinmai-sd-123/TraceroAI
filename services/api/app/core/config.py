@@ -49,6 +49,14 @@ class Settings(BaseSettings):
     # Largest request body the API accepts, in bytes (413 above it). One trace
     # with dozens of full-text chunks fits comfortably in the default.
     max_request_bytes: int = Field(default=1_000_000, gt=0)
+    # Database connection pool per process. Requests hold a connection only for
+    # their queries (evaluation never holds one across LLM calls), so the
+    # defaults serve far more concurrent requests than their sum.
+    db_pool_size: int = Field(default=5, ge=1)
+    db_max_overflow: int = Field(default=10, ge=0)
+    db_pool_timeout_seconds: float = Field(default=10.0, gt=0)
+    # Threads for in-process deep evaluation when Redis is unavailable.
+    fallback_eval_workers: int = Field(default=2, ge=1)
     # env_ignore_empty: an empty variable (TRACEROAI_X=, or an unset Compose
     # ${VAR:-}) means "use the default", rather than an empty string that the
     # JSON settings can't parse.

@@ -1,6 +1,7 @@
+import logging
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.tenancy import (
@@ -26,7 +27,9 @@ from app.services.rate_limiter import check_rate_limit, client_ip
 from app.services.trace_repository import DuplicateTraceError, TraceRepository
 from app.services.deep_evaluation import run_deep_evaluation
 from app.services.deep_eval_queue import enqueue_deep_eval_request
+from app.services.fallback_evaluation import submit_fallback_evaluation
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/traces", tags=["traces"])
 
@@ -38,7 +41,6 @@ ANONYMOUS_FEEDBACK_WINDOW_SECONDS = 60
 @router.post("", response_model=TraceIngestResponse, status_code=status.HTTP_202_ACCEPTED)
 def ingest_trace(
     payload: TraceIngestRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     project_id: str | None = Depends(write_project),
     sync_deep_eval: bool = False,
@@ -90,16 +92,17 @@ def ingest_trace(
     diagnosis = trace.diagnosis
     if sync_deep_eval:
         try:
-            run_deep_evaluation(trace.trace_id)
+            run_deep_evaluation(trace.trace_id, inline=True)
             record = repository.get(trace.trace_id)
             if record is not None:
                 diagnosis = Trace(**record.payload).diagnosis
         except Exception:
-            # inline judge failed — leave the quick diagnosis and let async retry
+            logger.exception("Inline deep evaluation failed for %s", trace.trace_id)
+            # Leave the quick diagnosis and evaluate again off the request path.
             if not enqueue_deep_eval_request(trace.trace_id):
-                background_tasks.add_task(run_deep_evaluation, trace.trace_id)
+                submit_fallback_evaluation(trace.trace_id)
     elif not enqueue_deep_eval_request(trace.trace_id):
-        background_tasks.add_task(run_deep_evaluation, trace.trace_id)
+        submit_fallback_evaluation(trace.trace_id)
 
     return TraceIngestResponse(
         trace_id=trace.trace_id,
@@ -201,9 +204,7 @@ def add_feedback(
 
     entry = FeedbackEntry(rating=body.rating, comment=body.comment)
     repository = TraceRepository(db)
-    record = repository.add_feedback(trace_id, entry, project_id=who.project_id)
-
-    if record is None:
+    if not repository.add_feedback(trace_id, entry, project_id=who.project_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Trace not found.",

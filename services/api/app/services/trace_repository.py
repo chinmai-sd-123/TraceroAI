@@ -3,7 +3,8 @@ from collections.abc import Collection
 from uuid import UUID
 
 
-from sqlalchemy import select
+from sqlalchemy import Text, func, literal, select, update
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -46,7 +47,8 @@ class TraceRepository:
         except IntegrityError as error:
             self.db.rollback()
             raise DuplicateTraceError(f"Trace {trace.trace_id} already exists.") from error
-        self.db.refresh(record)
+        # No refresh: it would open a new transaction and keep a pooled connection
+        # checked out for the rest of the request (e.g. during sync_deep_eval).
 
         return record
 
@@ -69,6 +71,12 @@ class TraceRepository:
     def get(self, trace_id: UUID) -> TraceRecord | None:
         return self.db.get(TraceRecord, trace_id)
     
+    # The two writers below change one part of a stored trace each, and run while
+    # other writers may be active (feedback arrives while the judge is running).
+    # Each is a single UPDATE that sets only its own keys inside the JSONB payload,
+    # so Postgres applies them one after the other and neither can overwrite the
+    # other's change, without reading the payload into Python first.
+
     def set_evaluations(
         self,
         trace_id: UUID,
@@ -76,43 +84,57 @@ class TraceRepository:
         quick: list[EvaluationResult] | None = None,
         deep: list[EvaluationResult] | None = None,
         diagnosis: DiagnosisTrace | None = None,
-    ) -> TraceRecord | None:
+    ) -> bool:
         """Write background evaluation results. Each argument left as None keeps
-        what's stored (e.g. no judge configured -> the deep list is untouched)."""
-        record = self.db.get(TraceRecord, trace_id)
-        if record is None:
-            return None
-
-        trace = Trace(**record.payload)
+        what's stored (e.g. no judge configured -> the deep list is untouched).
+        Returns False if the trace doesn't exist."""
+        payload = TraceRecord.payload
+        columns: dict[str, object] = {}
         if quick is not None:
-            trace.evaluations.quick = quick
+            payload = _jsonb_set(payload, ["evaluations", "quick"], _dump_list(quick))
         if deep is not None:
-            trace.evaluations.deep = deep
+            payload = _jsonb_set(payload, ["evaluations", "deep"], _dump_list(deep))
         if diagnosis is not None:
-            trace.diagnosis = diagnosis
-            record.diagnosis_label = diagnosis.label  # keep the indexed column in sync
-        record.payload = trace.model_dump(mode="json")
+            payload = _jsonb_set(payload, ["diagnosis"], diagnosis.model_dump(mode="json"))
+            columns["diagnosis_label"] = diagnosis.label  # keep the indexed column in sync
 
-        self.db.add(record)
-        self.db.commit()
-        self.db.refresh(record)
-        return record
-    
+        statement = update(TraceRecord).where(TraceRecord.trace_id == trace_id)
+        return self._update(statement.values(payload=payload, **columns))
+
     def add_feedback(
         self, trace_id: UUID, entry: FeedbackEntry, *, project_id: str | None = None
-    ) -> TraceRecord | None:
+    ) -> bool:
         """Append feedback. With project_id, a trace from another project is
-        treated as missing, so a key can't reveal or touch other tenants' traces."""
-        record = self.db.get(TraceRecord, trace_id)
-        if record is None or (project_id is not None and record.project_id != project_id):
-            return None
+        treated as missing, so a key can't reveal or touch other tenants' traces.
+        Returns False if no matching trace exists."""
+        existing = func.coalesce(TraceRecord.payload["feedback"], literal([], JSONB))
+        appended = existing.op("||", return_type=JSONB)(
+            literal([entry.model_dump(mode="json")], JSONB)
+        )
+        statement = update(TraceRecord).where(TraceRecord.trace_id == trace_id)
+        if project_id is not None:
+            statement = statement.where(TraceRecord.project_id == project_id)
+        return self._update(
+            statement.values(payload=_jsonb_set(TraceRecord.payload, ["feedback"], appended))
+        )
 
-        trace = Trace(**record.payload)
-        trace.feedback.append(entry)
-        record.payload = trace.model_dump(mode="json")
-
-        self.db.add(record)
+    def _update(self, statement) -> bool:
+        result = self.db.execute(
+            statement.returning(TraceRecord.trace_id),
+            execution_options={"synchronize_session": False},
+        )
+        found = result.first() is not None
         self.db.commit()
-        self.db.refresh(record)
-        return record
+        return found
+
+
+def _jsonb_set(target, path: list[str], value):
+    """jsonb_set(target, path, value): replace the value at path inside target."""
+    if not hasattr(value, "type"):  # a plain Python value, not a SQL expression
+        value = literal(value, JSONB)
+    return func.jsonb_set(target, literal(path, ARRAY(Text)), value, type_=JSONB)
+
+
+def _dump_list(results: list[EvaluationResult]) -> list[dict]:
+    return [result.model_dump(mode="json") for result in results]
 
