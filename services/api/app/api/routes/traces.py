@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.tenancy import (
     Caller,
     ReadScope,
@@ -204,10 +205,21 @@ def add_feedback(
 
     entry = FeedbackEntry(rating=body.rating, comment=body.comment)
     repository = TraceRepository(db)
-    if not repository.add_feedback(trace_id, entry, project_id=who.project_id):
+    outcome = repository.add_feedback(
+        trace_id,
+        entry,
+        project_id=who.project_id,
+        max_entries=get_settings().max_feedback_per_trace,
+    )
+    if outcome == "missing":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Trace not found.",
+        )
+    if outcome == "full":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This trace already has the maximum amount of feedback.",
         )
 
     return entry

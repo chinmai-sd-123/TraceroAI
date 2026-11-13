@@ -1,5 +1,6 @@
 from __future__ import annotations
 from collections.abc import Collection
+from typing import Literal
 from uuid import UUID
 
 
@@ -102,11 +103,19 @@ class TraceRepository:
         return self._update(statement.values(payload=payload, **columns))
 
     def add_feedback(
-        self, trace_id: UUID, entry: FeedbackEntry, *, project_id: str | None = None
-    ) -> bool:
-        """Append feedback. With project_id, a trace from another project is
-        treated as missing, so a key can't reveal or touch other tenants' traces.
-        Returns False if no matching trace exists."""
+        self,
+        trace_id: UUID,
+        entry: FeedbackEntry,
+        *,
+        project_id: str | None = None,
+        max_entries: int | None = None,
+    ) -> Literal["added", "missing", "full"]:
+        """Append feedback, keeping at most max_entries on the trace.
+
+        With project_id, a trace from another project is treated as missing, so
+        a key can't reveal or touch other tenants' traces. The limit is checked
+        in the same UPDATE, so concurrent posts can't overshoot it.
+        """
         existing = func.coalesce(TraceRecord.payload["feedback"], literal([], JSONB))
         appended = existing.op("||", return_type=JSONB)(
             literal([entry.model_dump(mode="json")], JSONB)
@@ -114,9 +123,17 @@ class TraceRepository:
         statement = update(TraceRecord).where(TraceRecord.trace_id == trace_id)
         if project_id is not None:
             statement = statement.where(TraceRecord.project_id == project_id)
-        return self._update(
+        if max_entries is not None:
+            statement = statement.where(func.jsonb_array_length(existing) < max_entries)
+        if self._update(
             statement.values(payload=_jsonb_set(TraceRecord.payload, ["feedback"], appended))
-        )
+        ):
+            return "added"
+
+        record = self.get(trace_id)
+        if record is None or (project_id is not None and record.project_id != project_id):
+            return "missing"
+        return "full"
 
     def _update(self, statement) -> bool:
         result = self.db.execute(

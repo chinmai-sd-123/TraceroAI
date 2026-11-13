@@ -63,6 +63,9 @@ def _isolate_external_services(monkeypatch):
     monkeypatch.setattr(settings, "redis_url", None)
     # Unauthenticated writes allowed by default; auth tests opt in explicitly.
     monkeypatch.setattr(settings, "require_api_key", False)
+    # Rate-limit counts are per process without Redis; start each test at zero.
+    from app.services import rate_limiter
+    rate_limiter._local.clear()
 
     from app.services import cost
     monkeypatch.setattr(cost, "_litellm_cache", {})

@@ -27,6 +27,8 @@ x-api-environment: &api-environment
   # JSON, e.g. '{"<key>":"my-app"}' and '["<admin key>"]'. Empty is fine in development.
   TRACEROAI_PROJECT_API_KEYS: ${TRACEROAI_PROJECT_API_KEYS:-}
   TRACEROAI_ADMIN_API_KEYS: ${TRACEROAI_ADMIN_API_KEYS:-}
+  # The docs page's live playground; on here because this stack is local.
+  TRACEROAI_PLAYGROUND_ENABLED: ${TRACEROAI_PLAYGROUND_ENABLED:-true}
 
 services:
   postgres:

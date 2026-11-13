@@ -217,6 +217,8 @@ export type PlaygroundResult = {
 };
 
 export class PlaygroundError extends Error {
+  // True when the message is meant for the visitor as-is (rate limited, or the
+  // playground is switched off); otherwise the UI shows a generic message.
   rateLimited: boolean;
   constructor(message: string, rateLimited = false) {
     super(message);
@@ -242,6 +244,10 @@ export async function tryPlayground(question: string): Promise<PlaygroundResult>
       /* non-JSON body — keep the default */
     }
     throw new PlaygroundError(detail, true);
+  }
+  if (response.status === 404) {
+    // Servers keep the playground off unless TRACEROAI_PLAYGROUND_ENABLED is set.
+    throw new PlaygroundError("The live playground isn't enabled on this server.", true);
   }
   if (!response.ok) {
     throw new PlaygroundError(`Playground request failed (${response.status})`);

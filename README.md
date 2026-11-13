@@ -286,6 +286,9 @@ Keys are optional in development and required when `TRACEROAI_APP_ENV` is `stagi
 | `TRACEROAI_API_KEY` | web | The key the dashboard's server uses. Never sent to the browser. |
 | `TRACEROAI_DASHBOARD_PASSWORD` | web | If set, the dashboard asks for this password first. |
 
+| `TRACEROAI_PLAYGROUND_ENABLED` | API | Turns on the keyless docs playground. Off by default. |
+| `TRACEROAI_TRUSTED_PROXY_COUNT` | API | Proxies in front of the API (1 behind Render). Rate limits identify callers with it. |
+
 When keys are required, a request without one can't write anything and can read only the
 public projects. A key never sees another project's data: those traces and eval runs are
 reported as not found.

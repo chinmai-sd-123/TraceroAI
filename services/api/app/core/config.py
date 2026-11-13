@@ -57,6 +57,15 @@ class Settings(BaseSettings):
     db_pool_timeout_seconds: float = Field(default=10.0, gt=0)
     # Threads for in-process deep evaluation when Redis is unavailable.
     fallback_eval_workers: int = Field(default=2, ge=1)
+    # How many reverse proxies in front of the API append to X-Forwarded-For
+    # (e.g. 1 behind Render or a single nginx). 0 = no proxy: use the socket
+    # address. Used to tell anonymous callers apart for rate limits.
+    trusted_proxy_count: int = Field(default=0, ge=0)
+    # The public "try it" endpoint (POST /v1/playground). It writes a trace and,
+    # with a judge configured, makes three LLM calls per request, without a key.
+    playground_enabled: bool = False
+    # Feedback entries kept per trace; further feedback gets a 409.
+    max_feedback_per_trace: int = Field(default=100, ge=1)
     # env_ignore_empty: an empty variable (TRACEROAI_X=, or an unset Compose
     # ${VAR:-}) means "use the default", rather than an empty string that the
     # JSON settings can't parse.
