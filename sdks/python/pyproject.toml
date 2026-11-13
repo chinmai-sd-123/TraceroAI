@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "traceroai"
-version = "0.4.0"
+dynamic = ["version"]
 description = "Python SDK for sending RAG traces to TraceroAI"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -30,6 +30,9 @@ recovery= [
 [project.urls]
 Homepage = "https://github.com/chinmai-sd-123/TraceroAI"
 Repository = "https://github.com/chinmai-sd-123/TraceroAI"
+
+[tool.hatch.version]
+path = "traceroai/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["traceroai"]

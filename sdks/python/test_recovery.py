@@ -156,6 +156,39 @@ def test_falls_back_to_quick_diagnosis_when_sync_judge_unavailable() -> None:
     assert result["attempts"] == 1
 
 
+class _SyncTimesOutClient:
+    """The sync call fails after the server may already have stored the trace
+    (e.g. a read timeout); the fallback send must reuse the attempt's id."""
+
+    def __init__(self) -> None:
+        self.sync_ids: list[str] = []
+        self.fallback_ids: list[str] = []
+
+    def log_trace_sync_eval(self, **payload):
+        self.sync_ids.append(str(payload["trace_id"]))
+        raise TimeoutError("read timed out")
+
+    def log_trace(self, **payload):
+        self.fallback_ids.append(str(payload["trace_id"]))
+        return payload["trace_id"]
+
+    def get_trace(self, trace_id: str) -> dict:
+        return {"diagnosis": {"label": "healthy_answer"}, "evaluations": {"deep": []}}
+
+
+def test_fallback_send_reuses_the_attempt_id() -> None:
+    client = _SyncTimesOutClient()
+    agent = RecoveryAgent(
+        client, retrieve=_retrieve, generate=_generate, diagnosis_poll_interval=0
+    )
+
+    result = agent.run("How long does a refund take?", confirm_with_deep_eval=False)
+
+    assert client.sync_ids == client.fallback_ids  # same id: the server dedupes it
+    assert result["trace_ids"] == client.sync_ids
+    assert "None" not in result["trace_ids"]
+
+
 class _DeepEvalClient:
     """Healthy on attempt 1; deep eval 'lands' after `deep_after` get_trace calls."""
 

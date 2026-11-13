@@ -10,6 +10,7 @@ is sent to TraceroAI, so the dashboard shows the full retry chain.
 from __future__ import annotations
 import time
 from typing import Any, Callable, TypedDict
+from uuid import uuid4
 
 # langgraph/langchain are optional — only needed for recovery. Give a clear,
 # actionable error instead of a cryptic ImportError if the extra isn't installed.
@@ -173,9 +174,16 @@ def _make_nodes(
         if state.get("prompt"):
             trace_kwargs["prompt"] = {"content": state["prompt"], "version": "recovery_v1"}
 
+        # One id per attempt, chosen here. If the sync call times out after the
+        # server stored the trace, the fallback send below reuses the id and the
+        # server answers with the stored trace instead of creating a duplicate.
+        trace_id = str(uuid4())
+        trace_kwargs["trace_id"] = trace_id
+
         diagnosis = "needs_review"
         try:
-            trace_id, verdict = client.log_trace_sync_eval(**trace_kwargs)
+            returned_id, verdict = client.log_trace_sync_eval(**trace_kwargs)
+            trace_id = str(returned_id)
             if verdict and verdict.get("label"):
                 diagnosis = verdict["label"]
             else:
@@ -186,15 +194,15 @@ def _make_nodes(
             # Sync path failed entirely (older server / network). Fall back to a plain
             # send + read of the quick diagnosis. Recovery degrades, never breaks.
             try:
-                trace_id = client.log_trace(**trace_kwargs)
+                trace_id = str(client.log_trace(**trace_kwargs))
                 diagnosis = _read_diagnosis(client, trace_id, interval=diagnosis_poll_interval)
             except Exception:
-                trace_id = None  # could not record the attempt; route on needs_review
+                pass  # the attempt may not be recorded; route on needs_review
 
         return {
             "diagnosis": diagnosis,
             "attempt": state.get("attempt", 0) + 1,
-            "trace_ids": state.get("trace_ids", []) + [str(trace_id)],
+            "trace_ids": state.get("trace_ids", []) + [trace_id],
         }
 
     return retrieve_node, generate_node, evaluate_node
