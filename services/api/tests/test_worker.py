@@ -127,8 +127,29 @@ def test_a_malformed_job_is_dead_lettered_without_retries(redis_client) -> None:
     assert [worker.handle(job) for job in worker.read_new()] == ["dead_lettered"]
 
 
+def _settle_other_pending_traces(keep: str) -> None:
+    """Earlier test runs leave pending traces in the shared test database; the
+    sweep takes the oldest first, so mark those settled to keep this test's
+    trace in the batch."""
+    from sqlalchemy import text
+
+    from app.db.session import SessionLocal
+
+    with SessionLocal() as db:
+        db.execute(
+            text(
+                "UPDATE traces SET payload = jsonb_set(payload, '{evaluations,deep_status}', "
+                "'\"skipped\"') WHERE payload->'evaluations'->>'deep_status' = 'pending' "
+                "AND trace_id <> CAST(:keep AS uuid)"
+            ),
+            {"keep": keep},
+        )
+        db.commit()
+
+
 def test_sweep_requeues_a_trace_whose_job_was_lost(redis_client, monkeypatch) -> None:
     trace_id = _pending_trace(monkeypatch)  # pending, but no job anywhere
+    _settle_other_pending_traces(keep=trace_id)
     worker = _worker(redis_client, lambda *a, **k: None, stalled_after_seconds=0)
 
     assert worker.requeue_stalled() >= 1

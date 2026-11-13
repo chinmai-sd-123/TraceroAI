@@ -1,8 +1,10 @@
 import type { TraceDiagnosis } from "@/lib/mock-traces";
-import { getProjects, getTraces } from "@/lib/api";
+import { getProjects, getSummary, getTraces } from "@/lib/api";
 
 import { ProjectSelector } from "./project-selector";
 import { TraceList } from "./trace-list";
+
+const PAGE_SIZE = 50;
 
 const DIAGNOSIS_LABELS = new Set<TraceDiagnosis>([
   "healthy_answer",
@@ -17,20 +19,28 @@ const DIAGNOSIS_LABELS = new Set<TraceDiagnosis>([
 export default async function TracesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string; diagnosis?: string }>;
+  searchParams: Promise<{ project?: string; diagnosis?: string; q?: string; cursor?: string }>;
 }) {
-  const { project, diagnosis } = await searchParams;
-  const [traces, projects] = await Promise.all([
-    getTraces(project),
-    getProjects(),
-  ]);
-
+  const params = await searchParams;
   // Only honor a diagnosis filter that is a real label (links from the dashboard
-  // Failure Mix pass these); anything else falls back to showing all.
-  const initialDiagnosis =
-    diagnosis && DIAGNOSIS_LABELS.has(diagnosis as TraceDiagnosis)
-      ? (diagnosis as TraceDiagnosis)
-      : "all";
+  // Failure Mix pass these); anything else shows all.
+  const diagnosis =
+    params.diagnosis && DIAGNOSIS_LABELS.has(params.diagnosis as TraceDiagnosis)
+      ? params.diagnosis
+      : undefined;
+  const q = params.q?.trim() || undefined;
+
+  const [page, projects, summary] = await Promise.all([
+    getTraces({
+      projectId: params.project,
+      diagnosis,
+      q,
+      cursor: params.cursor,
+      limit: PAGE_SIZE,
+    }),
+    getProjects(),
+    getSummary(params.project),
+  ]);
 
   return (
     <section>
@@ -48,16 +58,21 @@ export default async function TracesPage({
 
         <div className="flex items-center gap-3">
           {projects.length > 0 && (
-            <ProjectSelector projects={projects} selected={project} />
+            <ProjectSelector projects={projects} selected={params.project} />
           )}
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3">
             <p className="text-xs text-zinc-500">Total traces</p>
-            <p className="mt-1 text-xl font-semibold">{traces.length}</p>
+            <p className="mt-1 text-xl font-semibold">{summary?.total ?? "--"}</p>
           </div>
         </div>
       </div>
 
-      <TraceList traces={traces} initialDiagnosis={initialDiagnosis} />
+      <TraceList
+        traces={page.traces}
+        nextCursor={page.nextCursor}
+        filters={{ project: params.project, diagnosis, q, cursor: params.cursor }}
+        diagnosisCounts={summary?.byDiagnosis ?? {}}
+      />
     </section>
   );
 }

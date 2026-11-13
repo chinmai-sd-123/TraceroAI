@@ -1,13 +1,19 @@
 from datetime import datetime
 from uuid import UUID as PythonUUID
 
-from sqlalchemy import DateTime, Integer, String, func
+from sqlalchemy import DateTime, Index, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
 class TraceRecord(Base):
     __tablename__ = "traces"
+    # Trace lists are newest first, usually within one project (see
+    # app/services/trace_query.py); these keep a page an index range scan.
+    __table_args__ = (
+        Index("ix_traces_project_id_created_at", "project_id", "created_at"),
+        Index("ix_traces_created_at", "created_at"),
+    )
 
     trace_id: Mapped[PythonUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, index=True)
     schema_version: Mapped[str] = mapped_column(String, nullable=False)

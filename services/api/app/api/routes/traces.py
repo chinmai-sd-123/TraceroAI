@@ -1,7 +1,8 @@
 import logging
+from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -25,6 +26,7 @@ from app.schemas.traces import (
 from app.services.cost import compute_cost_usd
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.rate_limiter import check_rate_limit, client_ip
+from app.services.trace_query import InvalidCursor, TraceFilters, list_page
 from app.services.trace_repository import DuplicateTraceError, TraceRepository
 from app.services.deep_evaluation import (
     initial_deep_status,
@@ -142,13 +144,39 @@ def _already_ingested(record: TraceRecord, project_id: str) -> TraceIngestRespon
 
 @router.get("", response_model=list[Trace])
 def list_traces(
+    response: Response,
     project_id: str | None = None,
+    limit: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = None,
+    diagnosis: str | None = None,
+    model: str | None = None,
+    environment: str | None = None,
+    q: str | None = Query(default=None, max_length=200, description="Text in the query"),
+    since: datetime | None = None,
+    until: datetime | None = None,
     db: Session = Depends(get_db),
     scope: ReadScope = Depends(read_scope),
 ) -> list[dict]:
-    repository = TraceRepository(db)
-    records = repository.list(project_ids=scope.narrow(project_id))
+    """Traces, newest first, one page at a time.
 
+    When there are more, the X-Next-Cursor response header holds the value to
+    pass as ?cursor= for the next page.
+    """
+    filters = TraceFilters(
+        project_ids=scope.narrow(project_id),
+        diagnosis=diagnosis,
+        model=model,
+        environment=environment,
+        text=q,
+        since=since,
+        until=until,
+    )
+    try:
+        records, next_cursor = list_page(db, filters, limit=limit, cursor=cursor)
+    except InvalidCursor as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    if next_cursor:
+        response.headers["X-Next-Cursor"] = next_cursor
     return [record.payload for record in records]
 
 

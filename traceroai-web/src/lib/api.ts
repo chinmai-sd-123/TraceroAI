@@ -203,22 +203,82 @@ export async function postFeedback(
   }
 }
 
-export async function getTraces(projectId?: string): Promise<MockTrace[]> {
-  const url = projectId
-    ? `${API_BASE_URL}/v1/traces?project_id=${encodeURIComponent(projectId)}`
-    : `${API_BASE_URL}/v1/traces`;
+export type TraceQuery = {
+  projectId?: string;
+  limit?: number;
+  cursor?: string;
+  diagnosis?: string;
+  q?: string;
+};
+
+export type TracePage = { traces: MockTrace[]; nextCursor: string | null };
+
+/** One page of traces, newest first, filtered on the server. */
+export async function getTraces(query: TraceQuery = {}): Promise<TracePage> {
+  const params = new URLSearchParams();
+  if (query.projectId) params.set("project_id", query.projectId);
+  if (query.limit) params.set("limit", String(query.limit));
+  if (query.cursor) params.set("cursor", query.cursor);
+  if (query.diagnosis) params.set("diagnosis", query.diagnosis);
+  if (query.q) params.set("q", query.q);
   try {
-    const response = await fetch(url, { cache: "no-store", headers: serverHeaders() });
+    const response = await fetch(`${API_BASE_URL}/v1/traces?${params}`, {
+      cache: "no-store",
+      headers: serverHeaders(),
+    });
 
     if (!response.ok) {
-      return [];
+      return { traces: [], nextCursor: null };
     }
 
     const traces = (await response.json()) as ApiTrace[];
-    return traces.map(mapApiTraceToUiTrace);
+    return {
+      traces: traces.map(mapApiTraceToUiTrace),
+      nextCursor: response.headers.get("X-Next-Cursor"),
+    };
   } catch {
     // No fabricated data — an unreachable API shows an honest empty state.
-    return [];
+    return { traces: [], nextCursor: null };
+  }
+}
+
+export type TraceSummary = {
+  total: number;
+  healthy: number;
+  byDiagnosis: Record<string, number>;
+  bySource: Record<string, number>;
+  latencyMs: { measured: number; avg: number | null; p50: number | null; p95: number | null };
+  costUsd: { priced: number; total: number | null; avg: number | null };
+};
+
+/** Headline numbers over every trace in scope, computed by the API in SQL. */
+export async function getSummary(projectId?: string): Promise<TraceSummary | null> {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/metrics/summary?${params}`, {
+      cache: "no-store",
+      headers: serverHeaders(),
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      total: number;
+      healthy: number;
+      by_diagnosis: Record<string, number>;
+      by_source: Record<string, number>;
+      latency_ms: TraceSummary["latencyMs"];
+      cost_usd: TraceSummary["costUsd"];
+    };
+    return {
+      total: data.total,
+      healthy: data.healthy,
+      byDiagnosis: data.by_diagnosis,
+      bySource: data.by_source,
+      latencyMs: data.latency_ms,
+      costUsd: data.cost_usd,
+    };
+  } catch {
+    return null;
   }
 }
 

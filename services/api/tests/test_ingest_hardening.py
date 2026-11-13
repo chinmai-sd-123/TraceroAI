@@ -251,10 +251,10 @@ def test_every_response_carries_a_request_id() -> None:
 
 
 def test_unhandled_error_is_a_json_500_with_the_request_id(monkeypatch) -> None:
-    def boom(self, project_id=None):
+    def boom(*args, **kwargs):
         raise RuntimeError("database fell over")
 
-    monkeypatch.setattr(TraceRepository, "list", boom)
+    monkeypatch.setattr(traces_route, "list_page", boom)
 
     response = client.get("/v1/traces", headers={"X-Request-ID": "trace-me"})
 

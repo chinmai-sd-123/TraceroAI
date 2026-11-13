@@ -1,6 +1,14 @@
 import Link from "next/link";
 
-import { getEvalRuns, getJobStats, getProjects, getTraces } from "@/lib/api";
+import {
+  type TraceSummary,
+  getEvalRuns,
+  getJobStats,
+  getProjects,
+  getSummary,
+  getTraces,
+} from "@/lib/api";
+import type { MockTrace } from "@/lib/mock-traces";
 
 import { ProjectSelector } from "./traces/project-selector";
 
@@ -14,65 +22,19 @@ function withProject(href: string, project?: string) {
 
 // "Healthy" outcomes are not failures: a healthy answer AND a correct refusal
 // (the model rightly declining when context lacks the answer) both count as good.
-// Defined once so Healthy rate and Open failures stay consistent.
 const HEALTHY_LABELS = new Set(["healthy_answer", "correct_refusal"]);
 
-function calculateHealthyRate(traces: Awaited<ReturnType<typeof getTraces>>) {
-  if (traces.length === 0) {
-    return "--";
-  }
+// The panels that need each trace's details (evaluation methods, groundedness,
+// recovery) read only the most recent traces; the headline numbers come from
+// the API's summary, computed over every trace.
+const RECENT_LIMIT = 200;
 
-  const healthyCount = traces.filter((trace) =>
-    HEALTHY_LABELS.has(trace.diagnosis.label),
-  ).length;
-
-  return `${Math.round((healthyCount / traces.length) * 100)}%`;
+function percent(part: number, whole: number) {
+  return whole === 0 ? "--" : `${Math.round((part / whole) * 100)}%`;
 }
 
-// Only traces that actually reported latency (> 0) — a missing/unmeasured
-// latency must NOT be counted as 0, or it skews the average and percentiles.
-function measuredLatencies(traces: Awaited<ReturnType<typeof getTraces>>) {
-  return traces
-    .map((trace) => trace.latency.totalMs)
-    .filter((ms) => ms > 0);
-}
-
-function calculateAverageLatency(traces: Awaited<ReturnType<typeof getTraces>>) {
-  const values = measuredLatencies(traces);
-  if (values.length === 0) {
-    return "--";
-  }
-  const total = values.reduce((sum, ms) => sum + ms, 0);
-  return `${Math.round(total / values.length)}ms`;
-}
-
-function calculatePercentileLatency(
-  traces: Awaited<ReturnType<typeof getTraces>>,
-  percentile: number,
-) {
-  const sorted = measuredLatencies(traces).sort((a, b) => a - b);
-  if (sorted.length === 0) {
-    return "--";
-  }
-  // Nearest-rank percentile.
-  const rank = Math.ceil((percentile / 100) * sorted.length) - 1;
-  const index = Math.min(Math.max(rank, 0), sorted.length - 1);
-  return `${sorted[index]}ms`;
-}
-
-// Sum + average of per-trace cost, over traces that actually have a cost.
-function calculateCost(traces: Awaited<ReturnType<typeof getTraces>>) {
-  const costs = traces
-    .map((t) => t.generation.costUsd)
-    .filter((c): c is number => typeof c === "number" && c > 0);
-  if (costs.length === 0) {
-    return { total: "--", avg: "--" };
-  }
-  const total = costs.reduce((sum, c) => sum + c, 0);
-  return {
-    total: `$${total.toFixed(4)}`,
-    avg: `$${(total / costs.length).toFixed(5)}`,
-  };
+function ms(value: number | null | undefined) {
+  return value == null ? "--" : `${value}ms`;
 }
 
 // Map a "NN%" healthy-rate string to a status tone (>=80 good, >=50 warn, else bad).
@@ -82,39 +44,34 @@ function healthyRateTone(rate: string): "good" | "warn" | "bad" | undefined {
   return n >= 80 ? "good" : n >= 50 ? "warn" : "bad";
 }
 
-function calculateOpenFailures(traces: Awaited<ReturnType<typeof getTraces>>) {
-  return traces.filter((trace) => !HEALTHY_LABELS.has(trace.diagnosis.label))
-    .length;
-}
-
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ project?: string }>;
 }) {
   const { project } = await searchParams;
-  const [traces, jobStats, evalRuns, projects] = await Promise.all([
-    getTraces(project),
+  const [summary, recent, jobStats, evalRuns, projects] = await Promise.all([
+    getSummary(project),
+    getTraces({ projectId: project, limit: RECENT_LIMIT }),
     getJobStats(),
     getEvalRuns(project),
     getProjects(),
   ]);
+  const traces = recent.traces;
 
   // Most recent experiment (eval-run harness output), if any.
   const latestExperiment = [...evalRuns.experimentRuns].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
   )[0];
 
-  const totalTraces = traces.length;
-  const healthyRate = calculateHealthyRate(traces);
-  const averageLatency = calculateAverageLatency(traces);
-  const p95Latency = calculatePercentileLatency(traces, 95);
-  const openFailures = calculateOpenFailures(traces);
-  const cost = calculateCost(traces);
+  const total = summary?.total ?? 0;
+  const healthyRate = percent(summary?.healthy ?? 0, total);
+  const openFailures = total - (summary?.healthy ?? 0);
+  const avgCost = summary?.costUsd.avg;
   // Cost is shown only when (a) not disabled by env flag and (b) real cost data
-  // exists. Per-project access control is a future concern (needs auth).
-  const showCost =
-    process.env.NEXT_PUBLIC_SHOW_COST !== "false" && cost.avg !== "--";
+  // exists.
+  const showCost = process.env.NEXT_PUBLIC_SHOW_COST !== "false" && avgCost != null;
+  const partial = total > traces.length;
 
   return (
     <section>
@@ -144,22 +101,31 @@ export default async function DashboardPage({
           showCost ? "lg:grid-cols-6" : "lg:grid-cols-5"
         }`}
       >
-        <MetricCard label="Total traces" value={String(totalTraces)} />
+        <MetricCard label="Total traces" value={String(total)} />
         <MetricCard
           label="Healthy rate"
           value={healthyRate}
           tone={healthyRateTone(healthyRate)}
-          hint={judgedShare(traces)}
+          hint={judgedShare(summary)}
         />
-        <MetricCard label="Avg latency" value={averageLatency} />
-        <MetricCard label="p95 latency" value={p95Latency} />
+        <MetricCard label="Avg latency" value={ms(summary?.latencyMs.avg)} />
+        <MetricCard label="p95 latency" value={ms(summary?.latencyMs.p95)} />
         <MetricCard
           label="Open failures"
           value={String(openFailures)}
           tone={openFailures === 0 ? "good" : "bad"}
         />
-        {showCost && <MetricCard label="Avg cost / trace" value={cost.avg} />}
+        {showCost && avgCost != null && (
+          <MetricCard label="Avg cost / trace" value={`$${avgCost.toFixed(5)}`} />
+        )}
       </div>
+
+      {partial && (
+        <p className="mt-3 text-xs text-zinc-500">
+          The figures above cover all {total} traces; the panels below use the latest{" "}
+          {traces.length}.
+        </p>
+      )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
         <section className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
@@ -249,7 +215,7 @@ export default async function DashboardPage({
           <section className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
             <h2 className="text-lg font-semibold">Failure Mix</h2>
             <div className="mt-4 space-y-3">
-              {getFailureMix(traces).map((item) => (
+              {getFailureMix(summary).map((item) => (
                 <Link
                   key={item.label}
                   href={withProject(
@@ -465,10 +431,9 @@ export default async function DashboardPage({
 
 // The healthy rate mixes LLM-judge verdicts with cheaper estimates; say how
 // much of it the judge actually decided.
-function judgedShare(traces: Awaited<ReturnType<typeof getTraces>>) {
-  if (traces.length === 0) return undefined;
-  const judged = traces.filter((t) => t.diagnosis.source === "judge").length;
-  return `${Math.round((judged / traces.length) * 100)}% judged by LLM`;
+function judgedShare(summary: TraceSummary | null) {
+  if (!summary || summary.total === 0) return undefined;
+  return `${percent(summary.bySource.judge ?? 0, summary.total)} judged by LLM`;
 }
 
 function MetricCard({
@@ -527,7 +492,7 @@ const BIN_TONES = [
 ];
 
 function getGroundednessDistribution(
-  traces: Awaited<ReturnType<typeof getTraces>>,
+  traces: MockTrace[],
 ) {
   const scores = traces
     .filter((t) => t.evaluations.groundedness.label !== "not_evaluated")
@@ -562,7 +527,7 @@ function getGroundednessDistribution(
 
 // Share of traces each evaluation method touched. Surfaces the two-tier eval
 // architecture (fast embedding/lexical quick pass + LLM-judge deep pass).
-function getEvalMethodMix(traces: Awaited<ReturnType<typeof getTraces>>) {
+function getEvalMethodMix(traces: MockTrace[]) {
   const total = traces.length;
   if (total === 0) {
     return [] as Array<{ label: string; count: number; percentage: number }>;
@@ -624,7 +589,7 @@ function describeUnrecovered(r: RunInsight): string {
   return "never recovered — likely a knowledge-base gap; add the missing docs";
 }
 
-function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
+function getRecoveryInsights(traces: MockTrace[]) {
   const recoveryTraces = traces.filter((t) => t.recovery);
   if (recoveryTraces.length === 0) {
     return null;
@@ -714,19 +679,13 @@ function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
   };
 }
 
-function getFailureMix(traces: Awaited<ReturnType<typeof getTraces>>) {
-  const counts = new Map<string, number>();
-
-  for (const trace of traces) {
-    counts.set(
-      trace.diagnosis.label,
-      (counts.get(trace.diagnosis.label) || 0) + 1,
-    );
-  }
-
-  return Array.from(counts.entries()).map(([label, count]) => ({
-    label,
-    count,
-    percentage: traces.length === 0 ? 0 : Math.round((count / traces.length) * 100),
-  }));
+function getFailureMix(summary: TraceSummary | null) {
+  if (!summary || summary.total === 0) return [];
+  return Object.entries(summary.byDiagnosis)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, count]) => ({
+      label,
+      count,
+      percentage: Math.round((count / summary.total) * 100),
+    }));
 }
