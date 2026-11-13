@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.metrics import TRACES_INGESTED
 from app.core.tenancy import (
     Caller,
     ReadScope,
@@ -63,6 +64,7 @@ def ingest_trace(
     # trace back instead of creating a duplicate (and paying for a second judge run).
     existing = repository.get(payload.trace_id)
     if existing is not None:
+        TRACES_INGESTED.labels("duplicate").inc()
         return _already_ingested(existing, payload.project.project_id)
 
     trace = Trace(**payload.model_dump())
@@ -90,7 +92,9 @@ def ingest_trace(
         stored = repository.get(trace.trace_id)
         if stored is None:  # pragma: no cover - the row we collided with is gone
             raise
+        TRACES_INGESTED.labels("duplicate").inc()
         return _already_ingested(stored, trace.project.project_id)
+    TRACES_INGESTED.labels("stored").inc()
 
     # Synchronous deep eval (e.g. for the recovery agent, which must route on a
     # judge-quality diagnosis NOW rather than poll an async queue). Run the judge

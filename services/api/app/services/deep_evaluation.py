@@ -3,6 +3,7 @@ from uuid import UUID
 import openai
 
 from app.core.config import Settings, get_settings
+from app.core.metrics import DEEP_EVALUATIONS
 from app.db.session import SessionLocal
 from app.evaluators.deep_groundedness import evaluate_deep_groundedness
 from app.evaluators.deep_relevance import (
@@ -121,6 +122,7 @@ def run_deep_evaluation(
         TraceRepository(db).set_evaluations(
             trace_id, quick=quick, deep=deep, diagnosis=diagnosis, deep_status=deep_status
         )
+    DEEP_EVALUATIONS.labels(deep_status).inc()
 
 
 def judge_configured() -> bool:

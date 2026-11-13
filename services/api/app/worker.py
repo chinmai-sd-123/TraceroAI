@@ -275,6 +275,14 @@ def main() -> None:
     )
     if not settings.redis_url:
         raise SystemExit("TRACEROAI_REDIS_URL is not set; the worker needs Redis.")
+    if settings.worker_metrics_port:
+        from prometheus_client import start_http_server
+
+        from app.core.metrics import register_queue_collector
+
+        register_queue_collector()
+        start_http_server(settings.worker_metrics_port)
+        logger.info("Worker metrics on port %d", settings.worker_metrics_port)
 
     client = redis.Redis.from_url(
         settings.redis_url,

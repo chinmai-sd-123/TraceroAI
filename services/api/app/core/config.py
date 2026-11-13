@@ -74,6 +74,9 @@ class Settings(BaseSettings):
     # A trace still "pending" this long after ingest, with nothing left in the
     # queue, lost its job (process restart, queue trimmed) and is queued again.
     stalled_evaluation_seconds: int = Field(default=900, ge=60)
+    # Port for the worker's Prometheus metrics (http://host:port/metrics); unset
+    # = no metrics server. The API serves its own at /metrics.
+    worker_metrics_port: int | None = None
     # Feedback entries kept per trace; further feedback gets a 409.
     max_feedback_per_trace: int = Field(default=100, ge=1)
     # An empty environment variable is a real value and overrides .env: running

@@ -293,6 +293,16 @@ When keys are required, a request without one can't write anything and can read 
 public projects. A key never sees another project's data: those traces and eval runs are
 reported as not found.
 
+### Health and metrics
+
+| Endpoint | Use |
+|---|---|
+| `GET /health` | Liveness: the process is up. |
+| `GET /health/ready` | Readiness: 200 when the database (and Redis, if configured) answer, 503 otherwise. |
+| `GET /metrics` | Prometheus metrics: requests and latency by route, traces ingested, judge outcomes, queue depth. Needs an admin key when keys are required. |
+
+The worker serves the same format on `TRACEROAI_WORKER_METRICS_PORT` when it's set.
+
 ### Tests
 
 ```bash
