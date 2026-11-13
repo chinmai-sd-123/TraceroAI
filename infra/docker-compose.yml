@@ -24,6 +24,9 @@ x-api-environment: &api-environment
   TRACEROAI_JUDGE_MODEL: ${TRACEROAI_JUDGE_MODEL:-gpt-4o-mini}
   TRACEROAI_JUDGE_BASE_URL: ${TRACEROAI_JUDGE_BASE_URL:-}
   TRACEROAI_EMBEDDING_MODEL: ${TRACEROAI_EMBEDDING_MODEL:-text-embedding-3-small}
+  # JSON, e.g. '{"<key>":"my-app"}' and '["<admin key>"]'. Empty is fine in development.
+  TRACEROAI_PROJECT_API_KEYS: ${TRACEROAI_PROJECT_API_KEYS:-}
+  TRACEROAI_ADMIN_API_KEYS: ${TRACEROAI_ADMIN_API_KEYS:-}
 
 services:
   postgres:
@@ -102,6 +105,10 @@ services:
     restart: unless-stopped
     environment:
       TRACEROAI_API_URL: http://api:8000
+      # Needed once the API requires keys (APP_ENV=production): an admin key from
+      # TRACEROAI_ADMIN_API_KEYS. Set a dashboard password at the same time.
+      TRACEROAI_API_KEY: ${TRACEROAI_DASHBOARD_API_KEY:-}
+      TRACEROAI_DASHBOARD_PASSWORD: ${TRACEROAI_DASHBOARD_PASSWORD:-}
     ports:
       - "3000:3000"
     depends_on:

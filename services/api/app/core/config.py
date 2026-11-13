@@ -32,10 +32,16 @@ class Settings(BaseSettings):
     # An ingest request authenticated with a known key is stamped with that
     # project; unknown/absent keys fall back to the client-provided project.
     project_api_keys: dict[str, str] = Field(default_factory=dict)
-    # Whether writes (traces, eval runs, grading) require a valid key from
-    # project_api_keys (else 401). Unset = required in staging/production, optional
-    # in development/testing (see core/tenancy.api_key_required). Reads (the
-    # dashboard) aren't gated yet — that comes with real user login.
+    # Keys that may read every project and write to any (the dashboard server
+    # uses one). JSON list: TRACEROAI_ADMIN_API_KEYS='["<long random key>"]'.
+    admin_api_keys: list[str] = Field(default_factory=list)
+    # Projects that callers without a key may read when keys are required, e.g.
+    # a public demo: TRACEROAI_PUBLIC_READ_PROJECTS='["playground"]'.
+    public_read_projects: list[str] = Field(default_factory=list)
+    # Whether requests must carry a valid key. Unset = required in
+    # staging/production, optional in development/testing (see
+    # core/tenancy.api_key_required). When required, writes without a key get a
+    # 401 and reads without a key see only public_read_projects.
     require_api_key: bool | None = None
     # Extra browser origins allowed by CORS (the deployed frontend URL).
     # JSON list, e.g. TRACEROAI_CORS_ORIGINS='["https://traceroai.vercel.app"]'.
@@ -43,7 +49,12 @@ class Settings(BaseSettings):
     # Largest request body the API accepts, in bytes (413 above it). One trace
     # with dozens of full-text chunks fits comfortably in the default.
     max_request_bytes: int = Field(default=1_000_000, gt=0)
-    model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore")
+    # env_ignore_empty: an empty variable (TRACEROAI_X=, or an unset Compose
+    # ${VAR:-}) means "use the default", rather than an empty string that the
+    # JSON settings can't parse.
+    model_config = SettingsConfigDict(
+        env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore", env_ignore_empty=True
+    )
 
     @field_validator("judge_base_url", mode="before")
     @classmethod

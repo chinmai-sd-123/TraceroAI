@@ -154,12 +154,45 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_TRACEROAI_API_URL ||
   "http://127.0.0.1:8000";
 
+// The dashboard reads the API with TRACEROAI_API_KEY, from the server only: the
+// variable isn't NEXT_PUBLIC_, so Next.js never puts it in browser code. Use an
+// admin key to see every project, or a project key to show just one.
+function serverHeaders(): Record<string, string> {
+  const key =
+    typeof window === "undefined" ? process.env.TRACEROAI_API_KEY : undefined;
+  return key ? { Authorization: `Bearer ${key}` } : {};
+}
+
+export type FeedbackRating = "thumbs_up" | "thumbs_down";
+
+/** Server-side: record feedback on a trace with the dashboard's key. */
+export async function postFeedback(
+  traceId: string,
+  rating: FeedbackRating,
+  comment: string | null,
+): Promise<{ ok: true } | { ok: false; status: number }> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/traces/${encodeURIComponent(traceId)}/feedback`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...serverHeaders() },
+        body: JSON.stringify({ rating, comment }),
+        cache: "no-store",
+      },
+    );
+    return response.ok ? { ok: true } : { ok: false, status: response.status };
+  } catch {
+    return { ok: false, status: 0 };
+  }
+}
+
 export async function getTraces(projectId?: string): Promise<MockTrace[]> {
   const url = projectId
     ? `${API_BASE_URL}/v1/traces?project_id=${encodeURIComponent(projectId)}`
     : `${API_BASE_URL}/v1/traces`;
   try {
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(url, { cache: "no-store", headers: serverHeaders() });
 
     if (!response.ok) {
       return [];
@@ -220,6 +253,7 @@ export async function getProjects(): Promise<string[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/traces/projects`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
     if (!response.ok) {
       return [];
@@ -234,6 +268,7 @@ export async function getEvalRunProjects(): Promise<string[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/eval-runs/projects`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
     if (!response.ok) {
       return [];
@@ -253,6 +288,7 @@ export async function getJobStats(): Promise<JobStats> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/jobs/stats`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
 
     if (!response.ok) {
@@ -276,6 +312,7 @@ export async function getTrace(traceId: string): Promise<MockTrace | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/traces/${traceId}`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
 
     if (!response.ok) {
@@ -299,6 +336,7 @@ export async function getEvalRuns(projectId?: string): Promise<{
   try {
     const response = await fetch(url, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
 
     if (!response.ok) {
@@ -324,6 +362,7 @@ export async function getEvalRun(evalRunId: string): Promise<ApiEvalRun | null> 
   try {
     const response = await fetch(`${API_BASE_URL}/v1/eval-runs/${evalRunId}`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
 
     if (!response.ok) {

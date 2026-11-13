@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Collection
 from uuid import UUID
 
 from sqlalchemy import select
@@ -55,18 +56,22 @@ class EvalRunRepository:
 
         return record
 
-    def list(self, project_id: str | None = None) -> list[EvalRunRecord]:
+    def list(self, project_ids: Collection[str] | None = None) -> list[EvalRunRecord]:
+        """Eval runs, newest first. project_ids=None means every project; an
+        empty collection means none."""
         statement = select(EvalRunRecord).order_by(EvalRunRecord.created_at.desc())
-        if project_id:
-            statement = statement.where(EvalRunRecord.project_id == project_id)
+        if project_ids is not None:
+            statement = statement.where(EvalRunRecord.project_id.in_(sorted(project_ids)))
         return list(self.db.scalars(statement).all())
 
-    def list_projects(self) -> list[str]:
+    def list_projects(self, project_ids: Collection[str] | None = None) -> list[str]:
         statement = (
             select(EvalRunRecord.project_id)
             .distinct()
             .order_by(EvalRunRecord.project_id)
         )
+        if project_ids is not None:
+            statement = statement.where(EvalRunRecord.project_id.in_(sorted(project_ids)))
         return list(self.db.scalars(statement).all())
 
     def get(self, eval_run_id: UUID) -> EvalRunRecord | None:

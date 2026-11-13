@@ -1,15 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_TRACEROAI_API_URL || "http://127.0.0.1:8000";
+import type { FeedbackRating as Rating } from "@/lib/api";
 
-type Rating = "thumbs_up" | "thumbs_down";
+import { submitFeedback } from "./actions";
 
 export function FeedbackWidget({ traceId }: { traceId: string }) {
-  const router = useRouter();
   const [rating, setRating] = useState<Rating | null>(null);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -23,22 +20,15 @@ export function FeedbackWidget({ traceId }: { traceId: string }) {
     setSubmitting(true);
     setError(null);
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/v1/traces/${traceId}/feedback`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rating, comment: comment || null }),
-        },
-      );
-      if (!response.ok) {
-        throw new Error(`Request failed (${response.status})`);
+      const result = await submitFeedback(traceId, rating, comment);
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
       setRating(null);
-      setComment("");
-      router.refresh(); // re-fetch the server component to show the new entry
+      setComment(""); // the action refreshes the page, which shows the new entry
     } catch {
-      setError("Could not submit feedback. Is the API running?");
+      setError("Couldn't submit feedback. Try again.");
     } finally {
       setSubmitting(false);
     }

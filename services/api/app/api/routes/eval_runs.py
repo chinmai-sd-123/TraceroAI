@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.tenancy import write_project
+from app.core.tenancy import ReadScope, read_scope, write_project
 from app.db.session import get_db
 from app.schemas.eval_runs import EvalRunIngestRequest, EvalRunIngestResponse
 from app.services.eval_run_repository import EvalRunRepository, DuplicateEvalRunError
@@ -46,29 +46,34 @@ def ingest_eval_run(
 def list_eval_runs(
     project_id: str | None = None,
     db: Session = Depends(get_db),
+    scope: ReadScope = Depends(read_scope),
 ) -> list[dict]:
     repository = EvalRunRepository(db)
-    records = repository.list(project_id=project_id)
+    records = repository.list(project_ids=scope.narrow(project_id))
 
     return [record.payload for record in records]
 
 
 # Declared before /{eval_run_id} so "projects" isn't captured as an id.
 @router.get("/projects", response_model=list[str])
-def list_eval_run_projects(db: Session = Depends(get_db)) -> list[str]:
+def list_eval_run_projects(
+    db: Session = Depends(get_db),
+    scope: ReadScope = Depends(read_scope),
+) -> list[str]:
     repository = EvalRunRepository(db)
-    return repository.list_projects()
+    return repository.list_projects(project_ids=scope.projects)
 
 
 @router.get("/{eval_run_id}", response_model=EvalRunIngestRequest)
 def get_eval_run(
     eval_run_id: UUID,
     db: Session = Depends(get_db),
+    scope: ReadScope = Depends(read_scope),
 ) -> dict:
     repository = EvalRunRepository(db)
     record = repository.get(eval_run_id)
 
-    if record is None:
+    if record is None or not scope.allows(record.project_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Eval run not found.",

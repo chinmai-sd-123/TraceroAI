@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections.abc import Collection
 from uuid import UUID
 
 
@@ -49,16 +50,20 @@ class TraceRepository:
 
         return record
 
-    def list(self, project_id: str | None = None) -> list[TraceRecord]:
+    def list(self, project_ids: Collection[str] | None = None) -> list[TraceRecord]:
+        """Traces, newest first. project_ids=None means every project; an empty
+        collection means none."""
         statement = select(TraceRecord).order_by(TraceRecord.created_at.desc())
-        if project_id:
-            statement = statement.where(TraceRecord.project_id == project_id)
+        if project_ids is not None:
+            statement = statement.where(TraceRecord.project_id.in_(sorted(project_ids)))
         return list(self.db.scalars(statement).all())
 
-    def list_projects(self) -> list[str]:
+    def list_projects(self, project_ids: Collection[str] | None = None) -> list[str]:
         statement = (
             select(TraceRecord.project_id).distinct().order_by(TraceRecord.project_id)
         )
+        if project_ids is not None:
+            statement = statement.where(TraceRecord.project_id.in_(sorted(project_ids)))
         return list(self.db.scalars(statement).all())
 
     def get(self, trace_id: UUID) -> TraceRecord | None:

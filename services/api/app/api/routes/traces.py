@@ -3,7 +3,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, status, BackgroundTasks
 from sqlalchemy.orm import Session
 
-from app.core.tenancy import optional_project, write_project
+from app.core.tenancy import (
+    Caller,
+    ReadScope,
+    api_key_required,
+    caller,
+    read_scope,
+    write_project,
+)
 from app.db.session import get_db
 from app.db.models import TraceRecord
 from app.schemas.traces import (
@@ -126,28 +133,35 @@ def _already_ingested(record: TraceRecord, project_id: str) -> TraceIngestRespon
 def list_traces(
     project_id: str | None = None,
     db: Session = Depends(get_db),
+    scope: ReadScope = Depends(read_scope),
 ) -> list[dict]:
     repository = TraceRepository(db)
-    records = repository.list(project_id=project_id)
+    records = repository.list(project_ids=scope.narrow(project_id))
 
     return [record.payload for record in records]
 
 
 @router.get("/projects", response_model=list[str])
-def list_projects(db: Session = Depends(get_db)) -> list[str]:
+def list_projects(
+    db: Session = Depends(get_db),
+    scope: ReadScope = Depends(read_scope),
+) -> list[str]:
     repository = TraceRepository(db)
-    return repository.list_projects()
+    return repository.list_projects(project_ids=scope.projects)
 
 
 @router.get("/{trace_id}", response_model=Trace)
 def get_trace(
     trace_id: UUID,
     db: Session = Depends(get_db),
+    scope: ReadScope = Depends(read_scope),
 ) -> dict:
     repository = TraceRepository(db)
     record = repository.get(trace_id)
 
-    if record is None:
+    # A trace outside the caller's projects is reported as missing, not
+    # forbidden, so a key can't confirm that someone else's trace exists.
+    if record is None or not scope.allows(record.project_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Trace not found.",
@@ -161,25 +175,33 @@ def add_feedback(
     body: FeedbackRequest,
     request: Request,
     db: Session = Depends(get_db),
-    project_id: str | None = Depends(optional_project),
+    who: Caller = Depends(caller),
 ) -> FeedbackEntry:
-    # Feedback costs no LLM calls, so the dashboard widget may send it without a
-    # key (browsers can't hold one) — but keyless calls are rate-limited per IP.
-    # With a key, feedback is scoped to that key's project.
-    if project_id is None and not check_rate_limit(
-        bucket="feedback",
-        identity=client_ip(request),
-        limit=ANONYMOUS_FEEDBACK_LIMIT,
-        window_seconds=ANONYMOUS_FEEDBACK_WINDOW_SECONDS,
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Too much feedback from this address — please wait a minute.",
-        )
+    # With a project key, feedback is limited to that project's traces; an admin
+    # key (the dashboard's server) may add it to any trace. Without a key it's
+    # allowed only where keys aren't required (local development), and then
+    # rate-limited per IP.
+    if who.anonymous:
+        if api_key_required():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="A valid API key is required.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if not check_rate_limit(
+            bucket="feedback",
+            identity=client_ip(request),
+            limit=ANONYMOUS_FEEDBACK_LIMIT,
+            window_seconds=ANONYMOUS_FEEDBACK_WINDOW_SECONDS,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too much feedback from this address — please wait a minute.",
+            )
 
     entry = FeedbackEntry(rating=body.rating, comment=body.comment)
     repository = TraceRepository(db)
-    record = repository.add_feedback(trace_id, entry, project_id=project_id)
+    record = repository.add_feedback(trace_id, entry, project_id=who.project_id)
 
     if record is None:
         raise HTTPException(
