@@ -73,15 +73,55 @@ def test_judge_verdict_is_marked_judge_and_complete() -> None:
     assert trace["evaluations"]["deep_status"] == "complete"
 
 
-def test_judge_error_is_failed_and_keeps_the_quick_diagnosis() -> None:
+class BrokenJudge(StubJudge):
+    def _fail(self, *args, **kwargs):
+        raise ValueError("unparseable verdict")
+
+    judge_claim_groundedness = judge_context_relevance = judge_answer_relevance = _fail
+
+
+def test_one_failed_judge_call_is_partial_and_the_rest_still_count() -> None:
     trace_id = _ingest()
-    before = _trace(trace_id)["diagnosis"]
 
     run_deep_evaluation(UUID(trace_id), judge=FailingJudge())
 
     trace = _trace(trace_id)
+    assert trace["evaluations"]["deep_status"] == "partial"
+    labels = {r["evaluator_name"]: r["label"] for r in trace["evaluations"]["deep"]}
+    assert labels == {
+        "deep_context_relevance": "relevant",
+        "claim_groundedness": "error",
+        "deep_answer_relevance": "relevant",
+    }
+    assert trace["diagnosis"]["source"] == "judge"
+
+
+def test_every_judge_call_failing_is_failed_and_keeps_the_quick_diagnosis() -> None:
+    trace_id = _ingest()
+    before = _trace(trace_id)["diagnosis"]
+
+    run_deep_evaluation(UUID(trace_id), judge=BrokenJudge())
+
+    trace = _trace(trace_id)
     assert trace["evaluations"]["deep_status"] == "failed"
     assert trace["diagnosis"] == before  # still the lexical diagnosis, still labelled so
+
+
+def test_a_bad_verdict_is_retried_once() -> None:
+    class FlakyJudge(StubJudge):
+        calls = 0
+
+        def judge_claim_groundedness(self, answer, context):
+            FlakyJudge.calls += 1
+            if FlakyJudge.calls == 1:
+                raise ValueError("Judge returned no parsed verdict.")
+            return super().judge_claim_groundedness(answer, context)
+
+    trace_id = _ingest()
+    run_deep_evaluation(UUID(trace_id), judge=FlakyJudge())
+
+    assert FlakyJudge.calls == 2
+    assert _trace(trace_id)["evaluations"]["deep_status"] == "complete"
 
 
 def test_semantic_pass_is_marked_embedding(monkeypatch) -> None:

@@ -8,7 +8,7 @@ export type TraceDiagnosis =
   | "needs_review";
 
 export type DiagnosisSource = "lexical" | "embedding" | "judge";
-export type DeepStatus = "pending" | "complete" | "failed" | "skipped";
+export type DeepStatus = "pending" | "complete" | "partial" | "failed" | "skipped";
 
 export type MockTrace = {
   traceId: string;

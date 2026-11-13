@@ -98,9 +98,10 @@ DiagnosisSource = Literal["lexical", "embedding", "judge"]
 # State of the LLM-judge evaluation for a trace:
 #   pending   queued or running
 #   complete  judge results stored
-#   failed    the judge errored; the diagnosis comes from the quick checks
+#   partial   some judge calls failed; the diagnosis uses the ones that worked
+#   failed    every judge call failed; the diagnosis comes from the quick checks
 #   skipped   no judge configured (or deep evaluation disabled)
-DeepEvaluationStatus = Literal["pending", "complete", "failed", "skipped"]
+DeepEvaluationStatus = Literal["pending", "complete", "partial", "failed", "skipped"]
 
 
 class DiagnosisTrace(BaseModel):

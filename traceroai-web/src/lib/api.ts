@@ -10,7 +10,7 @@ import {
 } from "./mock-traces";
 
 const DIAGNOSIS_SOURCES: readonly DiagnosisSource[] = ["lexical", "embedding", "judge"];
-const DEEP_STATUSES: readonly DeepStatus[] = ["pending", "complete", "failed", "skipped"];
+const DEEP_STATUSES: readonly DeepStatus[] = ["pending", "complete", "partial", "failed", "skipped"];
 
 // A known value from the API, or undefined (older traces, or a value this build
 // doesn't know yet).

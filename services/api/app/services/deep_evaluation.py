@@ -26,6 +26,14 @@ DEEP_EVALUATORS = (
 # provider retries: the request waits at most about 45 seconds for the judge.
 INLINE_JUDGE_TIMEOUT_SECONDS = 15.0
 ERROR_EVALUATOR_NAME = "deep_evaluation"
+DEEP_EVALUATOR_NAMES = {
+    evaluate_deep_context_relevance: "deep_context_relevance",
+    evaluate_deep_groundedness: "claim_groundedness",
+    evaluate_deep_answer_relevance: "deep_answer_relevance",
+}
+# Extra attempts for a judge call that fails for a reason other than the
+# provider (usually a verdict that doesn't match the expected structure).
+VERDICT_RETRIES = 1
 ERROR_EVALUATOR_VERSION = "llm_judge_openai_v1"
 
 # Provider failures that are worth retrying later: rate limits (by far the most
@@ -100,7 +108,7 @@ def run_deep_evaluation(
     deep_status: DeepEvaluationStatus = "skipped"
     if judge_available:
         deep = _evaluate(trace, judge, settings, retry_transient=retry_transient, inline=inline)
-        deep_status = "failed" if _judge_failed(deep) else "complete"
+        deep_status = _deep_status(deep)
         # Re-diagnose from the judge's verdict — it's more reliable than the
         # quick eval. If the judge errored or yielded nothing usable,
         # diagnose_from_deep returns None and the quick diagnosis stands.
@@ -127,8 +135,11 @@ def initial_deep_status() -> DeepEvaluationStatus:
     return "pending" if settings.deep_eval_enabled and settings.openai_api_key else "skipped"
 
 
-def _judge_failed(deep: list[EvaluationResult]) -> bool:
-    return any(result.evaluator_name == ERROR_EVALUATOR_NAME for result in deep)
+def _deep_status(deep: list[EvaluationResult]) -> DeepEvaluationStatus:
+    errors = sum(1 for result in deep if result.label == "error")
+    if errors == 0:
+        return "complete"
+    return "failed" if errors == len(deep) else "partial"
 
 
 def _evaluate(
@@ -141,19 +152,39 @@ def _evaluate(
 ) -> list[EvaluationResult]:
     try:
         active_judge = judge or _build_default_judge(settings, inline=inline)
-        return [evaluator(trace, active_judge) for evaluator in DEEP_EVALUATORS]
     except Exception as exc:
-        if retry_transient and isinstance(exc, TRANSIENT_JUDGE_ERRORS):
-            raise TransientEvaluationError(f"{type(exc).__name__}: {exc}") from exc
-        return [
-            EvaluationResult(
-                evaluator_name=ERROR_EVALUATOR_NAME,
-                evaluator_version=ERROR_EVALUATOR_VERSION,
-                label="error",
-                reason=f"Deep evaluation failed: {exc}",
-                details={},
-            )
-        ]
+        return [_error_result(ERROR_EVALUATOR_NAME, exc)]
+    # Each judge call stands on its own: one failing doesn't discard the others.
+    return [
+        _run_evaluator(evaluator, trace, active_judge, retry_transient=retry_transient)
+        for evaluator in DEEP_EVALUATORS
+    ]
+
+
+def _run_evaluator(evaluator, trace: Trace, judge: LLMJudge, *, retry_transient: bool):
+    last_error: Exception | None = None
+    for _ in range(1 + VERDICT_RETRIES):
+        try:
+            return evaluator(trace, judge)
+        except TRANSIENT_JUDGE_ERRORS as exc:
+            # The provider client has already retried these.
+            if retry_transient:
+                raise TransientEvaluationError(f"{type(exc).__name__}: {exc}") from exc
+            last_error = exc
+            break
+        except Exception as exc:  # e.g. a verdict that didn't parse: ask again once
+            last_error = exc
+    return _error_result(DEEP_EVALUATOR_NAMES[evaluator], last_error)
+
+
+def _error_result(name: str, error: Exception | None) -> EvaluationResult:
+    return EvaluationResult(
+        evaluator_name=name,
+        evaluator_version=ERROR_EVALUATOR_VERSION,
+        label="error",
+        reason=f"Judge call failed: {type(error).__name__}: {error}",
+        details={},
+    )
 
 
 def _build_default_judge(settings: Settings, *, inline: bool = False) -> LLMJudge:

@@ -64,6 +64,16 @@ class Settings(BaseSettings):
     # The public "try it" endpoint (POST /v1/playground). It writes a trace and,
     # with a judge configured, makes three LLM calls per request, without a key.
     playground_enabled: bool = False
+    # Deep-eval worker (python -m app.worker).
+    # Jobs processed in parallel by one worker process.
+    worker_concurrency: int = Field(default=1, ge=1)
+    # How long a job may run before another worker takes it over. Must exceed
+    # the slowest job: three judge calls of up to 60 s, each retried twice by
+    # the provider client, plus embeddings.
+    worker_visibility_timeout_seconds: int = Field(default=600, ge=30)
+    # A trace still "pending" this long after ingest, with nothing left in the
+    # queue, lost its job (process restart, queue trimmed) and is queued again.
+    stalled_evaluation_seconds: int = Field(default=900, ge=60)
     # Feedback entries kept per trace; further feedback gets a 409.
     max_feedback_per_trace: int = Field(default=100, ge=1)
     # An empty environment variable is a real value and overrides .env: running

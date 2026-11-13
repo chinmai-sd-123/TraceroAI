@@ -1,5 +1,6 @@
 from __future__ import annotations
 from collections.abc import Collection
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
@@ -72,6 +73,18 @@ class TraceRepository:
 
     def get(self, trace_id: UUID) -> TraceRecord | None:
         return self.db.get(TraceRecord, trace_id)
+
+    def stalled_evaluations(self, *, older_than_seconds: int, limit: int = 200) -> list[UUID]:
+        """Traces still waiting for the judge long after they were stored."""
+        cutoff = datetime.now(UTC) - timedelta(seconds=older_than_seconds)
+        statement = (
+            select(TraceRecord.trace_id)
+            .where(TraceRecord.payload["evaluations"]["deep_status"].astext == "pending")
+            .where(TraceRecord.created_at < cutoff)
+            .order_by(TraceRecord.created_at)
+            .limit(limit)
+        )
+        return list(self.db.scalars(statement).all())
     
     # The two writers below change one part of a stored trace each, and run while
     # other writers may be active (feedback arrives while the judge is running).

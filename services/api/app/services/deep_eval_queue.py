@@ -66,7 +66,7 @@ def queue_stats() -> dict:
     if client is None:
         return empty
     try:
-        queued, pending = _group_backlog(client)
+        queued, pending = group_backlog(client)
         return {
             "redis_connected": True,
             "queued": queued + client.llen(LEGACY_LIST),
@@ -77,7 +77,7 @@ def queue_stats() -> dict:
         return empty
 
 
-def _group_backlog(client: redis.Redis) -> tuple[int, int]:
+def group_backlog(client: redis.Redis) -> tuple[int, int]:
     """(undelivered, pending) for the worker group."""
     if not client.exists(STREAM):
         return 0, 0

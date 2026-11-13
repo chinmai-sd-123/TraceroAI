@@ -17,6 +17,8 @@ export function deepStatusNote(status: DeepStatus | undefined): string | null {
   switch (status) {
     case "pending":
       return "Judge pending";
+    case "partial":
+      return "Judge partly failed";
     case "failed":
       return "Judge failed";
     case "skipped":
@@ -31,7 +33,11 @@ export function provenanceSentence(
   source: DiagnosisSource | undefined,
   status: DeepStatus | undefined,
 ): string | null {
-  if (source === "judge") return "Diagnosed by the LLM judge.";
+  if (source === "judge") {
+    return status === "partial"
+      ? "Diagnosed by the LLM judge, but some of its checks failed; the diagnosis uses the ones that completed."
+      : "Diagnosed by the LLM judge.";
+  }
   const estimate =
     source === "embedding"
       ? "Estimated from embedding similarity."
@@ -59,7 +65,8 @@ export function ProvenanceBadge({
   size?: "sm" | "md";
 }) {
   const label = sourceLabel(source);
-  const note = source === "judge" ? null : deepStatusNote(status);
+  const note =
+    source === "judge" && status !== "partial" ? null : deepStatusNote(status);
   if (!label && !note) return null;
 
   const judged = source === "judge";

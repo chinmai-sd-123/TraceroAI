@@ -64,7 +64,7 @@ def diagnose_from_deep(
     mapped: list[EvaluationResult] = []
     for evaluation in deep_evaluations:
         name = _DEEP_NAME_MAP.get(evaluation.evaluator_name)
-        if name is None:
+        if name is None or evaluation.label == "error":
             continue
         if evaluation.label in _DEEP_PASS_LABELS:
             label = "pass"

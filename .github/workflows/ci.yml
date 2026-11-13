@@ -41,8 +41,18 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       TRACEROAI_TEST_DATABASE_URL: postgresql+psycopg://traceroai:traceroai@localhost:5432/traceroai_test
+      TRACEROAI_TEST_REDIS_URL: redis://localhost:6379/15
     defaults:
       run:
         working-directory: services/api
