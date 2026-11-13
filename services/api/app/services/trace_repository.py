@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import TraceRecord
 from app.schemas.traces import (
+    DeepEvaluationStatus,
     DiagnosisTrace,
     EvaluationResult,
     FeedbackEntry,
@@ -85,6 +86,7 @@ class TraceRepository:
         quick: list[EvaluationResult] | None = None,
         deep: list[EvaluationResult] | None = None,
         diagnosis: DiagnosisTrace | None = None,
+        deep_status: DeepEvaluationStatus | None = None,
     ) -> bool:
         """Write background evaluation results. Each argument left as None keeps
         what's stored (e.g. no judge configured -> the deep list is untouched).
@@ -95,6 +97,8 @@ class TraceRepository:
             payload = _jsonb_set(payload, ["evaluations", "quick"], _dump_list(quick))
         if deep is not None:
             payload = _jsonb_set(payload, ["evaluations", "deep"], _dump_list(deep))
+        if deep_status is not None:
+            payload = _jsonb_set(payload, ["evaluations", "deep_status"], deep_status)
         if diagnosis is not None:
             payload = _jsonb_set(payload, ["diagnosis"], diagnosis.model_dump(mode="json"))
             columns["diagnosis_label"] = diagnosis.label  # keep the indexed column in sync

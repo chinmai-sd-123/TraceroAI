@@ -149,6 +149,7 @@ export default async function DashboardPage({
           label="Healthy rate"
           value={healthyRate}
           tone={healthyRateTone(healthyRate)}
+          hint={judgedShare(traces)}
         />
         <MetricCard label="Avg latency" value={averageLatency} />
         <MetricCard label="p95 latency" value={p95Latency} />
@@ -462,14 +463,24 @@ export default async function DashboardPage({
   );
 }
 
+// The healthy rate mixes LLM-judge verdicts with cheaper estimates; say how
+// much of it the judge actually decided.
+function judgedShare(traces: Awaited<ReturnType<typeof getTraces>>) {
+  if (traces.length === 0) return undefined;
+  const judged = traces.filter((t) => t.diagnosis.source === "judge").length;
+  return `${Math.round((judged / traces.length) * 100)}% judged by LLM`;
+}
+
 function MetricCard({
   label,
   value,
   tone,
+  hint,
 }: {
   label: string;
   value: string;
   tone?: "good" | "warn" | "bad";
+  hint?: string;
 }) {
   const valueTone =
     tone === "good"
@@ -496,6 +507,7 @@ function MetricCard({
         <p className="text-sm text-zinc-500">{label}</p>
       </div>
       <p className={`mt-2 text-2xl font-semibold ${valueTone}`}>{value}</p>
+      {hint && <p className="mt-1 text-xs text-zinc-500">{hint}</p>}
     </div>
   );
 }

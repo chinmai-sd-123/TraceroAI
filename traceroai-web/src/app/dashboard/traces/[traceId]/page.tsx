@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { getTrace } from "@/lib/api";
 import type { MockTrace, TraceDiagnosis } from "@/lib/mock-traces";
 
+import { ProvenanceBadge, provenanceSentence } from "@/components/diagnosis-provenance";
+
 import { FeedbackWidget } from "./feedback-widget";
 
 const diagnosisStyles: Record<TraceDiagnosis, string> = {
@@ -114,6 +116,7 @@ export default async function TraceDetailPage({
           >
             {formatLabel(trace.diagnosis.label)}
           </span>
+          <ProvenanceBadge source={trace.diagnosis.source} status={trace.deepStatus} />
         </div>
       </div>
 
@@ -155,6 +158,11 @@ export default async function TraceDetailPage({
             {formatLabel(trace.diagnosis.label)}
           </p>
           <p className="mt-3 leading-7 text-zinc-400">{trace.diagnosis.reason}</p>
+          {provenanceSentence(trace.diagnosis.source, trace.deepStatus) && (
+            <p className="mt-3 text-sm leading-6 text-zinc-500">
+              {provenanceSentence(trace.diagnosis.source, trace.deepStatus)}
+            </p>
+          )}
         </Panel>
       </div>
 

@@ -7,6 +7,9 @@ export type TraceDiagnosis =
   | "low_context_relevance"
   | "needs_review";
 
+export type DiagnosisSource = "lexical" | "embedding" | "judge";
+export type DeepStatus = "pending" | "complete" | "failed" | "skipped";
+
 export type MockTrace = {
   traceId: string;
   timestamp: string;
@@ -103,7 +106,12 @@ export type MockTrace = {
   diagnosis: {
     label: TraceDiagnosis;
     reason: string;
+    // Which evaluation produced the label; undefined on traces stored before
+    // the API recorded it.
+    source?: DiagnosisSource;
   };
+  // Where the LLM-judge evaluation stands; undefined on older traces.
+  deepStatus?: DeepStatus;
   feedback?: Array<{
     rating: string;
     comment?: string;

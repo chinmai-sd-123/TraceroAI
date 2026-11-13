@@ -41,7 +41,8 @@ class RecoveryState(TypedDict, total=False):
     prompt: str            # the prompt context the generator was given this attempt
     usage: dict[str, Any]  # optional token usage from generate() -> cost
     answer: str
-    diagnosis: str         # the server's quick-eval diagnosis for the last attempt
+    diagnosis: str         # the server's diagnosis for the last attempt
+    diagnosis_source: str | None  # "judge", "embedding" or "lexical" (None: older server)
     attempt: int           # how many attempts so far
     trace_ids: list[str]   # the trace id of every attempt (the retry chain)
     retrieval_ms: int      # timing of the last retrieve step
@@ -73,25 +74,27 @@ def _read_diagnosis(
     *,
     attempts: int = 6,
     interval: float = 1.5,
-) -> str:
-    """Read the diagnosis to route recovery on, preferring the judge-corrected one.
+) -> tuple[str, str | None]:
+    """Read (label, source) to route recovery on, preferring the judge's diagnosis.
 
     Polls briefly for the async deep eval (the server overwrites the diagnosis from the
-    LLM judge once it lands). Falls back to the synchronous quick diagnosis if the judge
-    doesn't arrive in time — recovery should retry on a cheap signal rather than hang.
+    LLM judge once it lands). Falls back to the quick diagnosis if the judge doesn't
+    arrive in time; its source then says it isn't a judge verdict.
     """
-    last_diagnosis = "needs_review"
+    last: tuple[str, str | None] = ("needs_review", None)
     for i in range(attempts):
         try:
             trace = client.get_trace(trace_id)
         except Exception:
-            return last_diagnosis  # read failed -> fail-safe to last known
-        last_diagnosis = trace.get("diagnosis", {}).get("label", "needs_review")
-        if _deep_eval_ready(trace):
-            return last_diagnosis  # judge-corrected diagnosis
+            return last  # read failed -> fail-safe to last known
+        diagnosis = trace.get("diagnosis") or {}
+        last = (diagnosis.get("label", "needs_review"), diagnosis.get("source"))
+        deep_status = (trace.get("evaluations") or {}).get("deep_status")
+        if _deep_eval_ready(trace) or deep_status in ("skipped", "failed"):
+            return last  # the judge has answered, or won't
         if i < attempts - 1:
             time.sleep(interval)
-    return last_diagnosis  # judge didn't land in time -> quick diagnosis
+    return last  # judge didn't land in time -> quick diagnosis
 
 
 def _make_nodes(
@@ -180,27 +183,32 @@ def _make_nodes(
         trace_id = str(uuid4())
         trace_kwargs["trace_id"] = trace_id
 
-        diagnosis = "needs_review"
+        diagnosis: str = "needs_review"
+        source: str | None = None
         try:
             returned_id, verdict = client.log_trace_sync_eval(**trace_kwargs)
             trace_id = str(returned_id)
             if verdict and verdict.get("label"):
-                diagnosis = verdict["label"]
+                diagnosis, source = verdict["label"], verdict.get("source")
             else:
-                # server didn't return a judge diagnosis (judge unavailable) — fall
-                # back to the stored quick diagnosis so recovery still has a signal.
-                diagnosis = _read_diagnosis(client, trace_id, interval=diagnosis_poll_interval)
+                # server didn't return a diagnosis: read the stored one.
+                diagnosis, source = _read_diagnosis(
+                    client, trace_id, interval=diagnosis_poll_interval
+                )
         except Exception:
             # Sync path failed entirely (older server / network). Fall back to a plain
             # send + read of the quick diagnosis. Recovery degrades, never breaks.
             try:
                 trace_id = str(client.log_trace(**trace_kwargs))
-                diagnosis = _read_diagnosis(client, trace_id, interval=diagnosis_poll_interval)
+                diagnosis, source = _read_diagnosis(
+                    client, trace_id, interval=diagnosis_poll_interval
+                )
             except Exception:
                 pass  # the attempt may not be recorded; route on needs_review
 
         return {
             "diagnosis": diagnosis,
+            "diagnosis_source": source,
             "attempt": state.get("attempt", 0) + 1,
             "trace_ids": state.get("trace_ids", []) + [trace_id],
         }
@@ -213,7 +221,9 @@ def _make_nodes(
 _SUCCESS = {"healthy_answer", "correct_refusal"}
 
 
-def _route(state: RecoveryState, max_attempts: int) -> str:
+def _route(
+    state: RecoveryState, max_attempts: int, retry_on_quick_diagnosis: bool = False
+) -> str:
     """Conditional edge: decide the next node from the diagnosis. THIS is the
     recovery logic — it maps a failure to the stage that should be retried."""
     diagnosis = state.get("diagnosis", "needs_review")
@@ -223,6 +233,11 @@ def _route(state: RecoveryState, max_attempts: int) -> str:
         return "success"            # -> END
     if attempt >= max_attempts:
         return "give_up"            # -> END (bounded: no infinite loops)
+    if state.get("diagnosis_source") != "judge" and not retry_on_quick_diagnosis:
+        # Only the LLM judge is reliable enough to act on. The quick checks label
+        # many correct answers as failures, and each retry costs the caller
+        # another generation, so report the result instead of retrying on a guess.
+        return "unverified"         # -> END
     if diagnosis == "retrieval_miss":
         return "fix_retrieval"      # -> retrieve again, with more/rewritten context
     if diagnosis == "unsupported_claim":
@@ -258,6 +273,9 @@ def _tighten_generation(state: RecoveryState) -> dict[str, Any]:
 class RecoveryResult(TypedDict):
     answer: str
     diagnosis: str
+    # "judge" when the diagnosis is the LLM judge's; "embedding" or "lexical" (or
+    # None, from servers before 0.5) when it's a quick-check estimate.
+    diagnosis_source: str | None
     attempts: int
     succeeded: bool
     trace_ids: list[str]
@@ -283,9 +301,15 @@ class RecoveryAgent:
         project_id: str = "recovery-agent",
         model: str = "unknown",
         diagnosis_poll_interval: float = 1.5,
+        retry_on_quick_diagnosis: bool = False,
     ) -> None:
+        """retry_on_quick_diagnosis: also retry when the server has no LLM judge
+        and the diagnosis is only a quick-check estimate. Off by default because
+        those estimates often flag correct answers, and each retry costs a
+        generation."""
         self.client = client
         self._max_attempts = max_attempts
+        self._retry_on_quick_diagnosis = retry_on_quick_diagnosis
         retrieve_node, generate_node, evaluate_node = _make_nodes(
             client, retrieve, generate, project_id, model,
             diagnosis_poll_interval=diagnosis_poll_interval,
@@ -308,10 +332,11 @@ class RecoveryAgent:
         # the conditional edge: route from evaluate based on the diagnosis
         g.add_conditional_edges(
             "evaluate",
-            lambda s: _route(s, self._max_attempts),
+            lambda s: _route(s, self._max_attempts, self._retry_on_quick_diagnosis),
             {
                 "success": END,
                 "give_up": END,
+                "unverified": END,
                 "fix_retrieval": "bump_retrieval",
                 "fix_generation": "tighten_generation",
             },
@@ -366,6 +391,7 @@ class RecoveryAgent:
         return RecoveryResult(
             answer=final.get("answer", ""),
             diagnosis=final.get("diagnosis", "needs_review"),
+            diagnosis_source=final.get("diagnosis_source"),
             attempts=final.get("attempt", 0),
             succeeded=final.get("diagnosis", "") in _SUCCESS,
             trace_ids=trace_ids,

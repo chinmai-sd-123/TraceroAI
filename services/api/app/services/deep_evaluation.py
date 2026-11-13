@@ -10,7 +10,7 @@ from app.evaluators.deep_relevance import (
     evaluate_deep_context_relevance,
 )
 from app.evaluators.diagnosis import diagnose_from_deep, is_refusal
-from app.schemas.traces import DiagnosisTrace, EvaluationResult, Trace
+from app.schemas.traces import DeepEvaluationStatus, DiagnosisTrace, EvaluationResult, Trace
 from app.services.embeddings import EmbeddingClient
 from app.services.llm_judge import LLMJudge, OpenAIJudge
 from app.services.quick_evaluation import run_quick_evaluation
@@ -75,8 +75,9 @@ def run_deep_evaluation(
     """
     settings = get_settings()
     semantic = embedder is not None or bool(settings.openai_api_key)
-    if not (semantic or settings.deep_eval_enabled):
-        return
+    judge_available = settings.deep_eval_enabled and (
+        judge is not None or bool(settings.openai_api_key)
+    )
 
     with SessionLocal() as db:
         record = TraceRepository(db).get(trace_id)
@@ -94,8 +95,12 @@ def run_deep_evaluation(
         diagnosis = refreshed.diagnosis
 
     deep: list[EvaluationResult] | None = None
-    if settings.deep_eval_enabled:
+    # No judge configured is a setup choice, not a failure: record "skipped"
+    # rather than an error result on every trace.
+    deep_status: DeepEvaluationStatus = "skipped"
+    if judge_available:
         deep = _evaluate(trace, judge, settings, retry_transient=retry_transient, inline=inline)
+        deep_status = "failed" if _judge_failed(deep) else "complete"
         # Re-diagnose from the judge's verdict — it's more reliable than the
         # quick eval. If the judge errored or yielded nothing usable,
         # diagnose_from_deep returns None and the quick diagnosis stands.
@@ -105,7 +110,25 @@ def run_deep_evaluation(
             diagnosis = deep_diagnosis
 
     with SessionLocal() as db:
-        TraceRepository(db).set_evaluations(trace_id, quick=quick, deep=deep, diagnosis=diagnosis)
+        TraceRepository(db).set_evaluations(
+            trace_id, quick=quick, deep=deep, diagnosis=diagnosis, deep_status=deep_status
+        )
+
+
+def judge_configured() -> bool:
+    """Whether background evaluation can do anything: it needs the provider key
+    for embeddings and for the judge."""
+    return bool(get_settings().openai_api_key)
+
+
+def initial_deep_status() -> DeepEvaluationStatus:
+    """The judge status a newly ingested trace starts with."""
+    settings = get_settings()
+    return "pending" if settings.deep_eval_enabled and settings.openai_api_key else "skipped"
+
+
+def _judge_failed(deep: list[EvaluationResult]) -> bool:
+    return any(result.evaluator_name == ERROR_EVALUATOR_NAME for result in deep)
 
 
 def _evaluate(

@@ -119,12 +119,12 @@ def test_sync_deep_eval_returns_judge_diagnosis_in_response(monkeypatch) -> None
     assert body["diagnosis"]["label"] == "healthy_answer"  # judge verdict, inline
 
 
-def test_ingest_triggers_deep_eval_and_degrades_without_key() -> None:
+def test_without_a_judge_key_deep_evaluation_is_skipped_not_an_error() -> None:
     response = client.post("/v1/traces", json=make_trace_payload())
     assert response.status_code == 202
 
-    trace_id = response.json()["trace_id"]
-    deep = client.get(f"/v1/traces/{trace_id}").json()["evaluations"]["deep"]
+    trace = client.get(f"/v1/traces/{response.json()['trace_id']}").json()
 
-    assert len(deep) == 1
-    assert deep[0]["label"] == "error"
+    assert trace["evaluations"]["deep"] == []
+    assert trace["evaluations"]["deep_status"] == "skipped"
+    assert trace["diagnosis"]["source"] == "lexical"

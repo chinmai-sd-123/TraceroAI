@@ -2,7 +2,21 @@ import {
   type ExperimentEvalRun,
   type RegressionEvalRun,
 } from "./mock-eval-runs";
-import { type MockTrace, type TraceDiagnosis } from "./mock-traces";
+import {
+  type DeepStatus,
+  type DiagnosisSource,
+  type MockTrace,
+  type TraceDiagnosis,
+} from "./mock-traces";
+
+const DIAGNOSIS_SOURCES: readonly DiagnosisSource[] = ["lexical", "embedding", "judge"];
+const DEEP_STATUSES: readonly DeepStatus[] = ["pending", "complete", "failed", "skipped"];
+
+// A known value from the API, or undefined (older traces, or a value this build
+// doesn't know yet).
+function oneOf<T extends string>(value: string | null | undefined, known: readonly T[]) {
+  return known.includes(value as T) ? (value as T) : undefined;
+}
 
 type ApiTrace = {
   trace_id: string;
@@ -78,10 +92,12 @@ type ApiTrace = {
         claims?: Array<{ claim: string; supported: boolean; reason: string }>;
       };
     }>;
+    deep_status?: string | null;
   };
   diagnosis: {
     label: TraceDiagnosis | string;
     reason?: string | null;
+    source?: string | null;
   };
   feedback?: Array<{
     rating: string;
@@ -521,7 +537,9 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
     diagnosis: {
       label: normalizeDiagnosis(trace.diagnosis.label),
       reason: trace.diagnosis.reason || "No diagnosis available.",
+      source: oneOf(trace.diagnosis.source, DIAGNOSIS_SOURCES),
     },
+    deepStatus: oneOf(trace.evaluations.deep_status, DEEP_STATUSES),
     feedback: (trace.feedback ?? []).map((item) => ({
       rating: item.rating,
       comment: item.comment ?? undefined,

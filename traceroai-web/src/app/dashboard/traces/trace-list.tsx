@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
+import { sourceLabel } from "@/components/diagnosis-provenance";
 import type { MockTrace, TraceDiagnosis } from "@/lib/mock-traces";
 
 const diagnosisStyles: Record<TraceDiagnosis, string> = {
@@ -135,6 +136,15 @@ export function TraceList({
                   >
                     {formatLabel(trace.diagnosis.label)}
                   </span>
+                  {sourceLabel(trace.diagnosis.source) && (
+                    <p
+                      className={`mt-1 text-[11px] ${
+                        trace.diagnosis.source === "judge" ? "text-violet-300" : "text-zinc-500"
+                      }`}
+                    >
+                      {sourceLabel(trace.diagnosis.source)}
+                    </p>
+                  )}
                 </div>
 
                 <div className="text-sm text-zinc-400">{trace.generation.model}</div>

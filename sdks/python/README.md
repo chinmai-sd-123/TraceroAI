@@ -99,12 +99,13 @@ result = agent.run("How long does a refund take?")
 `generate` may return just the answer, or `(answer, {"prompt_tokens": ..., "completion_tokens": ...})` —
 return the token counts and each recovery attempt's trace gets a server-computed cost.
 
-**Routing is judge-driven (v0.4.0+).** Each attempt is evaluated by the server's LLM
-judge *synchronously*, so recovery routes on a judge-quality diagnosis — not the cheap
-deterministic quick eval — without polling. If the judge is unavailable, it falls back to
-the quick diagnosis so recovery still progresses (it never hangs or breaks). This needs a
-TraceroAI server with deep eval configured; against an older server it transparently
-falls back to the quick-eval routing.
+**Routing is judge-driven.** Each attempt is evaluated by the server's LLM judge
+synchronously, and the agent retries only when that judge says the answer failed.
+`result["diagnosis_source"]` says where the final verdict came from: `"judge"`, or
+`"embedding"` / `"lexical"` when the server has no judge and the diagnosis is a quick-check
+estimate. On such an estimate the agent stops after the first attempt and reports it,
+because the quick checks often flag correct answers and every retry costs a generation.
+Pass `retry_on_quick_diagnosis=True` to retry on estimates anyway.
 
 ## Experiment evaluation
 
@@ -167,5 +168,7 @@ Evaluations, diagnosis, and cost are computed server-side.
 - Send failures are logged on the `traceroai` logger instead of raised
   (`log_trace`) or emitted as `UserWarning` (context manager).
 - `@client.traced` supports async functions and keeps the function's name.
+- `RecoveryAgent` retries only on LLM-judge verdicts unless
+  `retry_on_quick_diagnosis=True`, and returns `diagnosis_source`.
 - New: `flush()`, `close()`, `dropped_traces`, `TraceroError`, `__version__`,
   configuration from environment variables.

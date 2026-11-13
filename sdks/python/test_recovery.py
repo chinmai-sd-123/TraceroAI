@@ -34,7 +34,7 @@ class _ScriptedClient:
         self.posted.append(payload)
         trace_id = f"trace-{len(self.posted)}"
         idx = min(len(self.posted) - 1, len(self._diagnoses) - 1)
-        return trace_id, {"label": self._diagnoses[idx], "reason": "scripted"}
+        return trace_id, {"label": self._diagnoses[idx], "reason": "scripted", "source": "judge"}
 
     def get_trace(self, trace_id: str) -> dict:
         n = int(str(trace_id).split("-")[1])
@@ -237,3 +237,47 @@ def test_deep_eval_fails_open_to_none_when_pending() -> None:
 
     assert result["succeeded"] is True       # the loop still succeeded
     assert result["deep_eval"] is None        # deep verdict just pending
+
+
+class _QuickVerdictClient(_ScriptedClient):
+    """A server without a judge: every diagnosis is a lexical estimate."""
+
+    def log_trace_sync_eval(self, **payload):
+        trace_id, verdict = super().log_trace_sync_eval(**payload)
+        return trace_id, {**verdict, "source": "lexical"}
+
+
+def test_a_quick_check_failure_is_reported_not_retried() -> None:
+    client = _QuickVerdictClient(["retrieval_miss", "healthy_answer"])
+    agent = RecoveryAgent(client, retrieve=_retrieve, generate=_generate, diagnosis_poll_interval=0)
+
+    result = agent.run("How long does a refund take?", confirm_with_deep_eval=False)
+
+    assert result["attempts"] == 1  # no retry spent on an unverified failure
+    assert result["succeeded"] is False
+    assert (result["diagnosis"], result["diagnosis_source"]) == ("retrieval_miss", "lexical")
+
+
+def test_retrying_on_quick_checks_is_opt_in() -> None:
+    client = _QuickVerdictClient(["retrieval_miss", "healthy_answer"])
+    agent = RecoveryAgent(
+        client,
+        retrieve=_retrieve,
+        generate=_generate,
+        diagnosis_poll_interval=0,
+        retry_on_quick_diagnosis=True,
+    )
+
+    result = agent.run("How long does a refund take?", confirm_with_deep_eval=False)
+
+    assert result["attempts"] == 2
+    assert result["succeeded"] is True
+
+
+def test_judge_verdicts_report_their_source() -> None:
+    client = _ScriptedClient(["unsupported_claim", "healthy_answer"])
+    agent = RecoveryAgent(client, retrieve=_retrieve, generate=_generate, diagnosis_poll_interval=0)
+
+    result = agent.run("q", confirm_with_deep_eval=False)
+
+    assert result["diagnosis_source"] == "judge" and result["attempts"] == 2

@@ -26,7 +26,11 @@ from app.services.cost import compute_cost_usd
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.rate_limiter import check_rate_limit, client_ip
 from app.services.trace_repository import DuplicateTraceError, TraceRepository
-from app.services.deep_evaluation import run_deep_evaluation
+from app.services.deep_evaluation import (
+    initial_deep_status,
+    judge_configured,
+    run_deep_evaluation,
+)
 from app.services.deep_eval_queue import enqueue_deep_eval_request
 from app.services.fallback_evaluation import submit_fallback_evaluation
 
@@ -75,6 +79,7 @@ def ingest_trace(
     # embeddings provider can't slow ingest. The background pass re-runs the quick
     # evaluators with embeddings, then the LLM judge.
     trace = run_quick_evaluation(trace, semantic=False)
+    trace.evaluations.deep_status = initial_deep_status()
 
     try:
         repository.save(trace)
@@ -102,7 +107,9 @@ def ingest_trace(
             # Leave the quick diagnosis and evaluate again off the request path.
             if not enqueue_deep_eval_request(trace.trace_id):
                 submit_fallback_evaluation(trace.trace_id)
-    elif not enqueue_deep_eval_request(trace.trace_id):
+    elif judge_configured() and not enqueue_deep_eval_request(trace.trace_id):
+        # Without a provider key there is nothing to do in the background: the
+        # trace keeps its lexical diagnosis and deep_status "skipped".
         submit_fallback_evaluation(trace.trace_id)
 
     return TraceIngestResponse(

@@ -89,9 +89,25 @@ class LatencyTrace(BaseModel):
     generation_ms: int | None= Field(default=None, ge=0)
     total_ms:int | None= Field(default=None, ge=0)
 
+# Which evaluation produced a diagnosis, from least to most reliable:
+#   lexical    term overlap only (what ingest computes, no network)
+#   embedding  semantic similarity (the background pass, when embeddings work)
+#   judge      the LLM judge
+DiagnosisSource = Literal["lexical", "embedding", "judge"]
+
+# State of the LLM-judge evaluation for a trace:
+#   pending   queued or running
+#   complete  judge results stored
+#   failed    the judge errored; the diagnosis comes from the quick checks
+#   skipped   no judge configured (or deep evaluation disabled)
+DeepEvaluationStatus = Literal["pending", "complete", "failed", "skipped"]
+
+
 class DiagnosisTrace(BaseModel):
     label: str= Field(default= "pending", min_length=1)
     reason:str | None= None
+    # None on traces stored before sources were recorded.
+    source: DiagnosisSource | None = None
 
 
 class FeedbackEntry(BaseModel):
@@ -123,6 +139,8 @@ class EvaluationResult(BaseModel):
 class EvaluationsTrace(BaseModel):
     quick: list[EvaluationResult] = Field(default_factory=list)
     deep: list[EvaluationResult] = Field(default_factory=list)
+    # None on traces stored before the status was recorded.
+    deep_status: DeepEvaluationStatus | None = None
 
 class TraceIngestRequest(BaseModel):
     """What a client sends to POST /v1/traces.

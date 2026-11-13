@@ -38,7 +38,14 @@ def run_quick_evaluation(
     # A trace is a refusal if the model said so (answered=False) or the answer
     # text reads as a decline — diagnosed as correct_refusal, not a failure.
     refused = not trace.generation.answered or is_refusal(trace.generation.answer)
-    trace.diagnosis = diagnose_trace(quick_results, refused=refused)
+    # "embedding" only if a relevance check actually used embeddings; they fall
+    # back to term overlap on their own when the embeddings call fails.
+    used_embeddings = any(
+        (result.evaluator_version or "").startswith("embedding") for result in quick_results
+    )
+    trace.diagnosis = diagnose_trace(
+        quick_results, refused=refused, source="embedding" if used_embeddings else "lexical"
+    )
 
     return trace
 
