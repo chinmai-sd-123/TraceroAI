@@ -66,12 +66,12 @@ class Settings(BaseSettings):
     playground_enabled: bool = False
     # Feedback entries kept per trace; further feedback gets a 409.
     max_feedback_per_trace: int = Field(default=100, ge=1)
-    # env_ignore_empty: an empty variable (TRACEROAI_X=, or an unset Compose
-    # ${VAR:-}) means "use the default", rather than an empty string that the
-    # JSON settings can't parse.
-    model_config = SettingsConfigDict(
-        env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore", env_ignore_empty=True
-    )
+    # An empty environment variable is a real value and overrides .env: running
+    # with TRACEROAI_OPENAI_API_KEY= or TRACEROAI_REDIS_URL= switches that service
+    # off even when .env (which may point at production) sets it. The JSON
+    # settings therefore need valid JSON ({} or []), never an empty string;
+    # infra/docker-compose.yml defaults them that way.
+    model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore")
 
     @field_validator("judge_base_url", mode="before")
     @classmethod
