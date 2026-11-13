@@ -228,24 +228,56 @@ TraceroAI/
 
 ## Running locally
 
-```bash
-# 1. Start Postgres + Redis
-docker compose -f infra/docker-compose.yml up -d
+### Everything in Docker
 
-# 2. API (+ tests)
+```bash
+docker compose -f infra/docker-compose.yml up --build
+```
+
+This starts Postgres, Redis, the API on <http://localhost:8000> (interactive API docs at
+`/docs`), the deep-evaluation worker, and the dashboard on <http://localhost:3000>. The
+schema is created on first start. Point the SDK at it:
+
+```python
+client = TraceroClient(base_url="http://localhost:8000")
+```
+
+Traces are scored by the deterministic checks out of the box. To add the LLM judge, export
+`TRACEROAI_OPENAI_API_KEY` (and optionally `TRACEROAI_JUDGE_MODEL`,
+`TRACEROAI_JUDGE_BASE_URL`, `TRACEROAI_EMBEDDING_MODEL`) before `up`.
+
+The stack runs with `TRACEROAI_APP_ENV=development`, where API keys are optional. Set it to
+`production` and configure `TRACEROAI_PROJECT_API_KEYS` before exposing it to a network.
+
+### API and web outside Docker
+
+```bash
+# 1. Postgres + Redis only
+docker compose -f infra/docker-compose.yml up -d postgres redis
+
+# 2. API
+cp .env.example .env                       # at the repo root
 cd services/api
 python -m venv .venv && .venv/Scripts/activate     # or source .venv/bin/activate
 pip install -r requirements.txt pytest
-pytest -q          # uses a local traceroai_test database, never the one in .env
+python -m app.db.init_db                    # create or update the schema
 uvicorn app.main:app --reload
+python -m app.worker                        # in a second terminal
 
 # 3. Web
 cd ../../traceroai-web
 npm install && npm run dev
 ```
 
-Copy [`.env.example`](.env.example) to `.env` and fill in the connection strings and
-(optionally) a judge API key.
+After pulling changes that touch `services/api/migrations`, run `python -m app.db.init_db`
+again.
+
+### Tests
+
+```bash
+cd services/api && pytest -q
+cd sdks/python && pip install -e ".[recovery]" pytest && pytest -q
+```
 
 Tests create and use a `traceroai_test` database on the local Postgres. To point them
 somewhere else, set `TRACEROAI_TEST_DATABASE_URL`; non-local hosts are refused so a

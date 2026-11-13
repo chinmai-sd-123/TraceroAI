@@ -272,21 +272,29 @@ export default function DocsPage() {
             <h2 className="text-2xl font-semibold">Experiment runs</h2>
             <p className="mt-2 max-w-2xl text-sm text-zinc-400">
               Compare pipeline configs (top_k, prompt, model) against a labeled dataset.
-              The harness replays every case across each variant, grades the answers with
-              the LLM judge, and recommends a winner — A/B testing for RAG. Results show
-              up under <Link href="/dashboard/eval-runs" className="text-cyan-300 hover:underline">Eval Runs</Link>.
+              You supply your own retrieve and generate functions; the harness replays
+              every case across each variant, grades the answers with the server&apos;s
+              LLM judge, and recommends a winner. Results show up under{" "}
+              <Link href="/dashboard/eval-runs" className="text-cyan-300 hover:underline">Eval Runs</Link>.
+              Grading needs a judge configured on the server.
             </p>
             <div className="mt-4 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/70">
               <div className="border-b border-zinc-800 px-4 py-2 text-xs text-zinc-500">
-                bash
+                python
               </div>
               <pre className="overflow-auto p-5 text-sm leading-6 text-zinc-300">
-                <code>{`# from services/api — runs the experiment and posts the result
-python -m app.eval_runner \\
-    --dataset support_faq_v1 \\
-    --project my-app \\
-    --post \\
-    --api-url https://traceroai.onrender.com`}</code>
+                <code>{`from traceroai import TraceroClient
+from traceroai.eval import Case, Variant, run_experiment
+
+result = run_experiment(
+    client=TraceroClient(base_url="http://localhost:8000", api_key="your_project_key"),
+    dataset=[Case("refund", "How long does a refund take?", "5-7 business days.")],
+    retrieve=my_retrieve,    # (query, top_k) -> list[chunk dict]
+    generate=my_generate,    # (query, context) -> answer str
+    variants=[Variant("k3", "top_k=3", top_k=3), Variant("k5", "top_k=5", top_k=5)],
+    project_id="my-app",
+)
+print(result.recommendation)`}</code>
               </pre>
             </div>
             <p className="mt-3 text-sm text-zinc-400">

@@ -146,8 +146,13 @@ export type ApiEvalRun = {
   }>;
 };
 
+// Server rendering may reach the API on an internal address the browser can't
+// (http://api:8000 in Docker Compose), so the server prefers TRACEROAI_API_URL.
+// That variable is never sent to the browser; browser code uses the public URL.
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_TRACEROAI_API_URL || "http://127.0.0.1:8000";
+  (typeof window === "undefined" ? process.env.TRACEROAI_API_URL : undefined) ||
+  process.env.NEXT_PUBLIC_TRACEROAI_API_URL ||
+  "http://127.0.0.1:8000";
 
 export async function getTraces(projectId?: string): Promise<MockTrace[]> {
   const url = projectId

@@ -76,6 +76,50 @@ jobs:
       - run: pip install ".[recovery]" pytest
       - run: pytest -q
 
+  compose:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE: docker compose -f infra/docker-compose.yml
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start the stack
+        run: $COMPOSE up --build -d
+      - name: Wait for the API and the dashboard
+        run: |
+          for url in http://localhost:8000/health http://localhost:3000/; do
+            for i in $(seq 90); do curl -fsS -o /dev/null "$url" && break; sleep 2; done
+            curl -fsS -o /dev/null "$url"
+          done
+      - name: Send a trace and read it back
+        run: |
+          query="Compose smoke test: how long does a refund take?"
+          trace_id=$(curl -fsS -X POST http://localhost:8000/v1/traces \
+            -H 'Content-Type: application/json' \
+            -d "{\"query\":{\"original\":\"$query\"},
+                 \"retrieval\":{\"chunks\":[{\"rank\":1,\"chunk_id\":\"c1\",\"text\":\"Refunds take 5 to 7 business days.\"}]},
+                 \"generation\":{\"model\":\"smoke-test\",\"answer\":\"5 to 7 business days.\"}}" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["trace_id"])')
+          curl -fsS "http://localhost:8000/v1/traces/$trace_id" \
+            | python3 -c 'import json,sys; t=json.load(sys.stdin); assert t["diagnosis"]["label"] != "pending", t["diagnosis"]'
+          # The dashboard renders on the server through TRACEROAI_API_URL (http://api:8000).
+          curl -fsS http://localhost:3000/dashboard/traces | grep -q "Compose smoke test"
+          curl -fsS "http://localhost:3000/dashboard/traces/$trace_id" | grep -q "Compose smoke test"
+      - name: Worker processed the queued job
+        run: |
+          for i in $(seq 30); do
+            pending=$(curl -fsS http://localhost:8000/v1/jobs/stats | python3 -c 'import json,sys; s=json.load(sys.stdin); print(s["queued"] + s["pending"])')
+            [ "$pending" = "0" ] && exit 0
+            sleep 2
+          done
+          echo "deep-eval queue did not drain"; exit 1
+      - name: Logs
+        if: failure()
+        run: $COMPOSE logs --no-color
+      - name: Stop
+        if: always()
+        run: $COMPOSE down -v
+
   web:
     name: Web typecheck and lint
     runs-on: ubuntu-latest

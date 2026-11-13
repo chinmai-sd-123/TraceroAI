@@ -1,7 +1,33 @@
+# The whole TraceroAI stack on one machine.
+#
+#   docker compose -f infra/docker-compose.yml up --build
+#
+# Then: dashboard http://localhost:3000, API http://localhost:8000 (docs at /docs).
+#
+# Only Postgres and Redis (to run the API or tests outside Docker):
+#   docker compose -f infra/docker-compose.yml up -d postgres redis
+#
+# The LLM judge is optional. To enable it, export the variables below in your
+# shell before `up`; without them traces are scored by the deterministic checks.
+#   TRACEROAI_OPENAI_API_KEY, TRACEROAI_JUDGE_MODEL, TRACEROAI_JUDGE_BASE_URL,
+#   TRACEROAI_EMBEDDING_MODEL
+
+name: traceroai
+
+x-api-environment: &api-environment
+  TRACEROAI_DATABASE_URL: postgresql+psycopg://traceroai:traceroai@postgres:5432/traceroai
+  TRACEROAI_REDIS_URL: redis://redis:6379/0
+  # development: API keys are optional. Set production (and
+  # TRACEROAI_PROJECT_API_KEYS) before exposing this beyond your machine.
+  TRACEROAI_APP_ENV: ${TRACEROAI_APP_ENV:-development}
+  TRACEROAI_OPENAI_API_KEY: ${TRACEROAI_OPENAI_API_KEY:-}
+  TRACEROAI_JUDGE_MODEL: ${TRACEROAI_JUDGE_MODEL:-gpt-4o-mini}
+  TRACEROAI_JUDGE_BASE_URL: ${TRACEROAI_JUDGE_BASE_URL:-}
+  TRACEROAI_EMBEDDING_MODEL: ${TRACEROAI_EMBEDDING_MODEL:-text-embedding-3-small}
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: traceroai-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: traceroai
@@ -13,23 +39,74 @@ services:
       - traceroai_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U traceroai -d traceroai"]
-      interval: 1m30s
-      timeout: 30s
-      retries: 5
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   redis:
     image: redis:7-alpine
-    container_name: traceroai-redis
     restart: unless-stopped
-    ports: 
+    ports:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 1m30s
-      timeout: 30s
-      retries: 5
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-shot: brings the schema up to date, then exits. api and worker wait for it.
+  migrate:
+    build: ../services/api
+    image: traceroai-api:local
+    command: ["python", "-m", "app.db.init_db"]
+    environment: *api-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: ../services/api
+    image: traceroai-api:local
+    restart: unless-stopped
+    environment: *api-environment
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    build: ../services/api
+    image: traceroai-api:local
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker"]
+    environment: *api-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../traceroai-web
+      args:
+        NEXT_PUBLIC_TRACEROAI_API_URL: http://localhost:8000
+    restart: unless-stopped
+    environment:
+      TRACEROAI_API_URL: http://api:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   traceroai_postgres_data:
-
-      

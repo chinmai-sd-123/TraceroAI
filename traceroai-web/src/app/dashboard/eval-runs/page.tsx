@@ -40,11 +40,14 @@ export default async function EvalRunsPage({
 
       {isEmpty && (
         <div className="mt-8 rounded-lg border border-dashed border-zinc-800 bg-zinc-900/40 p-6 text-sm text-zinc-400">
-          No eval runs yet{project ? ` for project “${project}”` : ""}. Generate one
-          with the harness:{" "}
-          <code className="text-zinc-300">
-            python -m app.eval_runner --dataset support_faq_v1 --post
-          </code>
+          No eval runs yet{project ? ` for project “${project}”` : ""}. Create one
+          from your own pipeline with{" "}
+          <code className="text-zinc-300">traceroai.eval.run_experiment</code>{" "}
+          (see the{" "}
+          <Link href="/docs#experiments" className="text-cyan-300 hover:underline">
+            docs
+          </Link>
+          ).
         </div>
       )}
 

@@ -7,7 +7,10 @@ from typing import Literal
 
 # Anchor .env to the repo root so config loads regardless of the working
 # directory the API is launched from (env_file="..." is otherwise CWD-relative).
-ENV_FILE = Path(__file__).resolve().parents[4] / ".env"
+# In the Docker image the app sits at /app/app/core/config.py, which has no repo
+# root above it; there, configuration comes from the environment only.
+_PARENTS = Path(__file__).resolve().parents
+ENV_FILE = _PARENTS[4] / ".env" if len(_PARENTS) > 4 else None
 
 
 class Settings(BaseSettings):
