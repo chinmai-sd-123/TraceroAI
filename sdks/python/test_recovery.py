@@ -281,3 +281,103 @@ def test_judge_verdicts_report_their_source() -> None:
     result = agent.run("q", confirm_with_deep_eval=False)
 
     assert result["diagnosis_source"] == "judge" and result["attempts"] == 2
+
+
+# --- run ids, recorded levers, and the caller's own failures ---
+
+
+def test_attempts_share_a_run_id_and_record_top_k() -> None:
+    client = _ScriptedClient(["retrieval_miss", "healthy_answer"])
+    agent = RecoveryAgent(client, retrieve=_retrieve, generate=_generate, diagnosis_poll_interval=0)
+
+    agent.run("q", confirm_with_deep_eval=False)
+    agent.run("q", confirm_with_deep_eval=False)
+
+    metas = [p["metadata"] for p in client.posted]
+    first, second = metas[0]["recovery_run_id"], metas[2]["recovery_run_id"]
+    assert metas[1]["recovery_run_id"] == first  # one run, two attempts
+    assert first != second  # the same question asked again is a new run
+    assert [m["top_k"] for m in metas[:2]] == [3, 5]
+    assert [p["retrieval"]["config"]["final_top_k"] for p in client.posted[:2]] == [3, 5]
+
+
+def test_without_a_rewriter_the_question_is_not_altered() -> None:
+    client = _ScriptedClient(["retrieval_miss", "healthy_answer"])
+    seen: list[str] = []
+
+    def retrieve(query: str, top_k: int) -> list[dict]:
+        seen.append(query)
+        return [{"text": "x"}]
+
+    agent = RecoveryAgent(client, retrieve=retrieve, generate=_generate, diagnosis_poll_interval=0)
+    agent.run("How long does a refund take?", confirm_with_deep_eval=False)
+
+    assert seen == ["How long does a refund take?"] * 2
+    assert "rewritten" not in client.posted[1]["query"]
+
+
+def test_a_supplied_rewriter_is_used_and_recorded() -> None:
+    client = _ScriptedClient(["retrieval_miss", "healthy_answer"])
+    seen: list[str] = []
+
+    def retrieve(query: str, top_k: int) -> list[dict]:
+        seen.append(query)
+        return [{"text": "x"}]
+
+    agent = RecoveryAgent(
+        client,
+        retrieve=retrieve,
+        generate=_generate,
+        diagnosis_poll_interval=0,
+        rewrite=lambda q: f"refund processing time ({q})",
+    )
+    agent.run("How long?", confirm_with_deep_eval=False)
+
+    assert seen == ["How long?", "refund processing time (How long?)"]
+    assert client.posted[1]["query"] == {
+        "original": "How long?",
+        "rewritten": "refund processing time (How long?)",
+        "rewrite_changed": True,
+    }
+
+
+def test_a_failing_rewriter_keeps_the_question() -> None:
+    client = _ScriptedClient(["retrieval_miss", "healthy_answer"])
+
+    def broken_rewrite(question: str) -> str:
+        raise RuntimeError("rewriter down")
+
+    agent = RecoveryAgent(
+        client, retrieve=_retrieve, generate=_generate, diagnosis_poll_interval=0,
+        rewrite=broken_rewrite,
+    )
+    result = agent.run("q", confirm_with_deep_eval=False)
+
+    assert result["succeeded"] is True
+    assert "rewritten" not in client.posted[1]["query"]
+
+
+@pytest.mark.parametrize("stage", ["retrieve", "generate"])
+def test_a_failure_in_your_pipeline_is_traced_then_raised(stage: str) -> None:
+    client = _ScriptedClient(["healthy_answer"])
+    logged: list[dict] = []
+    client.log_trace = lambda **payload: logged.append(payload) or "trace-err"  # type: ignore[method-assign]
+
+    def boom(*args):
+        raise ConnectionError("vector store unreachable")
+
+    agent = RecoveryAgent(
+        client,
+        retrieve=boom if stage == "retrieve" else _retrieve,
+        generate=boom if stage == "generate" else _generate,
+        diagnosis_poll_interval=0,
+    )
+
+    with pytest.raises(ConnectionError, match="vector store unreachable"):
+        agent.run("q", confirm_with_deep_eval=False)
+
+    assert len(logged) == 1  # the failed attempt was recorded, without a judge call
+    assert logged[0]["status"] == "error"
+    assert logged[0]["generation"]["answered"] is False
+    assert f"{stage} failed" in logged[0]["generation"]["answer"]
+    assert client.posted == []  # nothing sent for judging

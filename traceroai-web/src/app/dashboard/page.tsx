@@ -582,10 +582,10 @@ function getEvalMethodMix(traces: Awaited<ReturnType<typeof getTraces>>) {
 }
 
 // Insight into the self-healing RecoveryAgent. Recovery sends ONE trace per
-// attempt, so we group attempts into "runs" by question (the best proxy without a
-// shared run-id) and judge each run by its FINAL (highest-attempt) outcome — so
-// "recovered %" reflects whether the question was ultimately answered, not a raw
-// per-attempt rate.
+// attempt; attempts are grouped into runs by their shared run id (or, for traces
+// from SDKs before 0.5, by question), and each run is judged by its FINAL
+// (highest-attempt) outcome, so "recovered %" reflects whether the question was
+// ultimately answered, not a raw per-attempt rate.
 type RunInsight = {
   question: string;
   firstLabel: string;
@@ -644,8 +644,10 @@ function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
       groundednessFailed: boolean;
     }>
   >();
+  const questions = new Map<string, string>();
   for (const t of recoveryTraces) {
-    const key = t.query.original;
+    const key = t.recovery!.runId ?? `question:${t.query.original}`;
+    questions.set(key, t.query.original);
     if (!chains.has(key)) chains.set(key, []);
     chains.get(key)!.push({
       attempt: t.recovery!.attempt,
@@ -657,7 +659,8 @@ function getRecoveryInsights(traces: Awaited<ReturnType<typeof getTraces>>) {
     });
   }
 
-  const runList = [...chains.entries()].map(([question, atts]) => {
+  const runList = [...chains.entries()].map(([key, atts]) => {
+    const question = questions.get(key) ?? key;
     const ordered = [...atts].sort((a, b) => a.attempt - b.attempt);
     const first = ordered[0];
     const final = ordered[ordered.length - 1];

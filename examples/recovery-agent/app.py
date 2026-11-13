@@ -252,6 +252,7 @@ if __name__ == "__main__":
         client,
         retrieve=retrieve,
         generate=generate_for_recovery,  # returns (answer, usage) -> traces get cost
+        rewrite=rewrite_query,           # used to rephrase the query after a retrieval miss
         max_attempts=3,
         project_id="recovery-agent",
         model="gpt-4o-mini",   # the real model behind generate() — recorded on traces

@@ -174,6 +174,7 @@ class TraceroClient:
         project: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
         trace_id: UUID | str | None = None,
+        status: str | None = None,
     ) -> UUID:
         """Send a trace and return its id.
 
@@ -199,6 +200,8 @@ class TraceroClient:
             "project": project or {},
             "metadata": metadata or {},
         }
+        if status is not None:
+            payload["status"] = status  # e.g. "error" when the pipeline itself failed
         if self._sender is not None:
             self._sender.enqueue(payload)
         elif self.raise_on_error:

@@ -96,6 +96,13 @@ result = agent.run("How long does a refund take?")
 # result["answer"], result["diagnosis"], result["attempts"], result["trace_ids"]
 ```
 
+Every attempt is a trace, and all attempts of one `run()` share a
+`metadata.recovery_run_id`, so the dashboard shows each run as one chain. On a retrieval
+miss the agent retrieves more chunks (`top_k` + 2); pass `rewrite=` (a
+`question -> query` function, such as an LLM call) to also rephrase the query. Each
+attempt records the `top_k` and query it used. If your `retrieve` or `generate` raises,
+that attempt is traced with status `error` and the exception is raised from `run()`.
+
 `generate` may return just the answer, or `(answer, {"prompt_tokens": ..., "completion_tokens": ...})` —
 return the token counts and each recovery attempt's trace gets a server-computed cost.
 
@@ -168,6 +175,9 @@ Evaluations, diagnosis, and cost are computed server-side.
 - Send failures are logged on the `traceroai` logger instead of raised
   (`log_trace`) or emitted as `UserWarning` (context manager).
 - `@client.traced` supports async functions and keeps the function's name.
+- `RecoveryAgent` no longer appends "(be specific and complete)" to the query on a
+  retrieval miss; pass `rewrite=` to rephrase it. Attempts carry a shared run id, and
+  a failure in your `retrieve`/`generate` is traced before it's raised.
 - `RecoveryAgent` retries only on LLM-judge verdicts unless
   `retry_on_quick_diagnosis=True`, and returns `diagnosis_source`.
 - New: `flush()`, `close()`, `dropped_traces`, `TraceroError`, `__version__`,

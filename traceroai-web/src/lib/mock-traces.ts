@@ -102,7 +102,8 @@ export type MockTrace = {
   };
   // Set when this trace is one attempt of a self-healing RecoveryAgent run.
   // `action` is the recovery lever that led to this attempt (absent on attempt 1).
-  recovery?: { attempt: number; action?: string };
+  // `runId` groups the attempts of one run (absent on traces from SDK < 0.5).
+  recovery?: { attempt: number; action?: string; runId?: string };
   diagnosis: {
     label: TraceDiagnosis;
     reason: string;

@@ -532,6 +532,10 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
               typeof trace.metadata?.recovery_action === "string"
                 ? trace.metadata.recovery_action
                 : undefined,
+            runId:
+              typeof trace.metadata?.recovery_run_id === "string"
+                ? trace.metadata.recovery_run_id
+                : undefined,
           }
         : undefined,
     diagnosis: {
