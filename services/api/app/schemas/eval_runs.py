@@ -5,6 +5,12 @@ from uuid import UUID, uuid4
 from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.traces import ProjectInfo
+from app.schemas.validation import (
+    DATASET_ID_MAX_LENGTH,
+    DATASET_NAME_MAX_LENGTH,
+    VERSION_MAX_LENGTH,
+    strip_nul,
+)
 
 
 EvalRunType = Literal["regression", "experiment"]
@@ -12,13 +18,13 @@ EvalRunStatus = Literal["queued", "running", "completed", "failed"]
 
 
 class EvalDataset(BaseModel):
-    dataset_id: str = Field(..., min_length=1)
-    name: str = Field(..., min_length=1)
-    version: str | None = None
+    dataset_id: str = Field(..., min_length=1, max_length=DATASET_ID_MAX_LENGTH)
+    name: str = Field(..., min_length=1, max_length=DATASET_NAME_MAX_LENGTH)
+    version: str | None = Field(default=None, max_length=VERSION_MAX_LENGTH)
 
 
 class PipelineConfig(BaseModel):
-    pipeline_version: str = Field(..., min_length=1)
+    pipeline_version: str = Field(..., min_length=1, max_length=VERSION_MAX_LENGTH)
     retrieval_strategy: str | None = None
     prompt_version: str | None = None
     model: str | None = None
@@ -89,6 +95,12 @@ class EvalRunIngestRequest(BaseModel):
     variants: list[ExperimentVariantResult] = Field(default_factory=list)
 
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_nul(cls, data: Any) -> Any:
+        return strip_nul(data)
+
     @model_validator(mode="after")
     def validate_run_consistency(self) -> "EvalRunIngestRequest":
         summary = self.summary

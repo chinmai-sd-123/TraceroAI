@@ -10,6 +10,7 @@ from app.api.routes.playground import router as playground_router
 from app.api.routes.eval_grade import router as eval_grade_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.core.middleware import BodySizeLimitMiddleware, RequestContextMiddleware
 from app.services.cost import start_price_refresh
 
 configure_logging(
@@ -32,6 +33,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Starlette runs the last-added middleware first. Order, outermost first:
+# CORS (so even a 413 or 500 carries CORS headers and a browser can read it),
+# then request id + JSON 500, then the body size limit.
+app.add_middleware(BodySizeLimitMiddleware, max_bytes=get_settings().max_request_bytes)
+app.add_middleware(RequestContextMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[

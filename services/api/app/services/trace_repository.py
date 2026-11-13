@@ -3,6 +3,7 @@ from uuid import UUID
 
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import TraceRecord
@@ -10,15 +11,19 @@ from app.schemas.traces import (
     DiagnosisTrace,
     EvaluationResult,
     FeedbackEntry,
-    TraceIngestRequest,
+    Trace,
 )
+
+
+class DuplicateTraceError(Exception):
+    """A trace with this trace_id is already stored."""
 
 
 class TraceRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def save(self, trace: TraceIngestRequest) -> TraceRecord:
+    def save(self, trace: Trace) -> TraceRecord:
         payload = trace.model_dump(mode="json")
 
         record = TraceRecord(
@@ -35,7 +40,11 @@ class TraceRepository:
         )
 
         self.db.add(record)
-        self.db.commit()
+        try:
+            self.db.commit()
+        except IntegrityError as error:
+            self.db.rollback()
+            raise DuplicateTraceError(f"Trace {trace.trace_id} already exists.") from error
         self.db.refresh(record)
 
         return record
@@ -69,7 +78,7 @@ class TraceRepository:
         if record is None:
             return None
 
-        trace = TraceIngestRequest(**record.payload)
+        trace = Trace(**record.payload)
         if quick is not None:
             trace.evaluations.quick = quick
         if deep is not None:
@@ -93,7 +102,7 @@ class TraceRepository:
         if record is None or (project_id is not None and record.project_id != project_id):
             return None
 
-        trace = TraceIngestRequest(**record.payload)
+        trace = Trace(**record.payload)
         trace.feedback.append(entry)
         record.payload = trace.model_dump(mode="json")
 

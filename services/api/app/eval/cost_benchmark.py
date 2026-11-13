@@ -28,7 +28,7 @@ from app.evaluators.deep_relevance import (
     evaluate_deep_context_relevance,
 )
 from app.evaluators.groundedness import evaluate_groundedness
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
 from app.services.cost import price_for, refresh_litellm_prices
 from app.services.embeddings import EmbeddingClient
 from app.services.llm_judge import OpenAIJudge
@@ -134,7 +134,7 @@ def main() -> None:
 
     try:
         for case in cases:
-            trace = TraceIngestRequest(**case["trace"])
+            trace = Trace(**case["trace"])
             # Quick eval — mirror run_quick_evaluation, but feed the metered embedder
             # into the (one) batched embedding call so its token usage is captured.
             vectors = _embed_relevance_inputs(trace, embedder=embedder)

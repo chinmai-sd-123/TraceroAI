@@ -1,9 +1,9 @@
 from app.evaluators.context_relevance import evaluate_context_relevance
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
 
 
-def make_trace(query: str, chunk_text: str) -> TraceIngestRequest:
-    return TraceIngestRequest.model_validate(
+def make_trace(query: str, chunk_text: str) -> Trace:
+    return Trace.model_validate(
         {
             "query": {
                 "original": query,
@@ -56,7 +56,7 @@ def test_context_relevance_fails_when_context_is_unrelated() -> None:
 
 
 def test_context_relevance_uses_rewritten_query_when_available() -> None:
-    trace = TraceIngestRequest.model_validate(
+    trace = Trace.model_validate(
         {
             "query": {
                 "original": "Can I get money back?",

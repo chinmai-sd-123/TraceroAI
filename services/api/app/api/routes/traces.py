@@ -5,16 +5,18 @@ from sqlalchemy.orm import Session
 
 from app.core.tenancy import optional_project, write_project
 from app.db.session import get_db
+from app.db.models import TraceRecord
 from app.schemas.traces import (
     FeedbackEntry,
     FeedbackRequest,
+    Trace,
     TraceIngestRequest,
     TraceIngestResponse,
 )
 from app.services.cost import compute_cost_usd
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.rate_limiter import check_rate_limit, client_ip
-from app.services.trace_repository import TraceRepository
+from app.services.trace_repository import DuplicateTraceError, TraceRepository
 from app.services.deep_evaluation import run_deep_evaluation
 from app.services.deep_eval_queue import enqueue_deep_eval_request
 
@@ -39,53 +41,88 @@ def ingest_trace(
     if project_id:
         payload.project.project_id = project_id
 
+    repository = TraceRepository(db)
+
+    # Idempotent on trace_id: a client retrying after a timeout gets the stored
+    # trace back instead of creating a duplicate (and paying for a second judge run).
+    existing = repository.get(payload.trace_id)
+    if existing is not None:
+        return _already_ingested(existing, payload.project.project_id)
+
+    trace = Trace(**payload.model_dump())
+
     # Cost is server-owned: fill total_tokens + cost_usd from the price table when
     # the client sent token counts but no cost (or none at all).
-    usage = payload.generation.usage
+    usage = trace.generation.usage
     if usage.total_tokens is None and (
         usage.prompt_tokens is not None or usage.completion_tokens is not None
     ):
         usage.total_tokens = (usage.prompt_tokens or 0) + (usage.completion_tokens or 0)
     if usage.cost_usd is None:
-        usage.cost_usd = compute_cost_usd(payload.generation.model, usage)
+        usage.cost_usd = compute_cost_usd(trace.generation.model, usage)
 
     # Lexical-only on the request path: no network call, so a slow or down
     # embeddings provider can't slow ingest. The background pass re-runs the quick
     # evaluators with embeddings, then the LLM judge.
-    payload = run_quick_evaluation(payload, semantic=False)
+    trace = run_quick_evaluation(trace, semantic=False)
 
-    repository = TraceRepository(db)
-    repository.save(payload)
+    try:
+        repository.save(trace)
+    except DuplicateTraceError:
+        # A concurrent request with the same trace_id inserted first.
+        stored = repository.get(trace.trace_id)
+        if stored is None:  # pragma: no cover - the row we collided with is gone
+            raise
+        return _already_ingested(stored, trace.project.project_id)
 
     # Synchronous deep eval (e.g. for the recovery agent, which must route on a
     # judge-quality diagnosis NOW rather than poll an async queue). Run the judge
     # inline and return the corrected diagnosis in the response. If it fails for any
     # reason, fall back to the async path and return the quick diagnosis — never hang
     # or break the caller.
-    diagnosis = payload.diagnosis
+    diagnosis = trace.diagnosis
     if sync_deep_eval:
         try:
-            run_deep_evaluation(payload.trace_id)
-            record = repository.get(payload.trace_id)
+            run_deep_evaluation(trace.trace_id)
+            record = repository.get(trace.trace_id)
             if record is not None:
-                diagnosis = TraceIngestRequest(**record.payload).diagnosis
+                diagnosis = Trace(**record.payload).diagnosis
         except Exception:
             # inline judge failed — leave the quick diagnosis and let async retry
-            if not enqueue_deep_eval_request(payload.trace_id):
-                background_tasks.add_task(run_deep_evaluation, payload.trace_id)
-    elif not enqueue_deep_eval_request(payload.trace_id):
-        background_tasks.add_task(run_deep_evaluation, payload.trace_id)
+            if not enqueue_deep_eval_request(trace.trace_id):
+                background_tasks.add_task(run_deep_evaluation, trace.trace_id)
+    elif not enqueue_deep_eval_request(trace.trace_id):
+        background_tasks.add_task(run_deep_evaluation, trace.trace_id)
 
     return TraceIngestResponse(
-        trace_id=payload.trace_id,
+        trace_id=trace.trace_id,
         status="accepted",
         message="Trace accepted for ingestion.",
         diagnosis=diagnosis,
     )
 
 
+def _already_ingested(record: TraceRecord, project_id: str) -> TraceIngestResponse:
+    """Response for a trace_id that is already stored.
 
-@router.get("", response_model=list[TraceIngestRequest])
+    Same project: the earlier result, so a retry looks like the first success.
+    Different project: 409, since ids aren't shared between projects.
+    """
+    if record.project_id != project_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A trace with this trace_id already exists.",
+        )
+    return TraceIngestResponse(
+        trace_id=record.trace_id,
+        status="accepted",
+        message="Trace already ingested.",
+        diagnosis=Trace(**record.payload).diagnosis,
+    )
+
+
+
+@router.get("", response_model=list[Trace])
 def list_traces(
     project_id: str | None = None,
     db: Session = Depends(get_db),
@@ -102,7 +139,7 @@ def list_projects(db: Session = Depends(get_db)) -> list[str]:
     return repository.list_projects()
 
 
-@router.get("/{trace_id}", response_model=TraceIngestRequest)
+@router.get("/{trace_id}", response_model=Trace)
 def get_trace(
     trace_id: UUID,
     db: Session = Depends(get_db),

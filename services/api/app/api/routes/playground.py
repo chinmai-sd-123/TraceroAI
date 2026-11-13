@@ -23,7 +23,7 @@ from app.evaluators.deep_relevance import (
     evaluate_deep_context_relevance,
 )
 from app.evaluators.diagnosis import diagnose_from_deep, is_refusal
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
 from app.services.llm_judge import OpenAIJudge
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.trace_repository import TraceRepository
@@ -164,7 +164,7 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
     prompt_build_ms = int((time.perf_counter() - prompt_start) * 1000)
 
     total_ms = int((time.perf_counter() - started) * 1000)
-    trace = TraceIngestRequest(
+    trace = Trace(
         query={"original": query},
         retrieval={"strategy": "lexical_top_k", "config": {"final_top_k": 3}, "chunks": chunks},
         prompt={"content": prompt_text, "version": "playground_v1", "template_name": "grounded_answer"},

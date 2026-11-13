@@ -1,9 +1,9 @@
 from app.evaluators.groundedness import evaluate_groundedness
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
 
 
-def make_trace(answer: str, chunk_text: str) -> TraceIngestRequest:
-    return TraceIngestRequest.model_validate(
+def make_trace(answer: str, chunk_text: str) -> Trace:
+    return Trace.model_validate(
         {
             "query": {
                 "original": "What regions are supported?",

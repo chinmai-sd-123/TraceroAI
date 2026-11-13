@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
 from app.services.quick_evaluation import run_quick_evaluation
 
 GOLDEN_PATH = Path(__file__).parent / "golden_traces.json"
@@ -45,7 +45,7 @@ def run_regression_gate(cases: list[dict] | None = None) -> GateReport:
 
     results: list[CaseResult] = []
     for case in cases:
-        trace = TraceIngestRequest(**case["trace"])
+        trace = Trace(**case["trace"])
         evaluated = run_quick_evaluation(trace)
 
         actual = evaluated.diagnosis.label

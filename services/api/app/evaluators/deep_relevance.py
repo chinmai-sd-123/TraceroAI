@@ -1,4 +1,4 @@
-from app.schemas.traces import EvaluationResult, TraceIngestRequest
+from app.schemas.traces import EvaluationResult, Trace
 from app.services.llm_judge import LLMJudge, RelevanceVerdict
 
 
@@ -8,7 +8,7 @@ EVALUATOR_VERSION = "llm_judge_openai_v1"
 
 
 def evaluate_deep_context_relevance(
-    trace: TraceIngestRequest, judge: LLMJudge
+    trace: Trace, judge: LLMJudge
 ) -> EvaluationResult:
     query = trace.query.rewritten or trace.query.original
     context = "\n\n".join(chunk.text for chunk in trace.retrieval.chunks)
@@ -18,7 +18,7 @@ def evaluate_deep_context_relevance(
 
 
 def evaluate_deep_answer_relevance(
-    trace: TraceIngestRequest, judge: LLMJudge
+    trace: Trace, judge: LLMJudge
 ) -> EvaluationResult:
     query = trace.query.rewritten or trace.query.original
 

@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from app.core.config import get_settings
 from app.eval.regression_gate import load_golden_cases
 from app.evaluators.diagnosis import diagnose_from_deep, is_refusal
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
 from app.services.deep_evaluation import DEEP_EVALUATORS, _build_default_judge
 from app.services.quick_evaluation import run_quick_evaluation
 
@@ -59,7 +59,7 @@ def benchmark_quick_accuracy(cases: list[dict]) -> list[CaseOutcome]:
     """Deterministic quick-eval diagnosis vs ground truth (no LLM)."""
     outcomes: list[CaseOutcome] = []
     for case in cases:
-        trace = TraceIngestRequest(**case["trace"])
+        trace = Trace(**case["trace"])
         evaluated = run_quick_evaluation(trace)
         outcomes.append(
             CaseOutcome(case["case_id"], case["expected_diagnosis"], evaluated.diagnosis.label)
@@ -89,7 +89,7 @@ def benchmark_judge_accuracy(cases: list[dict]) -> list[CaseOutcome]:
         judge = _build_default_judge(settings)
         outcomes: list[CaseOutcome] = []
         for case in cases:
-            trace = TraceIngestRequest(**case["trace"])
+            trace = Trace(**case["trace"])
             results = [evaluator(trace, judge) for evaluator in DEEP_EVALUATORS]
             refused = not trace.generation.answered or is_refusal(trace.generation.answer)
             diagnosis = diagnose_from_deep(results, refused=refused)
@@ -106,7 +106,7 @@ def benchmark_latency(cases: list[dict], runs: int) -> dict[str, float]:
     Times one run_quick_evaluation per (case x run) and reports the distribution.
     This is the real per-trace cost the ingest path pays before returning 202.
     """
-    traces = [TraceIngestRequest(**case["trace"]) for case in cases]
+    traces = [Trace(**case["trace"]) for case in cases]
     samples_ms: list[float] = []
     for _ in range(runs):
         for trace in traces:

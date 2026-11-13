@@ -2,11 +2,21 @@ from datetime import datetime, UTC
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+
+from app.schemas.validation import (
+    ENVIRONMENT_MAX_LENGTH,
+    MAX_CHUNKS_PER_TRACE,
+    MODEL_MAX_LENGTH,
+    PROJECT_ID_MAX_LENGTH,
+    STATUS_MAX_LENGTH,
+    VERSION_MAX_LENGTH,
+    strip_nul,
+)
 
 class ProjectInfo(BaseModel):
-    project_id: str= Field(default="demo-rag", min_length=1)
-    environment: str= Field(default="dev", min_length=1)
+    project_id: str = Field(default="demo-rag", min_length=1, max_length=PROJECT_ID_MAX_LENGTH)
+    environment: str = Field(default="dev", min_length=1, max_length=ENVIRONMENT_MAX_LENGTH)
 
 class QueryTrace(BaseModel):
     original: str= Field(..., min_length=1)
@@ -44,7 +54,7 @@ class RetrievedChunk(BaseModel):
 class RetrievalTrace(BaseModel):
     strategy: str = Field(default="vector", min_length=1)
     config: RetrievalConfig = Field(default_factory=RetrievalConfig)
-    chunks: list[RetrievedChunk] = Field(default_factory=list)
+    chunks: list[RetrievedChunk] = Field(default_factory=list, max_length=MAX_CHUNKS_PER_TRACE)
 
 
 class PromptTrace(BaseModel):
@@ -63,7 +73,7 @@ class UsageTrace(BaseModel):
 
 class GenerationTrace(BaseModel):
     provider: str | None= None
-    model: str= Field(..., min_length=1)
+    model: str = Field(..., min_length=1, max_length=MODEL_MAX_LENGTH)
     temperature: float | None= None
     # Any other tunable generation parameters (top_p, max_tokens, seed,
     # frequency_penalty, presence_penalty, ...). Kept as a free-form dict so new
@@ -97,6 +107,11 @@ class FeedbackRequest(BaseModel):
     rating: Literal["thumbs_up", "thumbs_down"]
     comment: str | None = Field(default=None, max_length=2000)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_nul(cls, data: Any) -> Any:
+        return strip_nul(data)
+
 class EvaluationResult(BaseModel):
     evaluator_name: str
     evaluator_version: str | None = None
@@ -110,10 +125,20 @@ class EvaluationsTrace(BaseModel):
     deep: list[EvaluationResult] = Field(default_factory=list)
 
 class TraceIngestRequest(BaseModel):
-    schema_version: str = Field(default="tracero_trace_v1")
+    """What a client sends to POST /v1/traces.
+
+    Evaluations, diagnosis and feedback are not part of it: the server computes
+    the first two and feedback has its own endpoint. If a client sends them anyway
+    they are ignored, so older SDKs that still include them keep working.
+
+    trace_id may be set by the client. Sending the same id again returns the
+    stored trace instead of creating a second one, which makes retries safe.
+    """
+
+    schema_version: str = Field(default="tracero_trace_v1", max_length=VERSION_MAX_LENGTH)
     trace_id: UUID = Field(default_factory=uuid4)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    status: str = Field(default="answered")
+    status: str = Field(default="answered", min_length=1, max_length=STATUS_MAX_LENGTH)
 
     project: ProjectInfo = Field(default_factory=ProjectInfo)
     query: QueryTrace
@@ -121,11 +146,21 @@ class TraceIngestRequest(BaseModel):
     prompt: PromptTrace = Field(default_factory=PromptTrace)
     generation: GenerationTrace
     latency: LatencyTrace = Field(default_factory=LatencyTrace)
+
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_nul(cls, data: Any) -> Any:
+        return strip_nul(data)
+
+
+class Trace(TraceIngestRequest):
+    """A stored trace: the client's input plus what the server adds to it."""
+
     evaluations: EvaluationsTrace = Field(default_factory=EvaluationsTrace)
     diagnosis: DiagnosisTrace = Field(default_factory=DiagnosisTrace)
     feedback: list[FeedbackEntry] = Field(default_factory=list)
-
-    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class TraceIngestResponse(BaseModel):

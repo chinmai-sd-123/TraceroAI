@@ -1,4 +1,4 @@
-from app.schemas.traces import EvaluationResult, TraceIngestRequest
+from app.schemas.traces import EvaluationResult, Trace
 from app.services.llm_judge import LLMJudge
 
 
@@ -13,7 +13,7 @@ GROUNDED_THRESHOLD = 0.8
 
 
 def evaluate_deep_groundedness(
-    trace: TraceIngestRequest, judge: LLMJudge
+    trace: Trace, judge: LLMJudge
 ) -> EvaluationResult:
     context = "\n\n".join(chunk.text for chunk in trace.retrieval.chunks)
     answer = trace.generation.answer

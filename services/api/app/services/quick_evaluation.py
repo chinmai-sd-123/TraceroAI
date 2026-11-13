@@ -2,16 +2,16 @@ from app.evaluators.answer_relevance import evaluate_answer_relevance
 from app.evaluators.context_relevance import evaluate_context_relevance
 from app.evaluators.diagnosis import diagnose_trace, is_refusal
 from app.evaluators.groundedness import evaluate_groundedness
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
 from app.services.embeddings import EmbeddingClient
 
 
 def run_quick_evaluation(
-    trace: TraceIngestRequest,
+    trace: Trace,
     *,
     semantic: bool = True,
     embedder: EmbeddingClient | None = None,
-) -> TraceIngestRequest:
+) -> Trace:
     """Run the quick evaluators and diagnosis on a trace.
 
     The server is the source of truth for evaluations, so any quick
@@ -44,7 +44,7 @@ def run_quick_evaluation(
 
 
 def _embed_relevance_inputs(
-    trace: TraceIngestRequest,
+    trace: Trace,
     embedder: EmbeddingClient | None = None,
 ) -> dict[str, list[float]] | None:
     """Embed [query, context, answer] in one batched call.

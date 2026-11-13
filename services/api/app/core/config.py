@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # Extra browser origins allowed by CORS (the deployed frontend URL).
     # JSON list, e.g. TRACEROAI_CORS_ORIGINS='["https://traceroai.vercel.app"]'.
     cors_origins: list[str] = Field(default_factory=list)
+    # Largest request body the API accepts, in bytes (413 above it). One trace
+    # with dozens of full-text chunks fits comfortably in the default.
+    max_request_bytes: int = Field(default=1_000_000, gt=0)
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore")
 
     @field_validator("judge_base_url", mode="before")

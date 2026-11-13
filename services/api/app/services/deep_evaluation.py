@@ -10,7 +10,7 @@ from app.evaluators.deep_relevance import (
     evaluate_deep_context_relevance,
 )
 from app.evaluators.diagnosis import diagnose_from_deep, is_refusal
-from app.schemas.traces import DiagnosisTrace, EvaluationResult, TraceIngestRequest
+from app.schemas.traces import DiagnosisTrace, EvaluationResult, Trace
 from app.services.embeddings import EmbeddingClient
 from app.services.llm_judge import LLMJudge, OpenAIJudge
 from app.services.quick_evaluation import run_quick_evaluation
@@ -73,7 +73,7 @@ def run_deep_evaluation(
         if record is None:
             return
 
-        trace = TraceIngestRequest(**record.payload)
+        trace = Trace(**record.payload)
 
         quick: list[EvaluationResult] | None = None
         diagnosis: DiagnosisTrace | None = None
@@ -101,7 +101,7 @@ def run_deep_evaluation(
 
 
 def _evaluate(
-    trace: TraceIngestRequest,
+    trace: Trace,
     judge: LLMJudge | None,
     settings: Settings,
     *,
