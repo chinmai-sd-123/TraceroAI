@@ -122,7 +122,10 @@ export default async function TraceDetailPage({
 
       <div className="mt-8 grid gap-4 md:grid-cols-4">
         <MetricCard label="Model" value={trace.generation.model} />
-        <MetricCard label="Total latency" value={`${trace.latency.totalMs}ms`} />
+        <MetricCard
+          label="Total latency"
+          value={trace.latency.totalMs > 0 ? `${trace.latency.totalMs}ms` : "Not measured"}
+        />
         {/* Cost shown only when known (tokens logged + model priced) and not
             disabled via NEXT_PUBLIC_SHOW_COST. */}
         {process.env.NEXT_PUBLIC_SHOW_COST !== "false" &&
@@ -496,7 +499,9 @@ function EvalRow({
     <div className="border-b border-zinc-800 pb-4 last:border-b-0 last:pb-0">
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm font-medium text-zinc-100">{label}</p>
-        <p className="font-mono text-sm text-cyan-300">{Math.round(score * 100)}%</p>
+        <p className="font-mono text-sm text-cyan-300">
+          {value === "not_evaluated" ? "—" : `${Math.round(score * 100)}%`}
+        </p>
       </div>
       <p className="mt-1 text-sm text-zinc-400">{formatLabel(value)}</p>
       <p className="mt-2 text-sm leading-6 text-zinc-500">{reason}</p>

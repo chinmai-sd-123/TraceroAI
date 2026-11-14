@@ -170,7 +170,7 @@ export default async function DashboardPage({
                     jobStats.redisConnected ? "bg-emerald-400" : "bg-zinc-500"
                   }`}
                 />
-                {jobStats.redisConnected ? "Redis connected" : "Fallback (in-process)"}
+                {jobStats.redisConnected ? "Redis connected" : "No queue"}
               </span>
             </div>
             <div className="mt-4 flex items-end gap-3">
@@ -180,7 +180,7 @@ export default async function DashboardPage({
             <p className="mt-3 text-xs leading-5 text-zinc-500">
               {jobStats.redisConnected
                 ? "Deep evaluations are processed asynchronously by the worker."
-                : "Redis is not configured — deep evaluations run in-process via background tasks."}
+                : "No Redis queue: with a judge configured, evaluations run inside the API process and are lost if it restarts; without one, traces keep their quick estimates."}
             </p>
           </section>
 

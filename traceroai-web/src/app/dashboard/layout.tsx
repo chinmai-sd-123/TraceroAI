@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { GitHubLink } from "@/components/github-link";
+import { getApiStatus } from "@/lib/api";
+
+import { ApiStatusBanner } from "./api-status-banner";
 
 import { DashboardNav } from "./nav";
 
@@ -10,7 +13,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -33,7 +36,10 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-8">{children}</div>
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <ApiStatusBanner status={await getApiStatus()} />
+        {children}
+      </div>
     </main>
   );
 }

@@ -179,6 +179,28 @@ function serverHeaders(): Record<string, string> {
   return key ? { Authorization: `Bearer ${key}` } : {};
 }
 
+export type ApiStatus = "ok" | "unreachable" | "unauthorized" | "degraded";
+
+/**
+ * Whether the dashboard can trust what it shows. Every data fetcher falls back
+ * to an empty result on failure, so without this an unreachable API, a wrong
+ * key and an empty project all look the same.
+ */
+export async function getApiStatus(): Promise<ApiStatus> {
+  try {
+    const ready = await fetch(`${API_BASE_URL}/health/ready`, { cache: "no-store" });
+    if (ready.status === 503) return "degraded";
+    const probe = await fetch(`${API_BASE_URL}/v1/traces?limit=1`, {
+      cache: "no-store",
+      headers: serverHeaders(),
+    });
+    if (probe.status === 401 || probe.status === 403) return "unauthorized";
+    return probe.ok ? "ok" : "degraded";
+  } catch {
+    return "unreachable";
+  }
+}
+
 export type FeedbackRating = "thumbs_up" | "thumbs_down";
 
 /** Server-side: record feedback on a trace with the dashboard's key. */
