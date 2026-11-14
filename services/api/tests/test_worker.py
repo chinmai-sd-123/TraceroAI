@@ -24,6 +24,11 @@ from tests.test_deep_groundedness import make_trace_payload
 TEST_REDIS_URL = os.environ.get("TRACEROAI_TEST_REDIS_URL", "redis://localhost:6379/15")
 client = TestClient(app)
 
+# "Stalled" means created before now() minus this. Negative so a trace created a
+# moment ago always qualifies, even if the database clock steps back slightly
+# (Docker Desktop's VM clock does under load).
+STALL_WINDOW = -60
+
 
 @pytest.fixture
 def redis_client(monkeypatch):
@@ -150,7 +155,7 @@ def _settle_other_pending_traces(keep: str) -> None:
 def test_sweep_requeues_a_trace_whose_job_was_lost(redis_client, monkeypatch) -> None:
     trace_id = _pending_trace(monkeypatch)  # pending, but no job anywhere
     _settle_other_pending_traces(keep=trace_id)
-    worker = _worker(redis_client, lambda *a, **k: None, stalled_after_seconds=0)
+    worker = _worker(redis_client, lambda *a, **k: None, stalled_after_seconds=STALL_WINDOW)
 
     assert worker.requeue_stalled() >= 1
     queued = {
@@ -162,7 +167,7 @@ def test_sweep_requeues_a_trace_whose_job_was_lost(redis_client, monkeypatch) ->
 
 def test_sweep_waits_while_jobs_are_still_queued(redis_client, monkeypatch) -> None:
     _pending_trace(monkeypatch)
-    worker = _worker(redis_client, lambda *a, **k: None, stalled_after_seconds=0)
+    worker = _worker(redis_client, lambda *a, **k: None, stalled_after_seconds=STALL_WINDOW)
     redis_client.xadd(worker_module.STREAM, {"trace_id": str(uuid4())})  # backlog
 
     assert worker.requeue_stalled() == 0
@@ -171,6 +176,6 @@ def test_sweep_waits_while_jobs_are_still_queued(redis_client, monkeypatch) -> N
 def test_sweep_does_nothing_without_a_judge(redis_client, monkeypatch) -> None:
     _pending_trace(monkeypatch)
     monkeypatch.setattr(get_settings(), "openai_api_key", None)
-    worker = _worker(redis_client, lambda *a, **k: None, stalled_after_seconds=0)
+    worker = _worker(redis_client, lambda *a, **k: None, stalled_after_seconds=STALL_WINDOW)
 
     assert worker.requeue_stalled() == 0

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections.abc import Collection
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from typing import Literal
 from uuid import UUID
 
@@ -68,7 +68,9 @@ class TraceRepository:
 
     def stalled_evaluations(self, *, older_than_seconds: int, limit: int = 200) -> list[UUID]:
         """Traces still waiting for the judge long after they were stored."""
-        cutoff = datetime.now(UTC) - timedelta(seconds=older_than_seconds)
+        # The cutoff uses the database's clock, the same one that set created_at:
+        # the app host's clock can be skewed from it.
+        cutoff = func.now() - timedelta(seconds=older_than_seconds)
         statement = (
             select(TraceRecord.trace_id)
             .where(TraceRecord.payload["evaluations"]["deep_status"].astext == "pending")

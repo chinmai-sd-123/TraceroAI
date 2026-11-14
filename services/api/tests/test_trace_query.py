@@ -62,7 +62,13 @@ def test_pages_cover_every_trace_once_newest_first(project) -> None:
             break
 
     assert pages == 3
-    assert seen == list(reversed(posted))  # newest first, nothing repeated or skipped
+    # Every trace exactly once, in the same order as one unpaged request. (Not
+    # necessarily reverse posting order: two inserts can share a timestamp, and
+    # the database clock may step back, so ties fall back to the trace id.)
+    assert len(seen) == len(set(seen)) == 5
+    assert set(seen) == set(posted)
+    unpaged = client.get("/v1/traces", params={"project_id": project, "limit": 200})
+    assert seen == _ids(unpaged)
 
 
 def test_a_bad_cursor_is_a_400(project) -> None:

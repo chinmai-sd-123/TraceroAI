@@ -1,5 +1,7 @@
 """Readiness checks and Prometheus metrics."""
 
+from uuid import uuid4
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -83,7 +85,7 @@ def test_ingest_outcomes_are_counted(monkeypatch) -> None:
     stored = _metric("traceroai_traces_ingested_total", outcome="stored")
     duplicate = _metric("traceroai_traces_ingested_total", outcome="duplicate")
 
-    payload = make_trace_payload() | {"trace_id": "8e3a1c2b-58b4-4d3e-9a54-7c1f0a2b9d10"}
+    payload = make_trace_payload() | {"trace_id": str(uuid4())}  # new each run
     client.post("/v1/traces", json=payload)
     client.post("/v1/traces", json=payload)
 
@@ -120,3 +122,36 @@ class TestMetricsAccess:
     def test_health_checks_stay_open(self) -> None:
         assert client.get("/health").status_code == 200
         assert client.get("/health/ready").status_code == 200
+
+
+def test_database_connections_time_out() -> None:
+    from app.db.session import engine_options
+
+    settings = get_settings()
+    assert engine_options(settings)["connect_args"] == {
+        "connect_timeout": settings.db_connect_timeout_seconds
+    }
+
+
+def test_readiness_answers_quickly_when_the_database_host_drops_packets(monkeypatch) -> None:
+    # 10.255.255.1 is unroutable: packets are dropped rather than refused. Before
+    # the connect timeout this check could hang for the OS TCP timeout.
+    import time
+
+    from sqlalchemy import create_engine
+
+    from app.core.config import Settings
+    from app.db.session import engine_options
+
+    options = engine_options(Settings(_env_file=None, db_connect_timeout_seconds=2))
+    blackholed = create_engine(
+        "postgresql+psycopg://user:secret@10.255.255.1:5432/db", **options
+    )
+    monkeypatch.setattr(health, "engine", blackholed)
+
+    started = time.perf_counter()
+    response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    assert time.perf_counter() - started < 15  # two addresses at most, 2 s each, plus slack
+    assert "secret" not in response.text
