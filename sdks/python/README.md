@@ -167,6 +167,18 @@ TraceroClient(
 
 Evaluations, diagnosis, and cost are computed server-side.
 
+### Chunks
+
+`log_retrieval` (and `log_trace`) take dicts, strings, or LangChain `Document` objects.
+Missing `rank`s and `chunk_id`s are filled in from position, and chunks with no text are
+left out, so a trace is never rejected over a chunk's shape.
+
+### Async code
+
+`log_trace` and the context manager never block, so they are safe in async code as is.
+For the calls that wait there are async variants: `await client.aget_trace(id)`,
+`await client.alog_trace_sync_eval(...)` and `await client.aflush()`.
+
 ### Changes in 0.5.0
 
 - Sending moved to a background thread; `log_trace` returns immediately with a
@@ -180,5 +192,10 @@ Evaluations, diagnosis, and cost are computed server-side.
   a failure in your `retrieve`/`generate` is traced before it's raised.
 - `RecoveryAgent` retries only on LLM-judge verdicts unless
   `retry_on_quick_diagnosis=True`, and returns `diagnosis_source`.
+- Chunks are normalised before sending (see Chunks above).
+- `run_experiment` keeps its results when posting the run fails, and reports why
+  cases couldn't be graded, in `result.errors`.
+- The `[recovery]` extra installs only `langgraph`; install your own LLM client.
 - New: `flush()`, `close()`, `dropped_traces`, `TraceroError`, `__version__`,
-  configuration from environment variables.
+  configuration from environment variables, `aget_trace`/`alog_trace_sync_eval`/`aflush`,
+  and type information (`py.typed`).

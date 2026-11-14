@@ -11,6 +11,7 @@ client.flush() before exiting; an exit hook also flushes briefly.
 
 from __future__ import annotations
 
+import asyncio
 import atexit
 import functools
 import inspect
@@ -25,6 +26,7 @@ from uuid import UUID, uuid4
 
 import httpx
 
+from traceroai._chunks import normalize_chunks
 from traceroai._version import __version__
 from traceroai.trace import TraceContext
 
@@ -190,6 +192,7 @@ class TraceroClient:
         if not self.enabled:
             return trace_id
 
+        retrieval = {**retrieval, "chunks": normalize_chunks(retrieval.get("chunks"))}
         payload = {
             "trace_id": str(trace_id),
             "query": query,
@@ -231,6 +234,7 @@ class TraceroClient:
         same trace_id to a later log_trace to retry without a duplicate.
         """
         trace_id = UUID(str(trace_id)) if trace_id is not None else uuid4()
+        retrieval = {**retrieval, "chunks": normalize_chunks(retrieval.get("chunks"))}
         payload = {
             "trace_id": str(trace_id),
             "query": query,
@@ -279,6 +283,20 @@ class TraceroClient:
         response = self._http.get(f"{self.base_url}/v1/traces/{trace_id}")
         response.raise_for_status()
         return response.json()
+
+    # --- async variants (log_trace never blocks, so it needs none) ---
+
+    async def aget_trace(self, trace_id: UUID | str) -> dict[str, Any]:
+        """get_trace for async code: runs in a worker thread, not the event loop."""
+        return await asyncio.to_thread(self.get_trace, trace_id)
+
+    async def alog_trace_sync_eval(self, **kwargs: Any) -> tuple[UUID, dict[str, Any] | None]:
+        """log_trace_sync_eval for async code."""
+        return await asyncio.to_thread(lambda: self.log_trace_sync_eval(**kwargs))
+
+    async def aflush(self, timeout: float | None = None) -> bool:
+        """flush for async code."""
+        return await asyncio.to_thread(self.flush, timeout)
 
     def close(self) -> None:
         """Send what's queued (briefly), then release the connection pool."""

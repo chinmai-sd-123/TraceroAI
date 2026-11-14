@@ -256,3 +256,64 @@ def test_explicit_trace_id_is_used() -> None:
     chosen = uuid4()
     assert client.log_trace(**_trace_args(), trace_id=chosen) == chosen
     assert recorder.posted_ids() == [str(chosen)]
+
+
+# --- chunk shapes from real retrievers ---
+
+
+def test_chunks_missing_rank_and_id_are_completed() -> None:
+    recorder = Recorder()
+    client = _client(recorder, background=False)
+
+    with client.trace("q") as t:
+        t.log_retrieval([{"text": "first"}, {"text": "  "}, {"text": "second", "rank": 0}])
+        t.log_generation("a", model="m")
+
+    chunks = json.loads(recorder.requests[0].content)["retrieval"]["chunks"]
+    assert chunks == [
+        {"text": "first", "rank": 1, "chunk_id": "chunk-1"},
+        {"text": "second", "rank": 2, "chunk_id": "chunk-2"},  # blank one left out
+    ]
+
+
+def test_langchain_documents_and_strings_are_accepted() -> None:
+    class Document:  # the shape of langchain_core.documents.Document
+        def __init__(self, page_content, metadata, id=None):
+            self.page_content, self.metadata, self.id = page_content, metadata, id
+
+    recorder = Recorder()
+    client = _client(recorder, background=False)
+    client.log_trace(
+        query={"original": "q"},
+        retrieval={"chunks": [
+            Document("Refunds take 5-7 days.", {"source": "refunds.md", "title": "Refunds"}, id="d1"),
+            "a plain string chunk",
+        ]},
+        generation={"model": "m", "answer": "a"},
+    )
+
+    chunks = json.loads(recorder.requests[0].content)["retrieval"]["chunks"]
+    assert chunks[0] == {
+        "text": "Refunds take 5-7 days.",
+        "source": "refunds.md",
+        "document_title": "Refunds",
+        "chunk_id": "d1",
+        "rank": 1,
+    }
+    assert chunks[1] == {"text": "a plain string chunk", "rank": 2, "chunk_id": "chunk-2"}
+
+
+# --- async helpers ---
+
+
+def test_async_read_back() -> None:
+    recorder = Recorder()
+    client = _client(recorder)
+
+    async def scenario():
+        trace_id = client.log_trace(**_trace_args())
+        assert await client.aflush(5)
+        return trace_id, await client.aget_trace(trace_id)
+
+    trace_id, stored = asyncio.run(scenario())
+    assert stored["trace_id"] == str(trace_id)

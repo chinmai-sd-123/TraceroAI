@@ -15,6 +15,10 @@ class _FakeResp:
         self.status_code = status
         self._payload = payload
 
+    @property
+    def text(self) -> str:
+        return str(self._payload)
+
     def json(self) -> dict:
         return self._payload
 
@@ -119,3 +123,36 @@ def test_requires_two_variants(monkeypatch):
             retrieve=_retrieve, generate=lambda q, c: "a",
             variants=[Variant("a", "A")], project_id="t",
         )
+
+
+def test_a_failed_upload_keeps_the_results(monkeypatch) -> None:
+    def fake_post(url, json=None, headers=None, timeout=None):
+        if url.endswith("/v1/eval/grade"):
+            return _FakeResp(200, {"correct": True, "reason": "stub"})
+        raise E.httpx.ConnectError("API unreachable")
+
+    monkeypatch.setattr(E.httpx, "post", fake_post)
+    result = run_experiment(
+        client=TraceroClient(base_url="http://x", flush_on_exit_seconds=0),
+        dataset=[Case("c1", "q", "a")],
+        retrieve=lambda q, k: [{"text": "ctx"}],
+        generate=lambda q, c: "a",
+        variants=[Variant("v1", "one", top_k=1), Variant("v2", "two", top_k=2)],
+    )
+
+    assert result.eval_run_id is None
+    assert len(result.variants) == 2  # the paid-for results are still here
+    assert any("posting the eval run failed" in e for e in result.errors)
+
+
+def test_ungradeable_cases_say_why(monkeypatch) -> None:
+    _patch_server(monkeypatch, correct_if=lambda a: True, grade_status=503)
+    result = run_experiment(
+        client=TraceroClient(base_url="http://x", flush_on_exit_seconds=0),
+        dataset=[Case("c1", "q", "a")],
+        retrieve=lambda q, k: [],
+        generate=lambda q, c: "a",
+        variants=[Variant("v1", "one"), Variant("v2", "two")],
+        post=False,
+    )
+    assert result.errors and "HTTP 503" in result.errors[0]

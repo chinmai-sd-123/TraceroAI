@@ -23,6 +23,8 @@ import time
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
+from traceroai._chunks import normalize_chunks
+
 if TYPE_CHECKING:
     from traceroai.client import TraceroClient
 
@@ -57,12 +59,12 @@ class TraceContext:
 
     def log_retrieval(
         self,
-        chunks: list[dict[str, Any]],
+        chunks: list[Any],
         *,
         strategy: str = "vector",
         config: dict[str, Any] | None = None,
     ) -> None:
-        self._retrieval = {"strategy": strategy, "chunks": chunks}
+        self._retrieval = {"strategy": strategy, "chunks": normalize_chunks(chunks)}
         if config is not None:
             self._retrieval["config"] = config
 
