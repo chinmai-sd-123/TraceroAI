@@ -278,10 +278,24 @@ again.
 Keys are optional in development and required when `TRACEROAI_APP_ENV` is `staging` or
 `production` (override with `TRACEROAI_REQUIRE_API_KEY`).
 
+Create keys with the CLI, from `services/api` (or `docker compose exec api python -m app.keys ...`):
+
+```bash
+python -m app.keys create --project my-app --name "my-app production"   # prints the key once
+python -m app.keys create --admin --name "dashboard"
+python -m app.keys list
+python -m app.keys revoke trk_AbCdEfGh                                   # a key's prefix or id
+```
+
+Only a SHA-256 hash of each key is stored, and revoking takes effect on the next request.
+Keys in the environment variables below also work, which is handy for a first deploy.
+
 | Setting | Where | What it does |
 |---|---|---|
 | `TRACEROAI_PROJECT_API_KEYS` | API | JSON map of key → project. A project key writes to and reads only that project. |
 | `TRACEROAI_ADMIN_API_KEYS` | API | JSON list of keys that read every project. Give one to the dashboard. |
+| `TRACEROAI_INGEST_RATE_LIMIT_PER_MINUTE` | API | Traces per minute per key (default 1200). |
+| `TRACEROAI_GRADE_RATE_LIMIT_PER_MINUTE` | API | Grading calls per minute per key (default 120). |
 | `TRACEROAI_PUBLIC_READ_PROJECTS` | API | JSON list of projects anyone may read without a key, for a public demo. |
 | `TRACEROAI_API_KEY` | web | The key the dashboard's server uses. Never sent to the browser. |
 | `TRACEROAI_DASHBOARD_PASSWORD` | web | If set, the dashboard asks for this password first. |

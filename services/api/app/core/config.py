@@ -80,6 +80,9 @@ class Settings(BaseSettings):
     # Port for the worker's Prometheus metrics (http://host:port/metrics); unset
     # = no metrics server. The API serves its own at /metrics.
     worker_metrics_port: int | None = None
+    # Per key (per address without a key), per minute.
+    ingest_rate_limit_per_minute: int = Field(default=1200, ge=1)
+    grade_rate_limit_per_minute: int = Field(default=120, ge=1)
     # Feedback entries kept per trace; further feedback gets a 409.
     max_feedback_per_trace: int = Field(default=100, ge=1)
     # An empty environment variable is a real value and overrides .env: running

@@ -12,6 +12,7 @@ from app.core.tenancy import (
     ReadScope,
     api_key_required,
     caller,
+    rate_limit,
     read_scope,
     write_project,
 )
@@ -51,6 +52,7 @@ def ingest_trace(
     payload: TraceIngestRequest,
     db: Session = Depends(get_db),
     project_id: str | None = Depends(write_project),
+    _limit: None = Depends(rate_limit("ingest", "ingest_rate_limit_per_minute")),
     sync_deep_eval: bool = False,
 ) -> TraceIngestResponse:
     # A known key means the server owns the attribution; without one (allowed only

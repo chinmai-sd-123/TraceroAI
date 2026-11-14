@@ -60,3 +60,26 @@ class EvalRunRecord(Base):
         server_default=func.now(),
         nullable=False,
     )
+
+class ApiKeyRecord(Base):
+    """An API key. Only a hash of the key is stored; the key itself is shown
+    once, when it's created (python -m app.keys create)."""
+
+    __tablename__ = "api_keys"
+
+    key_id: Mapped[PythonUUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    # SHA-256 of the full key. Keys are long random strings, so a fast hash is
+    # enough: there is nothing to guess from.
+    key_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    # The first characters of the key, so people can tell keys apart.
+    prefix: Mapped[str] = mapped_column(String(16), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    # "project": reads and writes one project. "admin": reads every project.
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    project_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

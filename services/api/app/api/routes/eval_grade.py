@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
-from app.core.tenancy import write_project
+from app.core.tenancy import rate_limit, write_project
 from app.services.llm_judge import OpenAIJudge
 
 router = APIRouter(prefix="/v1/eval", tags=["eval"])
@@ -32,7 +32,10 @@ class GradeResponse(BaseModel):
     response_model=GradeResponse,
     # Every call is a paid LLM request, so it's never open to anonymous callers
     # when keys are required.
-    dependencies=[Depends(write_project)],
+    dependencies=[
+        Depends(write_project),
+        Depends(rate_limit("grade", "grade_rate_limit_per_minute")),
+    ],
 )
 def grade_answer(payload: GradeRequest) -> GradeResponse:
     settings = get_settings()

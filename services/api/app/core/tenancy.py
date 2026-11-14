@@ -22,9 +22,13 @@ import hmac
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
+from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.db.session import get_db
+from app.services import api_keys
+from app.services.rate_limiter import check_rate_limit, client_ip
 
 
 @dataclass(frozen=True)
@@ -37,6 +41,8 @@ class Caller:
 
     project_id: str | None = None
     is_admin: bool = False
+    # Stable, non-secret identity of the key, for per-key rate limits.
+    key_ref: str | None = None
 
     @property
     def anonymous(self) -> bool:
@@ -112,23 +118,34 @@ def _unauthorized(detail: str) -> HTTPException:
     )
 
 
-def caller(authorization: str | None = Header(default=None)) -> Caller:
-    """Resolve the request's key.
+def caller(
+    authorization: str | None = Header(default=None), db: Session = Depends(get_db)
+) -> Caller:
+    """Resolve the request's key: environment keys first, then the api_keys table.
 
-    A key that IS sent but isn't recognized is always rejected: silently
-    ignoring it would attribute writes to whatever project the client claims.
+    A key that IS sent but isn't recognized (or is revoked) is always rejected:
+    silently ignoring it would attribute writes to whatever project the client
+    claims.
     """
     token = _bearer_token(authorization)
     if token is None:
         if authorization:
             raise _unauthorized("Invalid API key.")
         return Caller()
+    env_ref = f"env:{api_keys.hash_key(token)[:16]}"
     if _matches_any(token, get_settings().admin_api_keys):
-        return Caller(is_admin=True)
+        return Caller(is_admin=True, key_ref=env_ref)
     project_id = project_for_api_key(authorization)
-    if project_id is None:
+    if project_id is not None:
+        return Caller(project_id=project_id, key_ref=env_ref)
+
+    record = api_keys.find_active(db, token)
+    if record is None:
         raise _unauthorized("Invalid API key.")
-    return Caller(project_id=project_id)
+    api_keys.touch(db, record)
+    if record.role == "admin":
+        return Caller(is_admin=True, key_ref=str(record.key_id))
+    return Caller(project_id=record.project_id, key_ref=str(record.key_id))
 
 
 def write_project(who: Caller = Depends(caller)) -> str | None:
@@ -137,6 +154,23 @@ def write_project(who: Caller = Depends(caller)) -> str | None:
     if who.anonymous and api_key_required():
         raise _unauthorized("A valid project API key is required.")
     return who.project_id
+
+
+def rate_limit(bucket: str, setting: str):
+    """Dependency: at most `setting` calls per minute per key (per address
+    without a key) to this endpoint."""
+
+    def dependency(request: Request, who: Caller = Depends(caller)) -> None:
+        identity = who.key_ref or f"ip:{client_ip(request)}"
+        limit = getattr(get_settings(), setting)
+        if not check_rate_limit(bucket, identity, limit=limit, window_seconds=60):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Rate limit reached ({limit} per minute). Retry shortly.",
+                headers={"Retry-After": "60"},
+            )
+
+    return dependency
 
 
 def read_scope(who: Caller = Depends(caller)) -> ReadScope:
