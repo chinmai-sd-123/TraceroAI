@@ -307,6 +307,14 @@ When keys are required, a request without one can't write anything and can read 
 public projects. A key never sees another project's data: those traces and eval runs are
 reported as not found.
 
+### Data retention
+
+Traces hold your users' questions, retrieved documents and answers. Set
+`TRACEROAI_TRACE_RETENTION_DAYS` to delete traces older than that many days: the worker
+does it hourly, or run `python -m app.retention` (from `services/api`) on a schedule.
+Individual traces can be deleted with `DELETE /v1/traces/{trace_id}`, using a key for
+that trace's project or an admin key. Eval runs are not purged.
+
 ### Health and metrics
 
 | Endpoint | Use |

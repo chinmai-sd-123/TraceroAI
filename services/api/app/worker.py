@@ -61,6 +61,7 @@ VISIBILITY_TIMEOUT_MS = 600_000
 BLOCK_MS = 2_000
 RECLAIM_INTERVAL_SECONDS = 15.0
 SWEEP_INTERVAL_SECONDS = 300.0
+PURGE_INTERVAL_SECONDS = 3600.0
 
 # (trace_id, retry_transient=...) -> None
 Handler = Callable[..., None]
@@ -214,6 +215,18 @@ class DeepEvalWorker:
         except Exception:
             logger.exception("Couldn't mark trace %s as failed", trace_id)
 
+    # --- retention ---
+
+    def purge_expired(self) -> int:
+        days = get_settings().trace_retention_days
+        if not days:
+            return 0
+        with SessionLocal() as db:
+            deleted = TraceRepository(db).purge_older_than(days)
+        if deleted:
+            logger.info("Deleted %d trace(s) older than %d day(s)", deleted, days)
+        return deleted
+
     # --- recovering lost jobs ---
 
     def requeue_stalled(self) -> int:
@@ -246,6 +259,7 @@ class DeepEvalWorker:
 
         last_reclaim = 0.0
         last_sweep = time.monotonic()  # first sweep after one interval
+        last_purge = 0.0  # purge once at startup, then hourly
         while not stop.is_set():
             try:
                 jobs: list[Job] = []
@@ -255,6 +269,12 @@ class DeepEvalWorker:
                         self.requeue_stalled()
                     except Exception:
                         logger.exception("Sweep for lost evaluations failed")
+                if self.sweep and time.monotonic() - last_purge >= PURGE_INTERVAL_SECONDS:
+                    last_purge = time.monotonic()
+                    try:
+                        self.purge_expired()
+                    except Exception:
+                        logger.exception("Retention purge failed")
                 if time.monotonic() - last_reclaim >= RECLAIM_INTERVAL_SECONDS:
                     jobs = self.reclaim_stale()
                     last_reclaim = time.monotonic()

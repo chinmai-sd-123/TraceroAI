@@ -5,7 +5,7 @@ from typing import Literal
 from uuid import UUID
 
 
-from sqlalchemy import Text, func, literal, select, update
+from sqlalchemy import Text, delete, func, literal, select, update
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -65,6 +65,35 @@ class TraceRepository:
 
     def get(self, trace_id: UUID) -> TraceRecord | None:
         return self.db.get(TraceRecord, trace_id)
+
+    def delete(self, trace_id: UUID, *, project_id: str | None = None) -> bool:
+        """Delete one trace. With project_id, only a trace in that project."""
+        statement = delete(TraceRecord).where(TraceRecord.trace_id == trace_id)
+        if project_id is not None:
+            statement = statement.where(TraceRecord.project_id == project_id)
+        deleted = self.db.execute(statement).rowcount
+        self.db.commit()
+        return deleted > 0
+
+    def purge_older_than(self, days: int, *, batch_size: int = 1000) -> int:
+        """Delete traces created more than `days` ago, in batches so no single
+        transaction holds locks on a large table for long. Returns the count."""
+        cutoff = func.now() - timedelta(days=days)
+        total = 0
+        while True:
+            batch = (
+                select(TraceRecord.trace_id)
+                .where(TraceRecord.created_at < cutoff)
+                .limit(batch_size)
+                .scalar_subquery()
+            )
+            deleted = self.db.execute(
+                delete(TraceRecord).where(TraceRecord.trace_id.in_(batch))
+            ).rowcount
+            self.db.commit()
+            total += deleted
+            if deleted < batch_size:
+                return total
 
     def stalled_evaluations(self, *, older_than_seconds: int, limit: int = 200) -> list[UUID]:
         """Traces still waiting for the judge long after they were stored."""

@@ -214,6 +214,19 @@ def get_trace(
 
     return record.payload
 
+@router.delete("/{trace_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_trace(
+    trace_id: UUID,
+    db: Session = Depends(get_db),
+    project_id: str | None = Depends(write_project),
+) -> Response:
+    """Delete a trace. A project key can delete only its own project's traces
+    (another project's is reported as not found); an admin key, any trace."""
+    if not TraceRepository(db).delete(trace_id, project_id=project_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trace not found.")
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.post("/{trace_id}/feedback", status_code=status.HTTP_201_CREATED)
 def add_feedback(
     trace_id: UUID,
