@@ -336,6 +336,12 @@ Tests create and use a `traceroai_test` database on the local Postgres. To point
 somewhere else, set `TRACEROAI_TEST_DATABASE_URL`; non-local hosts are refused so a
 test run can't write into a hosted database by accident.
 
+## Contributing
+
+Issues and pull requests are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) for setup and
+checks, and [CHANGELOG.md](CHANGELOG.md) for what's changed. Please report security
+problems privately as described in [SECURITY.md](SECURITY.md).
+
 ## License
 
 [MIT](./LICENSE)

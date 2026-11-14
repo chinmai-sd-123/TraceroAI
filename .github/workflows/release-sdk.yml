@@ -1,0 +1,50 @@
+# Publish the Python SDK to PyPI when a tag like sdk-v0.5.0 is pushed.
+#
+# Uses PyPI trusted publishing, so no token is stored in the repository. One-time
+# setup on PyPI (project traceroai > Publishing): add a GitHub publisher with owner
+# chinmai-sd-123, repository TraceroAI, workflow release-sdk.yml, environment pypi.
+name: Release SDK
+
+on:
+  push:
+    tags: ["sdk-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Tag matches the package version
+        run: |
+          version=$(python -c "import re; print(re.search(r'\"(.+)\"', open('traceroai/_version.py').read()).group(1))")
+          test "sdk-v$version" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != version $version"; exit 1; }
+      - run: pip install ".[recovery]" pytest build twine
+      - run: pytest -q
+      - run: python -m build
+      - run: twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: sdks/python/dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write   # trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

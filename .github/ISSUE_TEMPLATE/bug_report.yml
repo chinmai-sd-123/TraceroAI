@@ -1,0 +1,36 @@
+name: Bug report
+description: Something doesn't work as documented.
+labels: ["needs-triage"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The smallest steps or code that show the problem. Leave out API keys and private data.
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options: [API, Worker, Dashboard, Python SDK, Docker / self-hosting, Docs]
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: SDK version (`python -c "import traceroai; print(traceroai.__version__)"`), and the commit or image you run.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error output
+      description: Include the X-Request-ID from the response if there is one.
+      render: text
