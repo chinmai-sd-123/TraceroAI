@@ -11,8 +11,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+# The lock pins every package (with hashes) to what CI tested.
+COPY requirements.lock .
+RUN pip install --require-hashes -r requirements.lock
 
 COPY alembic.ini .
 COPY migrations ./migrations

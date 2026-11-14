@@ -97,13 +97,14 @@ def list_page(
 def summary(db: Session, filters: TraceFilters) -> dict:
     """Headline numbers over every matching trace, computed in the database."""
     where = _where(filters)
-    by_diagnosis = dict(
-        db.execute(
+    by_diagnosis: dict[str | None, int] = {
+        label: count
+        for label, count in db.execute(
             select(TraceRecord.diagnosis_label, func.count())
             .where(*where)
             .group_by(TraceRecord.diagnosis_label)
         ).all()
-    )
+    }
     source = TraceRecord.payload["diagnosis"]["source"].astext
     by_source = {
         (key or "unknown"): count

@@ -71,7 +71,7 @@ class TraceRepository:
         statement = delete(TraceRecord).where(TraceRecord.trace_id == trace_id)
         if project_id is not None:
             statement = statement.where(TraceRecord.project_id == project_id)
-        deleted = self.db.execute(statement).rowcount
+        deleted = _rowcount(self.db.execute(statement))
         self.db.commit()
         return deleted > 0
 
@@ -87,9 +87,9 @@ class TraceRepository:
                 .limit(batch_size)
                 .scalar_subquery()
             )
-            deleted = self.db.execute(
-                delete(TraceRecord).where(TraceRecord.trace_id.in_(batch))
-            ).rowcount
+            deleted = _rowcount(
+                self.db.execute(delete(TraceRecord).where(TraceRecord.trace_id.in_(batch)))
+            )
             self.db.commit()
             total += deleted
             if deleted < batch_size:
@@ -190,6 +190,11 @@ def _jsonb_set(target, path: list[str], value):
     if not hasattr(value, "type"):  # a plain Python value, not a SQL expression
         value = literal(value, JSONB)
     return func.jsonb_set(target, literal(path, ARRAY(Text)), value, type_=JSONB)
+
+
+def _rowcount(result) -> int:
+    """Rows affected by a DELETE/UPDATE (a CursorResult; typed as Result)."""
+    return result.rowcount
 
 
 def _dump_list(results: list[EvaluationResult]) -> list[dict]:

@@ -169,7 +169,7 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
     prompt_build_ms = int((time.perf_counter() - prompt_start) * 1000)
 
     total_ms = int((time.perf_counter() - started) * 1000)
-    trace = Trace(
+    trace = Trace.model_validate(dict(
         query={"original": query},
         retrieval={"strategy": "lexical_top_k", "config": {"final_top_k": 3}, "chunks": chunks},
         prompt={"content": prompt_text, "version": "playground_v1", "template_name": "grounded_answer"},
@@ -181,7 +181,7 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
         },
         project={"project_id": "playground"},
         metadata={"source": "docs_playground"},
-    )
+    ))
     trace = run_quick_evaluation(trace)
 
     # The deterministic term-overlap checks are brittle on short queries. If an

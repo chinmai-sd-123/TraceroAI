@@ -29,11 +29,13 @@ import socket
 import threading
 import time
 from collections.abc import Callable
+from typing import cast
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID
 
 import redis
+import redis.exceptions as redis_exceptions
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
@@ -101,7 +103,7 @@ class DeepEvalWorker:
     def ensure_group(self) -> None:
         try:
             self.client.xgroup_create(STREAM, GROUP, id="0", mkstream=True)
-        except redis.exceptions.ResponseError as exc:
+        except redis_exceptions.ResponseError as exc:
             if "BUSYGROUP" not in str(exc):  # the group already exists: fine
                 raise
 
@@ -109,7 +111,7 @@ class DeepEvalWorker:
         """Move jobs left on the old list queue onto the stream."""
         moved = 0
         while (trace_id := self.client.rpop(LEGACY_LIST)) is not None:
-            self.client.xadd(STREAM, {"trace_id": trace_id})
+            self.client.xadd(STREAM, {"trace_id": str(trace_id)})
             moved += 1
         if moved:
             logger.info("Moved %d job(s) from the legacy list queue to the stream", moved)
@@ -118,8 +120,13 @@ class DeepEvalWorker:
     # --- reading ---
 
     def read_new(self, count: int = 1) -> list[Job]:
-        response = self.client.xreadgroup(
-            GROUP, self.consumer, {STREAM: ">"}, count=count, block=self.block_ms
+        # [(stream, [(message_id, {field: value}), ...])], strings with
+        # decode_responses=True; redis-py types it loosely.
+        response = cast(
+            list,
+            self.client.xreadgroup(
+                GROUP, self.consumer, {STREAM: ">"}, count=count, block=self.block_ms
+            ),
         )
         jobs = []
         for _stream, messages in response or []:
@@ -130,7 +137,7 @@ class DeepEvalWorker:
     def reclaim_stale(self, count: int = 10) -> list[Job]:
         """Take over jobs that another (likely dead) worker, or an earlier failed
         attempt, left pending longer than the visibility timeout."""
-        _next_id, messages, *_deleted = self.client.xautoclaim(
+        _next_id, messages, *_deleted = self.client.xautoclaim(  # type: ignore[misc]
             STREAM, GROUP, self.consumer, min_idle_time=self.visibility_timeout_ms,
             start_id="0-0", count=count,
         )
@@ -282,7 +289,7 @@ class DeepEvalWorker:
                     jobs = self.read_new()
                 for job in jobs:
                     self.handle(job)
-            except redis.exceptions.RedisError:
+            except redis_exceptions.RedisError:
                 logger.exception("Redis error; retrying in 1s")
                 stop.wait(1)
         logger.info("Worker %s stopped", self.consumer)

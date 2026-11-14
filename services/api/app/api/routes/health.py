@@ -12,6 +12,7 @@ hostnames or credentials, and these endpoints are reachable without a key.
 import logging
 
 import redis
+import redis.exceptions as redis_exceptions
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy import text
@@ -47,7 +48,7 @@ def _redis_status() -> str:
     try:
         redis.Redis.from_url(url, socket_connect_timeout=2, socket_timeout=2).ping()
         return "ok"
-    except redis.exceptions.RedisError:
+    except redis_exceptions.RedisError:
         logger.warning("Readiness: Redis check failed", exc_info=True)
         return "unavailable"
 

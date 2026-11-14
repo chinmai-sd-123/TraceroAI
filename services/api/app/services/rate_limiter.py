@@ -13,6 +13,7 @@ import threading
 import time
 
 import redis
+import redis.exceptions as redis_exceptions
 from fastapi import Request
 
 from app.core.config import get_settings
@@ -100,6 +101,6 @@ def check_rate_limit(bucket: str, identity: str, *, limit: int, window_seconds: 
             if count == 1:
                 client.expire(key, window_seconds)  # start the window on first hit
             return count <= limit
-        except redis.exceptions.RedisError:
+        except redis_exceptions.RedisError:
             pass  # fall through to the per-process count
     return _local.hit(key, limit=limit, window_seconds=window_seconds)
