@@ -37,6 +37,12 @@ hallucinate beyond its context? "The answer is wrong" doesn't tell you where to 
 **TraceroAI traces every RAG answer and diagnoses the failure stage**, so debugging
 becomes a lookup instead of a guess.
 
+## Demo
+
+A 30-second walkthrough: trace an answer, judge it, and let the recovery agent heal the failure.
+
+https://github.com/user-attachments/assets/9e94fdb2-fc38-4ef6-9288-69bd23c2ef73
+
 ## What it does
 
 - **Trace every answer**: the question, the retrieved chunks, the prompt, the answer, and
