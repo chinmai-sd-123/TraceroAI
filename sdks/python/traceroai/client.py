@@ -43,6 +43,46 @@ class TraceroError(Exception):
     """A trace could not be delivered (raised only with raise_on_error=True)."""
 
 
+def _trace_payload(
+    trace_id: UUID,
+    *,
+    query: dict[str, Any],
+    retrieval: dict[str, Any],
+    generation: dict[str, Any],
+    prompt: dict[str, Any] | None,
+    latency: dict[str, Any] | None,
+    project: dict[str, Any] | None,
+    metadata: dict[str, Any] | None,
+    status: str | None = None,
+) -> dict[str, Any]:
+    """The JSON body of POST /v1/traces (shared by the sync and async clients)."""
+    payload: dict[str, Any] = {
+        "trace_id": str(trace_id),
+        "query": query,
+        "retrieval": {**retrieval, "chunks": normalize_chunks(retrieval.get("chunks"))},
+        "generation": generation,
+        "prompt": prompt or {},
+        "latency": latency or {},
+        "project": project or {},
+        "metadata": metadata or {},
+    }
+    if status is not None:
+        payload["status"] = status  # e.g. "error" when the pipeline itself failed
+    return payload
+
+
+def _user_agent_headers(api_key: str | None) -> dict[str, str]:
+    headers = {"User-Agent": f"traceroai-python/{__version__}"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    return headers
+
+
+def _backoff_delay(base: float, attempt: int) -> float:
+    delay = min(base * 2 ** (attempt - 1), _MAX_BACKOFF_SECONDS)
+    return delay * random.uniform(0.5, 1.0)
+
+
 def _env_flag(name: str, default: bool) -> bool:
     value = os.environ.get(name)
     if value is None or not value.strip():
@@ -192,19 +232,17 @@ class TraceroClient:
         if not self.enabled:
             return trace_id
 
-        retrieval = {**retrieval, "chunks": normalize_chunks(retrieval.get("chunks"))}
-        payload = {
-            "trace_id": str(trace_id),
-            "query": query,
-            "retrieval": retrieval,
-            "generation": generation,
-            "prompt": prompt or {},
-            "latency": latency or {},
-            "project": project or {},
-            "metadata": metadata or {},
-        }
-        if status is not None:
-            payload["status"] = status  # e.g. "error" when the pipeline itself failed
+        payload = _trace_payload(
+            trace_id,
+            query=query,
+            retrieval=retrieval,
+            generation=generation,
+            prompt=prompt,
+            latency=latency,
+            project=project,
+            metadata=metadata,
+            status=status,
+        )
         if self._sender is not None:
             self._sender.enqueue(payload)
         elif self.raise_on_error:
@@ -234,17 +272,16 @@ class TraceroClient:
         same trace_id to a later log_trace to retry without a duplicate.
         """
         trace_id = UUID(str(trace_id)) if trace_id is not None else uuid4()
-        retrieval = {**retrieval, "chunks": normalize_chunks(retrieval.get("chunks"))}
-        payload = {
-            "trace_id": str(trace_id),
-            "query": query,
-            "retrieval": retrieval,
-            "generation": generation,
-            "prompt": prompt or {},
-            "latency": latency or {},
-            "project": project or {},
-            "metadata": metadata or {},
-        }
+        payload = _trace_payload(
+            trace_id,
+            query=query,
+            retrieval=retrieval,
+            generation=generation,
+            prompt=prompt,
+            latency=latency,
+            project=project,
+            metadata=metadata,
+        )
         response = self._http.post(
             f"{self.base_url}/v1/traces",
             params={"sync_deep_eval": "true"},
@@ -307,10 +344,7 @@ class TraceroClient:
     # --- internals ---
 
     def _headers(self) -> dict[str, str]:
-        headers = {"User-Agent": f"traceroai-python/{__version__}"}
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-        return headers
+        return _user_agent_headers(self.api_key)
 
     def _post_trace(self, payload: dict[str, Any]) -> None:
         """POST one trace, retrying temporary failures. Raises TraceroError."""
@@ -339,8 +373,7 @@ class TraceroClient:
             self._failures.recovered()
 
     def _backoff(self, attempt: int) -> float:
-        delay = min(self.retry_backoff_seconds * 2 ** (attempt - 1), _MAX_BACKOFF_SECONDS)
-        return delay * random.uniform(0.5, 1.0)
+        return _backoff_delay(self.retry_backoff_seconds, attempt)
 
 
 class _FailureLog:

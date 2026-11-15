@@ -51,6 +51,9 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 - Docs: an HTTP API reference and a troubleshooting section.
 - CI runs a browser smoke test of the production build, including the dashboard with
   its API down.
+- `AsyncTraceroClient`, a native asyncio client: traces are sent as tasks on the
+  running event loop with the same retries and never-raise behaviour as the sync client.
+- The SDK supports Python 3.10 (was 3.11); CI tests 3.10 and 3.14.
 - A light dashboard: a trace explorer with sorting, model and environment filters and
   keyboard navigation; a trace page built around the execution timeline; recovery run
   pages; and a per-question grid for experiments.

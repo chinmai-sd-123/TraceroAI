@@ -249,9 +249,11 @@ export default function DocsPage() {
 
           <DocSection id="reference" title="SDK reference">
             <P>
-              The public surface of <Code>TraceroClient</Code>. From async code, use <Code>aget_trace</Code>,{" "}
-              <Code>alog_trace_sync_eval</Code> and <Code>aflush</Code>; sending a trace never blocks, so it needs no
-              async version.
+              The public surface of <Code>TraceroClient</Code>. For asyncio applications,{" "}
+              <Code>AsyncTraceroClient</Code> has the same methods: <Code>log_trace</Code> and{" "}
+              <Code>trace()</Code> return at once (use <Code>with</Code> or <Code>async with</Code>), and{" "}
+              <Code>get_trace</Code>, <Code>log_trace_sync_eval</Code>, <Code>flush</Code> and{" "}
+              <Code>aclose</Code> are awaited. Python 3.10 or later.
             </P>
             <dl className="mt-4 divide-y divide-line rounded border border-line">
               {METHODS.map((m) => (

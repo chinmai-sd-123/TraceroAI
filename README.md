@@ -8,7 +8,7 @@ When a RAG answer is wrong, TraceroAI shows *why*: whether the failure came from
 retrieval, the context, grounding, or the generated answer.
 
 [![PyPI](https://img.shields.io/pypi/v/traceroai?color=06b6d4&label=pip%20install%20traceroai)](https://pypi.org/project/traceroai/)
-[![Python](https://img.shields.io/badge/python-3.11%2B-3776ab)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-3776ab)](https://www.python.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
 **[Website →](https://www.traceroai.tech)** &nbsp;·&nbsp;

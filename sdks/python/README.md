@@ -175,9 +175,31 @@ left out, so a trace is never rejected over a chunk's shape.
 
 ### Async code
 
-`log_trace` and the context manager never block, so they are safe in async code as is.
-For the calls that wait there are async variants: `await client.aget_trace(id)`,
-`await client.alog_trace_sync_eval(...)` and `await client.aflush()`.
+For asyncio applications use `AsyncTraceroClient`. It sends traces as tasks on the
+running event loop (no thread), with the same retries and the same promise never to
+raise into your code. `log_trace` and the context manager return at once; the calls
+that wait are coroutines.
+
+```python
+from traceroai import AsyncTraceroClient
+
+client = AsyncTraceroClient(base_url="http://localhost:8000")
+
+async def answer(question: str) -> str:
+    async with client.trace(question) as t:     # plain `with` works too
+        chunks = await retrieve(question)
+        t.log_retrieval(chunks)
+        reply = await generate(question, chunks)
+        t.log_generation(reply, model="gpt-4o-mini")
+    return reply
+
+trace = await client.get_trace(trace_id)          # sends pending traces first
+await client.aclose()                             # on shutdown: send what's pending
+```
+
+`@client.traced(model=...)` wraps `async def` functions. The sync `TraceroClient` also
+works in async code, and has `aget_trace`, `alog_trace_sync_eval` and `aflush` for the
+calls that wait.
 
 ### Changes in 0.5.0
 
@@ -196,6 +218,8 @@ For the calls that wait there are async variants: `await client.aget_trace(id)`,
 - `run_experiment` keeps its results when posting the run fails, and reports why
   cases couldn't be graded, in `result.errors`.
 - The `[recovery]` extra installs only `langgraph`; install your own LLM client.
+- New: `AsyncTraceroClient` for asyncio code (see Async code above).
 - New: `flush()`, `close()`, `dropped_traces`, `TraceroError`, `__version__`,
   configuration from environment variables, `aget_trace`/`alog_trace_sync_eval`/`aflush`,
   and type information (`py.typed`).
+- Supports Python 3.10 and later (was 3.11).
