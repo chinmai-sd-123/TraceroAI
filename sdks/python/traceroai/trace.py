@@ -26,6 +26,7 @@ from uuid import UUID, uuid4
 from traceroai._chunks import normalize_chunks
 
 if TYPE_CHECKING:
+    from traceroai.async_client import AsyncTraceroClient
     from traceroai.client import TraceroClient
 
 logger = logging.getLogger("traceroai")
@@ -34,7 +35,7 @@ logger = logging.getLogger("traceroai")
 class TraceContext:
     def __init__(
         self,
-        client: "TraceroClient",
+        client: "TraceroClient | AsyncTraceroClient",
         query: str,
         *,
         rewritten: str | None = None,
@@ -167,3 +168,12 @@ class TraceContext:
             logger.warning("TraceroAI: failed to send trace %s: %s", self.trace_id, send_error)
 
         return False  # never suppress the caller's exception
+
+    # `async with` works the same way: entering and sending never wait on the
+    # network (both clients' log_trace return at once).
+
+    async def __aenter__(self) -> "TraceContext":
+        return self.__enter__()
+
+    async def __aexit__(self, exc_type, exc, tb) -> bool:
+        return self.__exit__(exc_type, exc, tb)

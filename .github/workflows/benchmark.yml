@@ -1,0 +1,75 @@
+# Measure diagnosis accuracy against the labelled set every week, with the real
+# LLM judge (no stubs), and fail if it regresses.
+#
+# It makes real provider calls (about 1,200 judge and embedding calls, a few
+# cents with a small model), so it runs only when the repository has the
+# TRACEROAI_OPENAI_API_KEY secret. Without it the job says so and passes.
+# Optional repository variables: TRACEROAI_JUDGE_MODEL, TRACEROAI_EMBEDDING_MODEL.
+name: Diagnosis benchmark
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmark
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    name: Judge accuracy and self-agreement
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: services/api
+    env:
+      TRACEROAI_OPENAI_API_KEY: ${{ secrets.TRACEROAI_OPENAI_API_KEY }}
+      TRACEROAI_JUDGE_MODEL: ${{ vars.TRACEROAI_JUDGE_MODEL || 'gpt-4o-mini' }}
+      TRACEROAI_EMBEDDING_MODEL: ${{ vars.TRACEROAI_EMBEDDING_MODEL || 'text-embedding-3-small' }}
+    steps:
+      - name: Provider key present
+        id: key
+        run: |
+          if [ -z "$TRACEROAI_OPENAI_API_KEY" ]; then
+            echo "No TRACEROAI_OPENAI_API_KEY secret: skipping the benchmark." >> "$GITHUB_STEP_SUMMARY"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+      - uses: actions/setup-python@v5
+        if: steps.key.outputs.present == 'true'
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: services/api/requirements.lock
+      - if: steps.key.outputs.present == 'true'
+        run: pip install --require-hashes -r requirements.lock
+      - name: Run the benchmark (3 judge runs)
+        if: steps.key.outputs.present == 'true'
+        run: |
+          python -m app.eval.benchmark --repeat 3 --report benchmark.json \
+            --min-judge-accuracy 0.90 --min-self-agreement 0.90 | tee benchmark.txt
+      - name: Summary
+        if: always() && steps.key.outputs.present == 'true'
+        run: |
+          {
+            echo '### Diagnosis benchmark'
+            echo '```'
+            cat benchmark.txt 2>/dev/null || echo "no output"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.key.outputs.present == 'true'
+        with:
+          name: diagnosis-benchmark
+          path: |
+            services/api/benchmark.json
+            services/api/benchmark.txt
+          if-no-files-found: ignore

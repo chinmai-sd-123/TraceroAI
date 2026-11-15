@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID as PythonUUID
 
-from sqlalchemy import DateTime, Index, Integer, String, func
+from sqlalchemy import Computed, DateTime, Float, Index, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
@@ -27,6 +27,20 @@ class TraceRecord(Base):
     total_latency_ms: Mapped[int|None] = mapped_column(Integer, nullable=True)
 
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+    # Kept in step with the payload by Postgres (migration 0005), so the summary
+    # never has to parse every payload. Read-only: never set these directly.
+    diagnosis_source: Mapped[str | None] = mapped_column(
+        Text, Computed("(payload -> 'diagnosis' ->> 'source')", persisted=True)
+    )
+    cost_usd: Mapped[float | None] = mapped_column(
+        Float,
+        Computed(
+            "(CASE WHEN jsonb_typeof(payload -> 'generation' -> 'usage' -> 'cost_usd') = 'number' "
+            "THEN (payload -> 'generation' -> 'usage' ->> 'cost_usd')::double precision END)",
+            persisted=True,
+        ),
+    )
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False,)
 

@@ -7,12 +7,18 @@ name = "traceroai"
 dynamic = ["version"]
 description = "Python SDK for sending RAG traces to TraceroAI"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "chinmai-sd-123" }]
 keywords = ["rag", "observability", "evaluation", "llm", "tracing"]
 classifiers = [
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Framework :: AsyncIO",
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Topic :: Software Development :: Libraries :: Python Modules",

@@ -158,12 +158,35 @@ def _print_tier(name: str, verdicts: list[Verdict]) -> None:
     print("  by construction: " + ", ".join(f"{k} {v}" for k, v in by_construction(verdicts).items()))
 
 
+def threshold_failures(report: dict, min_judge_accuracy: float | None, min_self_agreement: float | None) -> list[str]:
+    """Why a report misses the bars (empty when it meets them, or when no bar is set).
+
+    A skipped judge tier fails a bar that was asked for: a scheduled run that
+    silently measured nothing must not pass.
+    """
+    if min_judge_accuracy is None and min_self_agreement is None:
+        return []
+    judge = report.get("tiers", {}).get("judge", {})
+    if "skipped" in judge or not judge:
+        return [f"the judge tier didn't run ({judge.get('skipped', 'not run')})"]
+    failures = []
+    worst = min(judge.get("accuracy_per_run") or [judge["accuracy"]])
+    if min_judge_accuracy is not None and worst < min_judge_accuracy:
+        failures.append(f"judge accuracy {worst:.1%} is below {min_judge_accuracy:.1%}")
+    agree = judge.get("self_agreement")
+    if min_self_agreement is not None and agree is not None and agree < min_self_agreement:
+        failures.append(f"judge self-agreement {agree:.1%} is below {min_self_agreement:.1%}")
+    return failures
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Diagnosis accuracy per evaluation tier")
     parser.add_argument("--repeat", type=int, default=1, help="judge runs, for self-agreement")
     parser.add_argument("--workers", type=int, default=8, help="parallel provider calls")
     parser.add_argument("--report", type=Path, help="write every verdict to this JSON file")
     parser.add_argument("--no-provider", action="store_true", help="lexical tier only")
+    parser.add_argument("--min-judge-accuracy", type=float, help="fail (exit 1) if any judge run scores below this, e.g. 0.9")
+    parser.add_argument("--min-self-agreement", type=float, help="fail (exit 1) if the judge agrees with itself less than this")
     args = parser.parse_args()
 
     cases = load_golden_cases()
@@ -219,6 +242,12 @@ def main() -> None:
     if args.report:
         args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")
         print(f"report written to {args.report}")
+
+    failures = threshold_failures(report, args.min_judge_accuracy, args.min_self_agreement)
+    for failure in failures:
+        print(f"FAIL: {failure}")
+    if failures:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

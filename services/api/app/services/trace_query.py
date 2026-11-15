@@ -17,7 +17,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import Float, Integer, cast, func, select, tuple_
+from sqlalchemy import Integer, cast, func, select, tuple_
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Session
 
@@ -192,7 +192,7 @@ def summary(db: Session, filters: TraceFilters) -> dict:
             .group_by(TraceRecord.diagnosis_label)
         ).all()
     }
-    source = TraceRecord.payload["diagnosis"]["source"].astext
+    source = TraceRecord.diagnosis_source
     by_source = {
         (key or "unknown"): count
         for key, count in db.execute(
@@ -227,7 +227,7 @@ def summary(db: Session, filters: TraceFilters) -> dict:
         ).where(*where)
     ).one()
 
-    cost_value = cast(TraceRecord.payload["generation"]["usage"]["cost_usd"].astext, Float)
+    cost_value = TraceRecord.cost_usd
     priced = cost_value > 0
     cost = db.execute(
         select(
@@ -235,6 +235,8 @@ def summary(db: Session, filters: TraceFilters) -> dict:
             func.sum(cost_value).filter(priced),
         ).where(*where)
     ).one()
+
+    priced_count, cost_total = cost[0], cost[1]  # the sum is NULL when nothing is priced
 
     total = sum(by_diagnosis.values())
     healthy = sum(by_diagnosis.get(label, 0) for label in HEALTHY_LABELS)
@@ -252,9 +254,9 @@ def summary(db: Session, filters: TraceFilters) -> dict:
             "p95": _round(latency[3]),
         },
         "cost_usd": {
-            "priced": cost[0],
-            "total": cost[1],
-            "avg": (cost[1] / cost[0]) if cost[0] else None,
+            "priced": priced_count,
+            "total": cost_total,
+            "avg": (cost_total / priced_count) if priced_count and cost_total is not None else None,
         },
     }
 

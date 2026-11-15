@@ -6,6 +6,9 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 ## Unreleased
 
 ### Changed
+- The dashboard summary reads the diagnosis source and cost from stored generated
+  columns (migration 0005) instead of parsing every trace's JSON: 147 ms instead of
+  777 ms at 50,000 traces. The migration rewrites the traces table once.
 - The project is now licensed under Apache-2.0 (previously MIT); see LICENSE and NOTICE.
 - TraceroAI is self-hosted only. A deployment of just the landing page and docs (no
   API configured) shows how to run the stack in place of the dashboard and playground.
@@ -51,6 +54,15 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 - Docs: an HTTP API reference and a troubleshooting section.
 - CI runs a browser smoke test of the production build, including the dashboard with
   its API down.
+- `AsyncTraceroClient`, a native asyncio client: traces are sent as tasks on the
+  running event loop with the same retries and never-raise behaviour as the sync client.
+- The SDK supports Python 3.10 (was 3.11); CI tests 3.10 and 3.14.
+- The diagnosis benchmark runs weekly against the real LLM judge (when the repository
+  has a provider key) and fails if judge accuracy or self-agreement drops below 90%.
+  `python -m app.eval.benchmark` takes `--min-judge-accuracy` and `--min-self-agreement`.
+- [What a trace contains](docs/trace-data.md): every field stored, when data goes to
+  an LLM provider, and how to remove it.
+- A test seeds 50,000 traces and checks every dashboard query stays fast.
 - A light dashboard: a trace explorer with sorting, model and environment filters and
   keyboard navigation; a trace page built around the execution timeline; recovery run
   pages; and a per-question grid for experiments.
