@@ -148,7 +148,7 @@ def recovery_runs(db: Session, filters: TraceFilters, *, limit: int) -> list[dic
             "started_at": started.isoformat(),
             "ended_at": ended.isoformat(),
         }
-        for rid, count, started, ended, trace_ids, questions, diagnoses, actions, top_ks in rows
+        for rid, count, started, ended, trace_ids, questions, diagnoses, actions, top_ks in (tuple(r) for r in rows)
     ]
 
 

@@ -98,7 +98,7 @@ jobs:
           cache: pip
           cache-dependency-path: services/api/requirements.lock
       - run: pip install --require-hashes -r requirements.lock
-      - run: pip install pyright
+      - run: pip install pyright==1.1.414
       - run: pyright
 
   sdk:
