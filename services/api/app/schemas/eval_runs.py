@@ -42,6 +42,9 @@ class EvalMetricSummary(BaseModel):
 
 
 class EvalCaseResult(BaseModel):
+    # On an experiment, the variant that produced this answer; regression runs
+    # leave it empty.
+    variant_id: str | None = None
     case_id: str = Field(..., min_length=1)
     question: str = Field(..., min_length=1)
     expected_answer: str | None = None
@@ -161,10 +164,23 @@ class EvalRunIngestRequest(BaseModel):
                     "completed experiments must contain at least two variants"
                 )
 
+            # Cases are optional; when present each names its variant, and
+            # each variant's graded cases match its passed and failed counts.
+            variants = {variant.variant_id: variant for variant in self.variants}
+            tallies = {variant_id: [0, 0] for variant_id in variants}
+            for case in self.cases:
+                if case.variant_id is None:
+                    raise ValueError("experiment cases must name their variant_id")
+                if case.variant_id not in variants:
+                    raise ValueError(f"case {case.case_id} names unknown variant {case.variant_id}")
+                tallies[case.variant_id][0 if case.passed else 1] += 1
             if self.cases:
-                raise ValueError(
-                    "experiment cases require variant association and are not supported yet"
-                )
+                for variant_id, (passed, failed) in tallies.items():
+                    variant = variants[variant_id]
+                    if (passed, failed) != (variant.passed_cases, variant.failed_cases):
+                        raise ValueError(
+                            f"variant {variant_id}'s cases don't match its passed_cases and failed_cases"
+                        )
 
         return self
 

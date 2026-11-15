@@ -9,6 +9,7 @@ from app.api.routes.jobs import router as jobs_router
 from app.api.routes.playground import router as playground_router
 from app.api.routes.eval_grade import router as eval_grade_router
 from app.api.routes.metrics import router as metrics_router
+from app.api.routes.recovery_runs import router as recovery_runs_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.core.metrics import MetricsMiddleware, register_queue_collector
@@ -63,3 +64,4 @@ app.include_router(jobs_router)
 app.include_router(playground_router)
 app.include_router(eval_grade_router)
 app.include_router(metrics_router)
+app.include_router(recovery_runs_router)

@@ -28,7 +28,7 @@ from app.schemas.traces import (
 from app.services.cost import compute_cost_usd
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.rate_limiter import check_rate_limit, client_ip
-from app.services.trace_query import InvalidCursor, TraceFilters, list_page
+from app.services.trace_query import InvalidCursor, TraceFilters, TraceSort, list_page
 from app.services.trace_repository import DuplicateTraceError, TraceRepository
 from app.services.deep_evaluation import (
     initial_deep_status,
@@ -160,10 +160,13 @@ def list_traces(
     q: str | None = Query(default=None, max_length=200, description="Text in the query"),
     since: datetime | None = None,
     until: datetime | None = None,
+    sort: TraceSort = "newest",
+    recovery_run_id: str | None = Query(default=None, max_length=100, description="Attempts of one recovery run"),
     db: Session = Depends(get_db),
     scope: ReadScope = Depends(read_scope),
 ) -> list[dict]:
-    """Traces, newest first, one page at a time.
+    """Traces one page at a time: newest first (default), oldest first, or
+    slowest first.
 
     When there are more, the X-Next-Cursor response header holds the value to
     pass as ?cursor= for the next page.
@@ -176,9 +179,10 @@ def list_traces(
         text=q,
         since=since,
         until=until,
+        recovery_run_id=recovery_run_id,
     )
     try:
-        records, next_cursor = list_page(db, filters, limit=limit, cursor=cursor)
+        records, next_cursor = list_page(db, filters, limit=limit, cursor=cursor, sort=sort)
     except InvalidCursor as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     if next_cursor:
