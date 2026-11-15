@@ -30,5 +30,6 @@ a published fix (Dependabot raises those).
 - Give the dashboard an admin key only together with `TRACEROAI_DASHBOARD_PASSWORD`, or
   keep it on a private network.
 - Traces contain your users' questions and your documents. Set
-  `TRACEROAI_TRACE_RETENTION_DAYS`, and keep the database private.
+  `TRACEROAI_TRACE_RETENTION_DAYS`, and keep the database private. See
+  [What a trace contains](docs/trace-data.md) for every field stored and where it can go.
 - Leave `TRACEROAI_PLAYGROUND_ENABLED` off unless you want a public demo.

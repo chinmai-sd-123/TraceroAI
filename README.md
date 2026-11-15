@@ -326,7 +326,8 @@ Traces hold your users' questions, retrieved documents and answers. Set
 `TRACEROAI_TRACE_RETENTION_DAYS` to delete traces older than that many days: the worker
 does it hourly, or run `python -m app.retention` (from `services/api`) on a schedule.
 Individual traces can be deleted with `DELETE /v1/traces/{trace_id}`, using a key for
-that trace's project or an admin key. Eval runs are not purged.
+that trace's project or an admin key. Eval runs are not purged. [What a trace
+contains](docs/trace-data.md) lists every field stored and when data leaves your servers.
 
 ### Health and metrics
 
