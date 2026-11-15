@@ -5,6 +5,11 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 
 ## Unreleased
 
+### Changed
+- The project is now licensed under Apache-2.0 (previously MIT); see LICENSE and NOTICE.
+- TraceroAI is self-hosted only. A deployment of just the landing page and docs (no
+  API configured) shows how to run the stack in place of the dashboard and playground.
+
 ### Security
 - Every read is scoped to the caller's API key: a project key sees only its project,
   admin keys see everything, and without a key (when keys are required) only
@@ -18,6 +23,8 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 - The playground is off unless `TRACEROAI_PLAYGROUND_ENABLED` is set.
 - The dashboard upgrades to Next.js 16.4.6, which fixes published remote code execution
   and Proxy bypass advisories, and can be protected with `TRACEROAI_DASHBOARD_PASSWORD`.
+- The dashboard sign-in allows 10 wrong passwords per client address in 15 minutes
+  (counted per server instance) and has a sign-out button.
 
 ### Added
 - Database migrations (Alembic), Dockerfiles, and a Docker Compose stack with the API,
@@ -28,6 +35,25 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   `GET /v1/metrics/summary`.
 - `GET /health/ready` and Prometheus metrics at `/metrics`.
 - Trace retention (`TRACEROAI_TRACE_RETENTION_DAYS`) and `DELETE /v1/traces/{id}`.
+- `GET /v1/traces` sorts newest first, oldest first or slowest first (`sort=`), and
+  filters to one recovery run (`recovery_run_id=`).
+- `GET /v1/recovery-runs` lists RecoveryAgent runs with each attempt's diagnosis,
+  lever and `top_k`; `GET /v1/metrics/timeseries` gives traces, healthy traces and
+  p95 latency per hour or day; the summary counts traces by model and environment.
+- The SDK's `trace()` context manager times retrieval, prompt building and generation
+  from when each piece is logged, so traces show where the time went.
+- Experiments can carry per-question results tied to a variant, and `run_experiment`
+  sends them (falling back to variant totals on older servers) and returns them in
+  `ExperimentResult.cases`.
+- Dashboard layout can be customized and is remembered per browser: the sidebar
+  collapses to icons, the trace list and execution timeline can be resized, and the
+  overview's panels can be resized, reordered and hidden.
+- Docs: an HTTP API reference and a troubleshooting section.
+- CI runs a browser smoke test of the production build, including the dashboard with
+  its API down.
+- A light dashboard: a trace explorer with sorting, model and environment filters and
+  keyboard navigation; a trace page built around the execution timeline; recovery run
+  pages; and a per-question grid for experiments.
 - A labelled set of 117 traces and a benchmark measuring each evaluation tier
   (`docs/evaluation-benchmark.md`).
 

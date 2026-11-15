@@ -23,7 +23,7 @@ attempt is sent as a trace, so the dashboard shows the full retry chain.
 ```bash
 pip install -r requirements.txt        # traceroai[recovery] = + langgraph, langchain-openai
 export OPENAI_API_KEY=sk-...
-export TRACEROAI_API_URL=https://traceroai.onrender.com
+export TRACEROAI_API_URL=http://localhost:8000
 export TRACEROAI_API_KEY=your_project_key    # optional
 python app.py
 ```
