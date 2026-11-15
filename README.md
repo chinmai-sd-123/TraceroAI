@@ -11,7 +11,7 @@ retrieval, the context, grounding, or the generated answer.
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776ab)](https://www.python.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
-**[Live demo →](https://www.traceroai.tech)** &nbsp;·&nbsp;
+**[Website →](https://www.traceroai.tech)** &nbsp;·&nbsp;
 **[Interactive docs →](https://www.traceroai.tech/docs)** &nbsp;·&nbsp;
 **[PyPI →](https://pypi.org/project/traceroai/)**&nbsp;·&nbsp;
 **[DEV.to →](https://dev.to/chinmai_sd/building-traceroai-a-better-way-to-debug-rag-applications-bhn)**
