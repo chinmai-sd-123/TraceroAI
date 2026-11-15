@@ -21,7 +21,7 @@ jobs:
     name: Ruff
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
@@ -61,7 +61,7 @@ jobs:
       run:
         working-directory: services/api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           # Matches the Render runtime.
@@ -91,7 +91,7 @@ jobs:
       run:
         working-directory: services/api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
@@ -111,7 +111,7 @@ jobs:
       run:
         working-directory: sdks/python
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -124,7 +124,7 @@ jobs:
     env:
       COMPOSE: docker compose -f infra/docker-compose.yml
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build and start the stack
         run: $COMPOSE up --build -d
       - name: Wait for the API and the dashboard
@@ -169,7 +169,7 @@ jobs:
       run:
         working-directory: traceroai-web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
