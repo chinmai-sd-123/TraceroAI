@@ -65,6 +65,9 @@ class ExperimentResult:
     # Why cases couldn't be graded, or the run couldn't be posted. The variant
     # results are complete either way.
     errors: list[str] = field(default_factory=list)
+    # Every question's result per variant; "passed" is None when the case
+    # couldn't be graded.
+    cases: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _grade(
@@ -107,6 +110,7 @@ def _run_variant(
     correct = 0
     gradeable = 0
     latencies: list[int] = []
+    cases: list[dict[str, Any]] = []
 
     for case in dataset:
         start = time.perf_counter()
@@ -115,6 +119,16 @@ def _run_variant(
         latencies.append(int((time.perf_counter() - start) * 1000))
 
         verdict = _grade(client, case.question, case.expected_answer, answer, errors)
+        cases.append(
+            {
+                "variant_id": variant.variant_id,
+                "case_id": case.case_id,
+                "question": case.question,
+                "expected_answer": case.expected_answer,
+                "actual_answer": answer,
+                "passed": verdict,
+            }
+        )
         if verdict is None:
             continue  # ungradeable — excluded from accuracy, not counted wrong
         gradeable += 1
@@ -134,6 +148,7 @@ def _run_variant(
         "average_latency_ms": avg_latency,
         "metrics": [{"metric_name": "accuracy", "score": accuracy}],
         "_accuracy": accuracy,  # internal, for winner selection
+        "_cases": cases,  # internal, sent separately
     }
 
 
@@ -188,6 +203,10 @@ def run_experiment(
     # Strip internal fields before sending.
     variants_payload = [{k: v for k, v in r.items() if not k.startswith("_")} for r in results]
     win_total = winner["passed_cases"] + winner["failed_cases"]
+    all_cases = [case for r in results for case in r["_cases"]]
+    # The server stores graded cases; ungradeable ones are counted in each
+    # variant's config instead.
+    graded_cases = [case for case in all_cases if case["passed"] is not None]
 
     payload = {
         "run_type": "experiment",
@@ -203,6 +222,7 @@ def run_experiment(
             "recommendation": recommendation,
         },
         "variants": variants_payload,
+        "cases": graded_cases,
     }
 
     eval_run_id: str | None = None
@@ -219,6 +239,16 @@ def run_experiment(
                 headers=headers,
                 timeout=client.timeout_seconds,
             )
+            if resp.status_code == 422 and graded_cases:
+                # Older servers reject per-question results on
+                # experiments; send the variant totals alone.
+                errors.append("the server didn't accept per-question results; posted variant totals only")
+                resp = httpx.post(
+                    f"{client.base_url}/v1/eval-runs",
+                    json={**payload, "cases": []},
+                    headers=headers,
+                    timeout=client.timeout_seconds,
+                )
             resp.raise_for_status()
             eval_run_id = resp.json().get("eval_run_id")
         except Exception as exc:
@@ -230,4 +260,5 @@ def run_experiment(
         recommendation=recommendation,
         variants=variants_payload,
         errors=errors,
+        cases=all_cases,
     )

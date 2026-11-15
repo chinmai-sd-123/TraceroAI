@@ -20,7 +20,7 @@ Times the block and sends the trace automatically:
 from traceroai import TraceroClient
 
 client = TraceroClient(
-    base_url="https://traceroai.onrender.com",
+    base_url="http://localhost:8000",
     api_key="your_project_key",
 )
 
@@ -74,7 +74,7 @@ client.log_trace(
 Pass your project API key; the server attributes traces to your project:
 
 ```python
-client = TraceroClient(base_url="https://traceroai.onrender.com", api_key="your_project_key")
+client = TraceroClient(base_url="http://localhost:8000", api_key="your_project_key")
 ```
 
 ## Self-healing recovery (optional)

@@ -119,3 +119,38 @@ def test_decorator_traces_and_returns_answer() -> None:
     assert len(captured) == 1
     assert captured[0]["query"]["original"] == "a question"
     assert captured[0]["retrieval"]["strategy"] == "lexical_top_k"
+
+
+def test_context_manager_times_each_step(monkeypatch) -> None:
+    import traceroai.trace as trace_module
+
+    clock = iter([10.0, 10.25, 10.255, 11.5, 11.6])  # enter, retrieval, prompt, generation, exit
+    monkeypatch.setattr(trace_module.time, "perf_counter", lambda: next(clock))
+    captured: list[dict] = []
+    client = _client_capturing(captured)
+
+    with client.trace("q") as t:
+        t.log_retrieval([{"text": "ctx"}])
+        t.log_prompt("prompt")
+        t.log_generation("answer", model="m")
+
+    assert captured[0]["latency"] == {
+        "total_ms": 1600,
+        "retrieval_ms": 250,
+        "prompt_build_ms": 5,
+        "generation_ms": 1245,
+    }
+
+
+def test_steps_not_logged_are_not_timed(monkeypatch) -> None:
+    import traceroai.trace as trace_module
+
+    clock = iter([0.0, 0.4, 0.9])  # enter, generation, exit
+    monkeypatch.setattr(trace_module.time, "perf_counter", lambda: next(clock))
+    captured: list[dict] = []
+    client = _client_capturing(captured)
+
+    with client.trace("q") as t:
+        t.log_generation("answer", model="m")
+
+    assert captured[0]["latency"] == {"total_ms": 900, "generation_ms": 400}
