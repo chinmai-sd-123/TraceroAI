@@ -72,10 +72,8 @@ def test_failed_generation_still_sends_a_valid_trace() -> None:
     assert "429 quota exceeded" in answer
 
 
-def test_send_failure_is_best_effort_and_does_not_raise() -> None:
+def test_send_failure_is_best_effort_and_does_not_raise(caplog) -> None:
     # A failure to SEND the trace must never break the caller's code.
-    import pytest
-
     client = TraceroClient(base_url="http://test")
 
     def boom_log_trace(**payload):
@@ -83,11 +81,12 @@ def test_send_failure_is_best_effort_and_does_not_raise() -> None:
 
     client.log_trace = boom_log_trace  # type: ignore[method-assign]
 
-    with pytest.warns(UserWarning, match="failed to send trace"):
+    with caplog.at_level("WARNING", logger="traceroai"):
         with client.trace("q") as t:
             t.log_generation("an answer", model="gpt-4o-mini")
 
-    assert t.trace_id is None  # send failed, but no exception propagated
+    assert "failed to send trace" in caplog.text
+    assert t.trace_id is not None  # assigned up front, whether or not sending worked
 
 
 def test_send_failure_does_not_mask_callers_exception() -> None:
@@ -120,3 +119,38 @@ def test_decorator_traces_and_returns_answer() -> None:
     assert len(captured) == 1
     assert captured[0]["query"]["original"] == "a question"
     assert captured[0]["retrieval"]["strategy"] == "lexical_top_k"
+
+
+def test_context_manager_times_each_step(monkeypatch) -> None:
+    import traceroai.trace as trace_module
+
+    clock = iter([10.0, 10.25, 10.255, 11.5, 11.6])  # enter, retrieval, prompt, generation, exit
+    monkeypatch.setattr(trace_module.time, "perf_counter", lambda: next(clock))
+    captured: list[dict] = []
+    client = _client_capturing(captured)
+
+    with client.trace("q") as t:
+        t.log_retrieval([{"text": "ctx"}])
+        t.log_prompt("prompt")
+        t.log_generation("answer", model="m")
+
+    assert captured[0]["latency"] == {
+        "total_ms": 1600,
+        "retrieval_ms": 250,
+        "prompt_build_ms": 5,
+        "generation_ms": 1245,
+    }
+
+
+def test_steps_not_logged_are_not_timed(monkeypatch) -> None:
+    import traceroai.trace as trace_module
+
+    clock = iter([0.0, 0.4, 0.9])  # enter, generation, exit
+    monkeypatch.setattr(trace_module.time, "perf_counter", lambda: next(clock))
+    captured: list[dict] = []
+    client = _client_capturing(captured)
+
+    with client.trace("q") as t:
+        t.log_generation("answer", model="m")
+
+    assert captured[0]["latency"] == {"total_ms": 900, "generation_ms": 400}

@@ -1,63 +1,123 @@
-import type { TraceDiagnosis } from "@/lib/mock-traces";
-import { getProjects, getTraces } from "@/lib/api";
+import { TIME_RANGES, getSummary, getTraces, parseRange, rangeSince } from "@/lib/api";
 
-import { ProjectSelector } from "./project-selector";
-import { TraceList } from "./trace-list";
+import { ListKeys } from "../list-keys";
+import { EmptyState, PageFrame, PageHeader, Segmented } from "../ui";
+import {
+  Pager,
+  TraceFilters,
+  TraceRows,
+  TraceTable,
+  type TraceListFilters,
+  listHref,
+  parseDiagnosis,
+  parseSort,
+} from "./trace-list";
 
-const DIAGNOSIS_LABELS = new Set<TraceDiagnosis>([
-  "healthy_answer",
-  "correct_refusal",
-  "retrieval_miss",
-  "unsupported_claim",
-  "wrong_answer",
-  "low_context_relevance",
-  "needs_review",
-]);
+const PAGE_SIZE = 50;
 
 export default async function TracesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ project?: string; diagnosis?: string }>;
+  searchParams: Promise<{
+    project?: string;
+    diagnosis?: string;
+    q?: string;
+    cursor?: string;
+    range?: string;
+    model?: string;
+    environment?: string;
+    sort?: string;
+  }>;
 }) {
-  const { project, diagnosis } = await searchParams;
-  const [traces, projects] = await Promise.all([
-    getTraces(project),
-    getProjects(),
-  ]);
+  const params = await searchParams;
+  const range = parseRange(params.range, "all");
+  const filters: TraceListFilters = {
+    project: params.project,
+    diagnosis: parseDiagnosis(params.diagnosis),
+    q: params.q?.trim() || undefined,
+    range: range === "all" ? undefined : range,
+    model: params.model || undefined,
+    environment: params.environment || undefined,
+    sort: parseSort(params.sort),
+    cursor: params.cursor,
+  };
+  const narrowed = Boolean(filters.model || filters.environment);
 
-  // Only honor a diagnosis filter that is a real label (links from the dashboard
-  // Failure Mix pass these); anything else falls back to showing all.
-  const initialDiagnosis =
-    diagnosis && DIAGNOSIS_LABELS.has(diagnosis as TraceDiagnosis)
-      ? (diagnosis as TraceDiagnosis)
-      : "all";
+  const [page, scopeSummary, filteredSummary] = await Promise.all([
+    getTraces({
+      projectId: filters.project,
+      diagnosis: filters.diagnosis,
+      q: filters.q,
+      model: filters.model,
+      environment: filters.environment,
+      sort: filters.sort,
+      cursor: filters.cursor,
+      limit: PAGE_SIZE,
+      since: rangeSince(range),
+    }),
+    // Model and environment options come from the whole range, so picking one
+    // doesn't hide the others; diagnosis counts follow the picked ones.
+    getSummary(filters.project, range),
+    narrowed
+      ? getSummary(filters.project, range, { model: filters.model, environment: filters.environment })
+      : Promise.resolve(null),
+  ]);
+  const counts = (filteredSummary ?? scopeSummary)?.byDiagnosis ?? {};
+  const byCount = (record: Record<string, number> | undefined) =>
+    Object.entries(record ?? {})
+      .sort((a, b) => b[1] - a[1])
+      .map(([name]) => name);
+
+  const order = filters.sort === "slowest" ? "slowest first" : filters.sort === "oldest" ? "oldest first" : "newest first";
 
   return (
-    <section>
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-cyan-300">
-            Traces
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold">RAG Trace Debugger</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            Inspect individual RAG requests and diagnose whether failures came
-            from retrieval, context, prompting, or generation.
-          </p>
-        </div>
+    <PageFrame>
+      <ListKeys />
+      <PageHeader
+        title="Traces"
+        description="Every answer your pipeline logged, with the stage that broke. Open one to see the evidence."
+        actions={
+          <Segmented
+            label="Time range"
+            active={range}
+            options={Object.keys(TIME_RANGES).map((key) => ({
+              key,
+              label: key === "all" ? "All" : key,
+              href: listHref({ ...filters, cursor: undefined, range: key === "all" ? undefined : key }),
+            }))}
+          />
+        }
+      />
 
-        <div className="flex items-center gap-3">
-          {projects.length > 0 && (
-            <ProjectSelector projects={projects} selected={project} />
-          )}
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 px-4 py-3">
-            <p className="text-xs text-zinc-500">Total traces</p>
-            <p className="mt-1 text-xl font-semibold">{traces.length}</p>
-          </div>
-        </div>
+      <div className="mt-5 space-y-4">
+        <TraceFilters
+          filters={filters}
+          diagnosisCounts={counts}
+          models={byCount(scopeSummary?.byModel)}
+          environments={byCount(scopeSummary?.byEnvironment)}
+        />
+        {page.traces.length === 0 ? (
+          <EmptyState title="No traces match these filters">
+            {filters.diagnosis || filters.q || narrowed || range !== "all"
+              ? "Clear a filter or widen the time range."
+              : "Send a trace with the Python SDK and it appears here."}
+          </EmptyState>
+        ) : (
+          <>
+            <p className="text-xs text-ink-muted">
+              {page.traces.length} trace{page.traces.length === 1 ? "" : "s"}
+              {filters.cursor ? " on this page" : ""}, {order}. Stages run Retrieval, Grounding, Answer;
+              red marks the probable cause, hatching an estimate. Press <kbd className="font-dash-mono">j</kbd>{" "}
+              and <kbd className="font-dash-mono">k</kbd> to move through the list.
+            </p>
+            <div className="max-md:hidden">
+              <TraceTable traces={page.traces} filters={filters} />
+            </div>
+            <TraceRows traces={page.traces} filters={filters} className="rounded border border-line md:hidden" />
+            <Pager filters={filters} nextCursor={page.nextCursor} />
+          </>
+        )}
       </div>
-
-      <TraceList traces={traces} initialDiagnosis={initialDiagnosis} />
-    </section>
+    </PageFrame>
   );
 }

@@ -7,7 +7,7 @@ never breaks (fail-open).
 """
 
 from app.evaluators.groundedness import extract_terms
-from app.schemas.traces import EvaluationResult, TraceIngestRequest
+from app.schemas.traces import EvaluationResult, Trace
 from app.services.embeddings import EmbeddingClient, cosine_similarity
 
 EVALUATOR_NAME = "context_relevance"
@@ -22,7 +22,7 @@ REVIEW_THRESHOLD = 0.30
 
 
 def evaluate_context_relevance(
-    trace: TraceIngestRequest,
+    trace: Trace,
     embedder: EmbeddingClient | None = None,
     vectors: dict[str, list[float]] | None = None,
     *,

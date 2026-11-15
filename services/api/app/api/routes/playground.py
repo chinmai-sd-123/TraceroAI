@@ -12,7 +12,7 @@ import re
 import time
 
 from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -23,7 +23,8 @@ from app.evaluators.deep_relevance import (
     evaluate_deep_context_relevance,
 )
 from app.evaluators.diagnosis import diagnose_from_deep, is_refusal
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
+from app.services.deep_evaluation import INLINE_JUDGE_TIMEOUT_SECONDS
 from app.services.llm_judge import OpenAIJudge
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.trace_repository import TraceRepository
@@ -107,12 +108,16 @@ def _terms(text: str) -> set[str]:
 
 
 class PlaygroundRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=1, max_length=500)
 
 
 @router.post("")
 def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depends(get_db)) -> dict:
-    # Check rate limit
+    # Off unless explicitly enabled: it's unauthenticated, writes a trace, and
+    # spends judge quota. A public demo turns it on.
+    if not get_settings().playground_enabled:
+        raise HTTPException(status_code=404, detail="Not Found")
+
     if not check_rate_limit(
         bucket="playground",
         identity=client_ip(request),
@@ -164,7 +169,7 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
     prompt_build_ms = int((time.perf_counter() - prompt_start) * 1000)
 
     total_ms = int((time.perf_counter() - started) * 1000)
-    trace = TraceIngestRequest(
+    trace = Trace.model_validate(dict(
         query={"original": query},
         retrieval={"strategy": "lexical_top_k", "config": {"final_top_k": 3}, "chunks": chunks},
         prompt={"content": prompt_text, "version": "playground_v1", "template_name": "grounded_answer"},
@@ -176,7 +181,7 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
         },
         project={"project_id": "playground"},
         metadata={"source": "docs_playground"},
-    )
+    ))
     trace = run_quick_evaluation(trace)
 
     # The deterministic term-overlap checks are brittle on short queries. If an
@@ -188,7 +193,8 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
     settings = get_settings()
     if settings.deep_eval_enabled and settings.openai_api_key:
         try:
-            judge = OpenAIJudge()
+            # A visitor is waiting: short timeouts, no provider retries.
+            judge = OpenAIJudge(timeout=INLINE_JUDGE_TIMEOUT_SECONDS, max_retries=0)
             deep_results = [
                 evaluate_deep_context_relevance(trace, judge),
                 evaluate_deep_groundedness(trace, judge),

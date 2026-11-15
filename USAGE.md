@@ -4,7 +4,7 @@ How to instrument any RAG pipeline with the `traceroai` SDK, what each feature d
 and how to read the results in the dashboard.
 
 - **Install:** `pip install traceroai`
-- **API base URL:** `https://traceroai.onrender.com` (or your own deployment)
+- **API base URL:** `http://localhost:8000` when you run the stack yourself (see the README), or your own deployment
 - **Dashboard:** https://www.traceroai.tech/dashboard
 - **PyPI:** https://pypi.org/project/traceroai/
 
@@ -19,7 +19,7 @@ is optional and scopes traces to a project.
 from traceroai import TraceroClient
 
 client = TraceroClient(
-    base_url="https://traceroai.onrender.com",
+    base_url="http://localhost:8000",
     api_key="your_project_key",   # optional — omit for the open demo
     timeout_seconds=10.0,          # optional
 )
@@ -232,7 +232,7 @@ from traceroai import TraceroClient
 from traceroai.eval import run_experiment, Case, Variant
 
 run_experiment(
-    client=TraceroClient(base_url="https://traceroai.onrender.com", api_key="your_project_key"),
+    client=TraceroClient(base_url="http://localhost:8000", api_key="your_project_key"),
     dataset=[Case("c1", "How long does a refund take?", "5-7 business days.")],
     retrieve=my_retrieve,   # (query, top_k) -> list[chunk dict]
     generate=my_generate,   # (query, context) -> answer str

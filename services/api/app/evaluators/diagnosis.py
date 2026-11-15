@@ -1,6 +1,6 @@
 import re
 
-from app.schemas.traces import DiagnosisTrace, EvaluationResult
+from app.schemas.traces import DiagnosisSource, DiagnosisTrace, EvaluationResult
 
 # Patterns for an explicit decline (e.g. the context lacked the answer). A refusal
 # is correct behavior, not an unsupported claim, so it must be diagnosed before the
@@ -64,7 +64,7 @@ def diagnose_from_deep(
     mapped: list[EvaluationResult] = []
     for evaluation in deep_evaluations:
         name = _DEEP_NAME_MAP.get(evaluation.evaluator_name)
-        if name is None:
+        if name is None or evaluation.label == "error":
             continue
         if evaluation.label in _DEEP_PASS_LABELS:
             label = "pass"
@@ -76,12 +76,21 @@ def diagnose_from_deep(
 
     if not mapped:
         return None
-    return diagnose_trace(mapped, refused=refused)
+    return diagnose_trace(mapped, refused=refused, source="judge")
 
 
 def diagnose_trace(
-    evaluations: list[EvaluationResult], *, refused: bool = False
+    evaluations: list[EvaluationResult],
+    *,
+    refused: bool = False,
+    source: DiagnosisSource | None = None,
 ) -> DiagnosisTrace:
+    diagnosis = _diagnose(evaluations, refused=refused)
+    diagnosis.source = source
+    return diagnosis
+
+
+def _diagnose(evaluations: list[EvaluationResult], *, refused: bool) -> DiagnosisTrace:
     by_name = {evaluation.evaluator_name: evaluation for evaluation in evaluations}
 
     context_relevance = by_name.get("context_relevance")

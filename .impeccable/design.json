@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T18:00:00Z",
+  "title": "Design System: TraceroAI",
+  "extensions": {
+    "colorMeta": {
+      "docket-navy": {
+        "role": "primary",
+        "displayName": "Docket Navy",
+        "tonalRamp": [
+          "#0b1726",
+          "#13263d",
+          "#1d3a5f",
+          "#2f5486",
+          "#4b72a8",
+          "#7c9cc6",
+          "#b4c6de",
+          "#e3e9f1"
+        ]
+      },
+      "cause-red": {
+        "role": "secondary",
+        "displayName": "Cause Red",
+        "tonalRamp": [
+          "#4a0e09",
+          "#7a1810",
+          "#b42318",
+          "#d1402f",
+          "#e4705f",
+          "#f0a196",
+          "#f8cfc9",
+          "#fdecea"
+        ]
+      },
+      "pass-green": {
+        "role": "secondary",
+        "displayName": "Pass Green",
+        "tonalRamp": [
+          "#0a2e1c",
+          "#124b2f",
+          "#1d7348",
+          "#2e9462",
+          "#56b285",
+          "#8ccdab",
+          "#c3e4d2",
+          "#e6f2ec"
+        ]
+      },
+      "unclear-amber": {
+        "role": "secondary",
+        "displayName": "Unclear Amber",
+        "tonalRamp": [
+          "#3b2003",
+          "#663706",
+          "#95500a",
+          "#b8690f",
+          "#d88b2c",
+          "#ebb46a",
+          "#f5d7a9",
+          "#fbf0e1"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "#0a1018",
+          "#14202e",
+          "#2c3747",
+          "#4f5a6b",
+          "#687284",
+          "#8a93a3",
+          "#c5ccd6",
+          "#eef2f6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles and the question at the top of a trace."
+      },
+      "verdict": {
+        "displayName": "Verdict",
+        "purpose": "The diagnosis name on the trace page, coloured by tone."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel headings and stage names."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Tables, lists and reasons, with tabular figures."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, legends, chart axes, provenance marks."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Ids, sources, scores, config values and code only."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Every entrance and glide on the public pages."
+      },
+      {
+        "name": "copy-confirm",
+        "value": "200ms ease-out (opacity, scale)",
+        "purpose": "The copy button's icon swap to a check."
+      },
+      {
+        "name": "verdict-stamp",
+        "value": "420ms, scale 1.18 to 1",
+        "purpose": "A stage verdict landing in the investigation replay."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action in a form or dialog.",
+      "html": "<button class=\"ds-btn-primary\">Save feedback</button>",
+      "css": ".ds-btn-primary { background: #1d3a5f; color: #fff; border: 0; border-radius: 4px; padding: 6px 14px; font: 500 14px/20px 'Public Sans', system-ui, sans-serif; cursor: pointer; } .ds-btn-primary:hover { background: rgb(29 58 95 / 0.9); } .ds-btn-primary:focus-visible { outline: 2px solid #1d3a5f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Every other action: search, go back, copy.",
+      "html": "<button class=\"ds-btn-secondary\">Search</button>",
+      "css": ".ds-btn-secondary { background: #fff; color: #14202e; border: 1px solid #c5ccd6; border-radius: 4px; padding: 6px 14px; font: 500 14px/20px 'Public Sans', system-ui, sans-serif; cursor: pointer; } .ds-btn-secondary:hover { background: #f4f6f9; } .ds-btn-secondary:focus-visible { outline: 2px solid #1d3a5f; outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Search field with a leading icon.",
+      "html": "<label class=\"ds-search\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\"><circle cx=\"7\" cy=\"7\" r=\"4.25\"/><path d=\"m10.25 10.25 3.25 3.25\"/></svg><input placeholder=\"Search questions\"></label>",
+      "css": ".ds-search { display: flex; align-items: center; gap: 8px; border: 1px solid #c5ccd6; border-radius: 4px; padding: 0 10px; background: #fff; color: #4f5a6b; width: 320px; } .ds-search:focus-within { outline: 2px solid #1d3a5f; } .ds-search input { border: 0; outline: 0; flex: 1; padding: 6px 0; font: 400 14px/20px 'Public Sans', system-ui, sans-serif; color: #14202e; background: transparent; } .ds-search input::placeholder { color: #687284; }"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Grouped items on the docket rail; the active one is solid navy.",
+      "html": "<nav class=\"ds-rail\"><a class=\"ds-rail-item\">Overview</a><a class=\"ds-rail-item ds-active\">Traces</a><a class=\"ds-rail-item\">Eval runs</a></nav>",
+      "css": ".ds-rail { background: #eef2f6; padding: 12px; width: 200px; display: grid; gap: 2px; } .ds-rail-item { display: block; padding: 6px 8px; border-radius: 4px; color: #14202e; font: 400 14px/20px 'Public Sans', system-ui, sans-serif; text-decoration: none; cursor: pointer; } .ds-rail-item:hover { background: #fff; } .ds-rail-item.ds-active { background: #1d3a5f; color: #fff; font-weight: 500; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-filter-active",
+      "description": "Diagnosis filter with a count; active chips take the navy tint.",
+      "html": "<span class=\"ds-chip ds-on\">All <b>68</b></span> <span class=\"ds-chip\">Retrieval miss <b>66</b></span>",
+      "css": ".ds-chip { display: inline-flex; gap: 6px; border: 1px solid #c5ccd6; border-radius: 4px; padding: 4px 10px; font: 400 14px/20px 'Public Sans', system-ui, sans-serif; color: #14202e; background: #fff; } .ds-chip b { font-weight: 400; color: #4f5a6b; } .ds-chip:hover { background: #f4f6f9; } .ds-chip.ds-on { border-color: #1d3a5f; background: #e3e9f1; color: #1d3a5f; font-weight: 500; }"
+    },
+    {
+      "name": "Stage Sequence",
+      "kind": "custom",
+      "refersTo": "badge-cause",
+      "description": "Retrieval, Grounding, Answer: red for the probable cause, solid when judged, hatched when estimated.",
+      "html": "<span class=\"ds-seq\" role=\"img\" aria-label=\"Retrieval failed (probable cause), estimated; Grounding passed, judged; Answer passed, estimated\"><i class=\"ds-cause ds-hatch\"></i><i class=\"ds-pass\"></i><i class=\"ds-pass ds-hatch\"></i></span>",
+      "css": ".ds-seq { display: inline-flex; gap: 3px; } .ds-seq i { display: block; width: 20px; height: 8px; border-radius: 1px; background: currentColor; } .ds-seq .ds-cause { color: #b42318; } .ds-seq .ds-pass { color: #1d7348; } .ds-seq .ds-hatch { background: repeating-linear-gradient(135deg, currentColor 0 2px, transparent 2px 4.5px); }"
+    },
+    {
+      "name": "Provenance Mark",
+      "kind": "custom",
+      "description": "Final (LLM judge, solid border) or Preliminary (estimate, dashed border).",
+      "html": "<span class=\"ds-prov\"><b>Final</b> · LLM judge</span> <span class=\"ds-prov ds-pre\"><b>Preliminary</b> · term-overlap estimate</span>",
+      "css": ".ds-prov { display: inline-flex; gap: 4px; border: 1px solid #14202e; border-radius: 3px; padding: 1px 6px; font: 400 12px/16px 'Public Sans', system-ui, sans-serif; color: #14202e; } .ds-prov b { font-weight: 600; } .ds-prov.ds-pre { border-style: dashed; border-color: #687284; color: #4f5a6b; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Investigation Docket",
+    "overview": "The dashboard treats every bad answer as an incident to investigate. A trace reads like an accident report: what happened, in sequence (Retrieval, Grounding, Answer), the findings for each stage, and one probable cause. The visual system borrows the report's materials and leaves its bureaucracy behind: white report stock for the work, a pale blue-grey docket rail around it, 1px rules for structure, and a typeface drawn for government reports.\n\nDensity is that of a working tool used for long investigations. Lists are compact. Evidence (judge reasons, retrieved chunks, claims) gets reading width and line height, because the engineer reads it rather than scans it. The shell follows the category's conventions: a left rail with grouped navigation, page headers with a time range, ruled metric rows and charts. The report world shows up in type, palette, rules and one signature component, the stage sequence. It never changes the layout or the controls.\n\nHow sure we are is drawn rather than coloured. A verdict the LLM judge made is solid and called Final. One an estimate made (term overlap, embedding similarity) is hatched and called Preliminary. When the judge overrules an estimate, the estimate stays on the record, struck through.",
+    "keyCharacteristics": [
+      "White work areas on a tinted docket rail; structure from 1px rules, never shadows.",
+      "Red marks the probable cause and nothing else.",
+      "Solid means judged, hatched means estimated.",
+      "Public Sans for words, IBM Plex Mono for ids, sources, scores and code.",
+      "Standard web controls throughout: tables, underline tabs, segmented links, selects."
+    ],
+    "rules": [
+      {
+        "name": "The One Red Rule",
+        "body": "Red appears only on the probable cause. A second failing stage is ink; an error message is amber; a failed eval case says \"Failed\" in ink. If something red is not the reason an answer went wrong, it is the wrong colour. The one deliberate exception is the reviewer's stroke drawn under \"failed.\" in the home page headline.",
+        "section": "colors"
+      },
+      {
+        "name": "The Drawn Certainty Rule",
+        "body": "Certainty is shown by fill, not by another colour: solid for the LLM judge, a 135° hatch (2px line, 4.5px repeat, in the element's own colour) for estimates. Every verdict on screen is one or the other.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Eyebrow Rule",
+        "body": "Headings carry their own weight. No labels, pills or uppercase lines above headings, and no tracked-out caps anywhere. A sentence of context goes below the heading.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ruled Page Rule",
+        "body": "Structure is drawn with 1px lines in rule or rule-strong. A container that needs to stand apart gets a border, never a shadow or a coloured side stripe.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep red for the probable cause (The One Red Rule); errors and warnings are amber.",
+      "Do draw every verdict solid or hatched by who decided it (The Drawn Certainty Rule).",
+      "Do show \"—\", \"No score\" or \"Not measured\" for missing values; never a zero that was not measured.",
+      "Do use Plex Mono only for ids, sources, scores, config and code.",
+      "Do keep evidence prose at a 70 to 75ch measure with generous line height.",
+      "Do make filters, tabs and pages URLs, so every view can be linked to and works without JavaScript.",
+      "Do animate only what the product does, with its real data, and give every animation a finished state for reduced motion."
+    ],
+    "donts": [
+      "Don't add shadows, floating cards or coloured side stripes; use 1px rules (The Ruled Page Rule).",
+      "Don't put uppercase eyebrow labels above headings (The No Eyebrow Rule).",
+      "Don't use emoji or text glyphs as icons; icons are 16px SVG at a 1.5px stroke.",
+      "Don't reintroduce the old dark theme or a single cyan accent; the product is light by decision.",
+      "Don't let the report world reach the controls: tables, tabs, buttons and selects stay standard web components.",
+      "Don't use decorative grid-line or gradient-orb backgrounds; texture comes from the product's own material (the trace record, the stage marks)."
+    ]
+  }
+}

@@ -9,7 +9,7 @@ traced, so the dashboard shows the full retry chain.
 Run:
     pip install -r requirements.txt          # installs traceroai[recovery]
     export OPENAI_API_KEY=sk-...
-    export TRACEROAI_API_URL=https://traceroai.onrender.com
+    export TRACEROAI_API_URL=http://localhost:8000
     export TRACEROAI_API_KEY=your_project_key   # optional
     python app.py
 """
@@ -191,7 +191,7 @@ if __name__ == "__main__":
         raise SystemExit("Set OPENAI_API_KEY (or fill .env) to run this example.")
 
     client = TraceroClient(
-        base_url=os.getenv("TRACEROAI_API_URL", "https://traceroai.onrender.com"),
+        base_url=os.getenv("TRACEROAI_API_URL", "http://localhost:8000"),
         api_key=os.getenv("TRACEROAI_API_KEY"),
     )
 
@@ -252,6 +252,7 @@ if __name__ == "__main__":
         client,
         retrieve=retrieve,
         generate=generate_for_recovery,  # returns (answer, usage) -> traces get cost
+        rewrite=rewrite_query,           # used to rephrase the query after a retrieval miss
         max_attempts=3,
         project_id="recovery-agent",
         model="gpt-4o-mini",   # the real model behind generate() — recorded on traces

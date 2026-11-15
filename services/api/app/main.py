@@ -8,8 +8,12 @@ from app.api.routes.eval_runs import router as eval_runs_router
 from app.api.routes.jobs import router as jobs_router
 from app.api.routes.playground import router as playground_router
 from app.api.routes.eval_grade import router as eval_grade_router
+from app.api.routes.metrics import router as metrics_router
+from app.api.routes.recovery_runs import router as recovery_runs_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.core.metrics import MetricsMiddleware, register_queue_collector
+from app.core.middleware import BodySizeLimitMiddleware, RequestContextMiddleware
 from app.services.cost import start_price_refresh
 
 configure_logging(
@@ -22,6 +26,7 @@ async def lifespan(_: FastAPI):
     # Load live model prices off the request path; pricing uses the built-in
     # table until this lands.
     start_price_refresh()
+    register_queue_collector()
     yield
 
 
@@ -32,6 +37,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Starlette runs the last-added middleware first. Order, outermost first:
+# CORS (so even a 413 or 500 carries CORS headers and a browser can read it),
+# then request id + JSON 500, then request metrics (so a 500 from the app is
+# counted as one), then the body size limit.
+app.add_middleware(BodySizeLimitMiddleware, max_bytes=get_settings().max_request_bytes)
+app.add_middleware(MetricsMiddleware)
+app.add_middleware(RequestContextMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -42,6 +54,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Next-Cursor", "X-Request-ID"],
 )
 
 app.include_router(health_router)
@@ -50,3 +63,5 @@ app.include_router(eval_runs_router)
 app.include_router(jobs_router)
 app.include_router(playground_router)
 app.include_router(eval_grade_router)
+app.include_router(metrics_router)
+app.include_router(recovery_runs_router)

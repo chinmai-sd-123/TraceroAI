@@ -1,28 +1,19 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
-import { Geist, Geist_Mono } from "next/font/google";
+
+import { fontVariables } from "./fonts";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const SITE_URL = "https://www.traceroai.tech";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "TraceroAI — RAG Observability, Evaluation & Self-Healing",
+    default: "TraceroAI: know which stage of your RAG pipeline failed",
     template: "%s | TraceroAI",
   },
   description:
-    "Debug RAG failures before they reach users. TraceroAI traces, evaluates, and diagnoses retrieval-augmented generation pipelines with an LLM-as-judge and a self-healing recovery agent.",
+    "Open-source tracing and evaluation for RAG pipelines. TraceroAI checks retrieval, grounding and the answer for every response, names the stage that failed, and says whether an LLM judge or an estimate decided.",
   keywords: [
     "RAG observability",
     "RAG evaluation",
@@ -39,29 +30,20 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "TraceroAI" }],
   creator: "TraceroAI",
+  // The preview image comes from app/opengraph-image.tsx.
   openGraph: {
     type: "website",
-    locale: "en_IN",
+    locale: "en_US",
     url: SITE_URL,
     siteName: "TraceroAI",
-    title: "TraceroAI — Debug RAG Failures Before They Reach Users",
+    title: "TraceroAI: know which stage of your RAG pipeline failed",
     description:
-      "Trace, evaluate, and diagnose RAG pipelines. Two-tier evaluation (embedding + LLM judge), self-healing recovery agent, and an experiment harness for A/B testing retrieval configs.",
-    images: [
-      {
-        url: "/dashboard.png",
-        width: 1200,
-        height: 630,
-        alt: "TraceroAI reliability dashboard showing healthy rate, failure mix, and latency metrics",
-      },
-    ],
+      "Open-source tracing and evaluation for RAG. Every answer gets a diagnosis tied to a pipeline stage, and says whether an LLM judge or an estimate made it.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TraceroAI — RAG Observability & Self-Healing",
-    description:
-      "Debug RAG failures before they reach users. LLM-as-judge evaluation, self-healing recovery, and experiment harness.",
-    images: ["/dashboard.png"],
+    title: "TraceroAI: know which stage of your RAG pipeline failed",
+    description: "Open-source tracing and evaluation for RAG pipelines, self-hosted with Docker Compose.",
   },
   verification: {
     google: "AE23jg8KjzUiTGdL2J1rXNCubATMZVbo4o5hDlyb4t8",
@@ -84,7 +66,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${geistSans.variable} ${geistMono.variable} h-full`}
+      className={`${fontVariables} h-full`}
     >
       <body className="min-h-full antialiased">
         {children}

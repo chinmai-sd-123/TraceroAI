@@ -1,15 +1,37 @@
 @import "tailwindcss";
 
-:root {
-  --background: #050505;
-  --foreground: #f4f4f5;
+/* Fonts: the root layout loads Public Sans and IBM Plex Mono and puts their
+   variables on <html>. font-dash / font-dash-mono are the names the components
+   use; font-sans / font-mono are Tailwind's defaults and point at the same. */
+@theme inline {
+  --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --font-dash: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-dash-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+/* Palette (light), site-wide. White report stock for the work, a pale docket
+   rail around it, navy for what can be clicked or is selected. Status colours
+   carry one meaning each: red marks the probable cause and nothing else,
+   green passed, amber unclear and every error. See DESIGN.md. */
+@theme {
+  --color-canvas: #ffffff;
+  --color-surface: #ffffff;
+  --color-rail: #eef2f6;
+  --color-sunken: #f4f6f9;
+  --color-line: #dfe4ea;
+  --color-line-strong: #c5ccd6;
+  --color-ink: #14202e;
+  --color-ink-muted: #4f5a6b;
+  --color-ink-faint: #687284;
+  --color-accent: #1d3a5f;
+  --color-accent-soft: #e3e9f1;
+  --color-cause: #b42318;
+  --color-cause-soft: #fdecea;
+  --color-pass: #1d7348;
+  --color-pass-soft: #e6f2ec;
+  --color-warn: #95500a;
+  --color-warn-soft: #fbf0e1;
 }
 
 * {
@@ -20,9 +42,246 @@ html {
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   margin: 0;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-dash);
+  font-variant-numeric: tabular-nums;
+  accent-color: var(--color-accent);
+  caret-color: var(--color-accent);
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+/* A verdict an estimate made (not the LLM judge) is drawn hatched in its
+   colour; a judged one is solid. Set the colour with a text-* utility. */
+.hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    currentColor 0 2px,
+    transparent 2px 4.5px
+  );
+}
+
+/* --- Landing page motion -------------------------------------------------
+   One family of moves, all from the product's own vocabulary: a check scans a
+   stage, its verdict stamps in, evidence appears. Everything is visible by
+   default and settles at once under reduced motion. */
+
+@keyframes replay-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes replay-stamp {
+  0% { opacity: 0; transform: scale(1.18); }
+  60% { opacity: 1; transform: scale(0.97); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes replay-scan {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+@keyframes replay-blink {
+  50% { opacity: 0; }
+}
+@keyframes replay-mark {
+  from { background-size: 0% 100%; }
+  to { background-size: 100% 100%; }
+}
+@keyframes probe-travel {
+  from { left: 4%; }
+  to { left: var(--probe-to); }
+}
+@keyframes probe-ring {
+  from { opacity: 0.9; transform: scale(0.6); }
+  to { opacity: 0; transform: scale(2.2); }
+}
+@keyframes reveal-wipe {
+  from { clip-path: inset(0 0 100% 0); transform: translateY(12px); }
+  to { clip-path: inset(0 0 0 0); transform: none; }
+}
+
+.replay-in { animation: replay-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.replay-stamp { display: inline-block; animation: replay-stamp 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+div.replay-stamp { display: block; }
+.replay-scan {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-accent) 14%, transparent) 70%, var(--color-accent) 70.5%, transparent 71%);
+  animation: replay-scan 700ms linear infinite;
+}
+.replay-caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: -2px;
+  background: var(--color-accent);
+  animation: replay-blink 900ms steps(1) infinite;
+}
+.replay-mark {
+  background-image: linear-gradient(var(--color-cause-soft), var(--color-cause-soft));
+  background-repeat: no-repeat;
+  background-color: transparent;
+  text-decoration-line: underline;
+  animation: replay-mark 600ms ease-out both;
+}
+.probe { animation: probe-travel ease-in-out both; }
+.probe-ring { animation: probe-ring 900ms ease-out both; }
+
+/* Figures wipe up into view once, only after JS has seen them off-screen. */
+.reveal[data-reveal="waiting"] { clip-path: inset(0 0 100% 0); }
+.reveal[data-reveal="shown"] { animation: reveal-wipe 800ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Figures magnify under the pointer. */
+.magnify-image { transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1); transform-origin: var(--zoom-origin); }
+.magnify[data-zoomed] .magnify-image { transform: scale(1.7); cursor: zoom-in; }
+
+/* The hero's backdrop: a real trace record set faintly in monospace, and
+   printer's crop marks around the report. */
+.trace-record-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(28rem, 1fr));
+  gap: 3rem;
+  padding: 1.5rem 2rem;
+  transform: rotate(-2deg) translateY(-2rem) scale(1.08);
+  transform-origin: top left;
+}
+.trace-record-text {
+  margin: 0;
+  font-family: var(--font-dash-mono);
+  font-size: 11px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: color-mix(in srgb, var(--color-ink) 9%, transparent);
+}
+.trace-record { mask-image: linear-gradient(to bottom, black 55%, transparent 98%); }
+/* The lit copy: navy text, visible only in a circle around the pointer. */
+.trace-record-lit .trace-record-text { color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+.trace-record-lit {
+  mask-image: radial-gradient(circle 190px at var(--mx, -999px) var(--my, -999px), black 25%, transparent 75%);
+  opacity: 0;
+  transition: opacity 300ms ease-out;
+}
+[data-lit] > .trace-record-lit { opacity: 1; }
+.crop-marks { position: relative; }
+.crop-marks > .crop {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: var(--color-ink-muted);
+  pointer-events: none;
+}
+.crop.tl { top: -1px; left: -1px; border-top-width: 1px; border-left-width: 1px; }
+.crop.tr { top: -1px; right: -1px; border-top-width: 1px; border-right-width: 1px; }
+.crop.bl { bottom: -1px; left: -1px; border-bottom-width: 1px; border-left-width: 1px; }
+.crop.br { bottom: -1px; right: -1px; border-bottom-width: 1px; border-right-width: 1px; }
+
+.trace-stream { mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .replay-in, .replay-stamp, .replay-mark, .probe, .probe-ring, .reveal[data-reveal="shown"] { animation: none; }
+  .reveal[data-reveal="waiting"] { clip-path: none; }
+  .replay-scan, .replay-caret, .arch-packet { display: none; }
+  .magnify-image { transition: none; }
+  .magnify[data-zoomed] .magnify-image { transform: none; }
+}
+
+/* Headline: words rise in turn, then the red stroke is drawn under "failed." */
+@keyframes title-rise {
+  from { opacity: 0; transform: translateY(0.35em); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes title-stroke {
+  from { stroke-dashoffset: 260; }
+  to { stroke-dashoffset: 0; }
+}
+.title-word { display: inline-block; animation: title-rise 700ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.title-stroke path { stroke-dasharray: 260; animation: title-stroke 700ms 1000ms cubic-bezier(0.65, 0, 0.35, 1) both; }
+
+
+/* Section headings wipe in as they scroll into view, where the browser
+   supports scroll-driven animations; elsewhere they simply show. */
+@supports (animation-timeline: view()) {
+  @keyframes heading-wipe {
+    from { clip-path: inset(0 100% 0 0); opacity: 0.2; }
+    to { clip-path: inset(0 0 0 0); opacity: 1; }
+  }
+  .heading-wipe {
+    animation: heading-wipe linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 30%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-word, .title-stroke path, .heading-wipe { animation: none; }
+  .title-stroke path { stroke-dasharray: none; }
+  .trace-record-lit { display: none; }
+}
+
+/* The closing wordmark: translucent navy, fading out toward the page's edge. */
+.footer-wordmark {
+  font-size: clamp(5rem, 21vw, 19rem);
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 0.78;
+  margin-bottom: -0.12em;
+  background-image: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-accent) 58%, transparent) 0%,
+    color-mix(in srgb, var(--color-accent) 22%, transparent) 55%,
+    transparent 92%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transition: letter-spacing 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.footer-wordmark-wrap:hover .footer-wordmark { letter-spacing: -0.045em; }
+@media (prefers-reduced-motion: reduce) {
+  .footer-wordmark { transition: none; }
+}
+.is-resizing, .is-resizing * { cursor: col-resize !important; user-select: none !important; }
+
+/* Overview panels resizing or moving: the group morphs, the snapshots don't
+   stretch (they stay pinned top-left and are clipped). */
+::view-transition-group(.panel) {
+  animation-duration: 240ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+::view-transition-image-pair(.panel) {
+  overflow: clip;
+}
+::view-transition-old(.panel),
+::view-transition-new(.panel) {
+  width: 100%;
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 160ms;
 }

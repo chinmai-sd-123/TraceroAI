@@ -4,16 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "traceroai"
-version = "0.4.0"
+dynamic = ["version"]
 description = "Python SDK for sending RAG traces to TraceroAI"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [{ name = "chinmai-sd-123" }]
 keywords = ["rag", "observability", "evaluation", "llm", "tracing"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -21,15 +21,17 @@ dependencies = [
   "httpx>=0.27.0",
 ]
 [project.optional-dependencies]
-recovery= [
+# Only what traceroai.recovery imports. Your own pipeline brings its own LLM client.
+recovery = [
   "langgraph>=0.2.0",
-  "langchain-openai>=0.2.0",
-  "langchain-core>=0.3.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/chinmai-sd-123/TraceroAI"
 Repository = "https://github.com/chinmai-sd-123/TraceroAI"
+
+[tool.hatch.version]
+path = "traceroai/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["traceroai"]

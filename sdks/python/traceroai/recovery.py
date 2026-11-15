@@ -8,8 +8,10 @@ is sent to TraceroAI, so the dashboard shows the full retry chain.
 """
 
 from __future__ import annotations
+import logging
 import time
 from typing import Any, Callable, TypedDict
+from uuid import uuid4
 
 # langgraph/langchain are optional — only needed for recovery. Give a clear,
 # actionable error instead of a cryptic ImportError if the extra isn't installed.
@@ -23,11 +25,14 @@ except ImportError as exc:  # pragma: no cover
 
 from traceroai.client import TraceroClient
 
+logger = logging.getLogger("traceroai")
+
 
 # The shape of the user's injected functions.
 RetrieveFn = Callable[[str, int], list[dict[str, Any]]]  # (query, top_k) -> chunks
 # (query, context) -> answer, OR (answer, {"prompt_tokens", "completion_tokens"})
 GenerateFn = Callable[[str, str], "str | tuple[str, dict[str, Any]]"]
+RewriteFn = Callable[[str], str]  # question -> retrieval query
 
 
 class RecoveryState(TypedDict, total=False):
@@ -40,12 +45,16 @@ class RecoveryState(TypedDict, total=False):
     prompt: str            # the prompt context the generator was given this attempt
     usage: dict[str, Any]  # optional token usage from generate() -> cost
     answer: str
-    diagnosis: str         # the server's quick-eval diagnosis for the last attempt
+    diagnosis: str         # the server's diagnosis for the last attempt
+    diagnosis_source: str | None  # "judge", "embedding" or "lexical" (None: older server)
     attempt: int           # how many attempts so far
     trace_ids: list[str]   # the trace id of every attempt (the retry chain)
     retrieval_ms: int      # timing of the last retrieve step
     generation_ms: int     # timing of the last generate step
     recovery_action: str   # the lever taken before this attempt (bump_retrieval / tighten_generation)
+    run_id: str            # shared by every attempt of one run() call
+    error: BaseException   # set when retrieve() or generate() raised
+    error_stage: str       # "retrieve" or "generate"
 
 def _format_context(chunks: list[dict[str, Any]]) -> str:
     """Join retrieved chunks into a single context string with [n] citations."""
@@ -72,25 +81,27 @@ def _read_diagnosis(
     *,
     attempts: int = 6,
     interval: float = 1.5,
-) -> str:
-    """Read the diagnosis to route recovery on, preferring the judge-corrected one.
+) -> tuple[str, str | None]:
+    """Read (label, source) to route recovery on, preferring the judge's diagnosis.
 
     Polls briefly for the async deep eval (the server overwrites the diagnosis from the
-    LLM judge once it lands). Falls back to the synchronous quick diagnosis if the judge
-    doesn't arrive in time — recovery should retry on a cheap signal rather than hang.
+    LLM judge once it lands). Falls back to the quick diagnosis if the judge doesn't
+    arrive in time; its source then says it isn't a judge verdict.
     """
-    last_diagnosis = "needs_review"
+    last: tuple[str, str | None] = ("needs_review", None)
     for i in range(attempts):
         try:
             trace = client.get_trace(trace_id)
         except Exception:
-            return last_diagnosis  # read failed -> fail-safe to last known
-        last_diagnosis = trace.get("diagnosis", {}).get("label", "needs_review")
-        if _deep_eval_ready(trace):
-            return last_diagnosis  # judge-corrected diagnosis
+            return last  # read failed -> fail-safe to last known
+        diagnosis = trace.get("diagnosis") or {}
+        last = (diagnosis.get("label", "needs_review"), diagnosis.get("source"))
+        deep_status = (trace.get("evaluations") or {}).get("deep_status")
+        if _deep_eval_ready(trace) or deep_status in ("skipped", "failed"):
+            return last  # the judge has answered, or won't
         if i < attempts - 1:
             time.sleep(interval)
-    return last_diagnosis  # judge didn't land in time -> quick diagnosis
+    return last  # judge didn't land in time -> quick diagnosis
 
 
 def _make_nodes(
@@ -108,10 +119,15 @@ def _make_nodes(
         query = state.get("query") or state["question"]
         top_k = state.get("top_k", 3)
         start = time.perf_counter()
-        chunks = retrieve(query, top_k)
+        try:
+            chunks = retrieve(query, top_k)
+        except Exception as exc:  # traced by evaluate_node, then re-raised by run()
+            return {"chunks": [], "error": exc, "error_stage": "retrieve"}
         return {"chunks": chunks, "retrieval_ms": int((time.perf_counter() - start) * 1000)}
 
     def generate_node(state: RecoveryState) -> dict[str, Any]:
+        if state.get("error") is not None:
+            return {}  # retrieval already failed
         query = state.get("query") or state["question"]
         context = _format_context(state.get("chunks", []))
         # On a grounding failure we re-enter with prompt_style="strict": prepend a
@@ -124,7 +140,10 @@ def _make_nodes(
         # Record the prompt the generator saw this attempt (context + question).
         prompt = f"Context:\n{context}\n\nQuestion: {query}"
         start = time.perf_counter()
-        result = generate(query, context)
+        try:
+            result = generate(query, context)
+        except Exception as exc:  # traced by evaluate_node, then re-raised by run()
+            return {"prompt": prompt, "error": exc, "error_stage": "generate"}
         # generate() may return just the answer, or (answer, usage) where usage is
         # {"prompt_tokens": int, "completion_tokens": int} — so recovery traces can
         # carry token usage for server-side cost computation.
@@ -146,16 +165,31 @@ def _make_nodes(
         # to a normal send + read of the quick diagnosis — recovery still progresses.
         retrieval_ms = state.get("retrieval_ms", 0)
         generation_ms = state.get("generation_ms", 0)
-        generation: dict[str, Any] = {"model": model, "answer": state.get("answer", "")}
+        error = state.get("error")
+        answer = state.get("answer", "")
+        if error is not None:
+            answer = f"[{state.get('error_stage', 'pipeline')} failed: {type(error).__name__}: {error}]"
+        generation: dict[str, Any] = {
+            "model": model,
+            "answer": answer,
+            "answered": error is None,
+        }
         usage = state.get("usage") or {}
         if usage.get("prompt_tokens") is not None or usage.get("completion_tokens") is not None:
             generation["usage"] = {
                 "prompt_tokens": usage.get("prompt_tokens"),
                 "completion_tokens": usage.get("completion_tokens"),
             }
+        query: dict[str, Any] = {"original": state["question"]}
+        if state.get("query") and state["query"] != state["question"]:
+            query.update({"rewritten": state["query"], "rewrite_changed": True})
         trace_kwargs: dict[str, Any] = {
-            "query": {"original": state["question"]},
-            "retrieval": {"strategy": "recovery", "chunks": state.get("chunks", [])},
+            "query": query,
+            "retrieval": {
+                "strategy": "recovery",
+                "config": {"final_top_k": state.get("top_k")},
+                "chunks": state.get("chunks", []),
+            },
             "generation": generation,
             "latency": {
                 "retrieval_ms": retrieval_ms,
@@ -163,38 +197,64 @@ def _make_nodes(
                 "total_ms": retrieval_ms + generation_ms,
             },
             "metadata": {
-                "attempt": state.get("attempt", 0) + 1,
                 "agent": "recovery",
+                # every attempt of one run() shares this id, so a run can be shown
+                # as one chain even when the same question is asked twice
+                "recovery_run_id": state.get("run_id"),
+                "attempt": state.get("attempt", 0) + 1,
                 # the lever that led to THIS attempt (absent on the first attempt)
                 "recovery_action": state.get("recovery_action"),
+                "top_k": state.get("top_k"),
             },
             "project": {"project_id": project_id},
         }
         if state.get("prompt"):
             trace_kwargs["prompt"] = {"content": state["prompt"], "version": "recovery_v1"}
 
-        diagnosis = "needs_review"
+        if error is not None:
+            # The caller's own code failed: record the attempt (no judge needed)
+            # and stop; run() re-raises the error.
+            trace_id = str(client.log_trace(**trace_kwargs, status="error"))
+            return {
+                "diagnosis": "error",
+                "attempt": state.get("attempt", 0) + 1,
+                "trace_ids": state.get("trace_ids", []) + [trace_id],
+            }
+
+        # One id per attempt, chosen here. If the sync call times out after the
+        # server stored the trace, the fallback send below reuses the id and the
+        # server answers with the stored trace instead of creating a duplicate.
+        trace_id = str(uuid4())
+        trace_kwargs["trace_id"] = trace_id
+
+        diagnosis: str = "needs_review"
+        source: str | None = None
         try:
-            trace_id, verdict = client.log_trace_sync_eval(**trace_kwargs)
+            returned_id, verdict = client.log_trace_sync_eval(**trace_kwargs)
+            trace_id = str(returned_id)
             if verdict and verdict.get("label"):
-                diagnosis = verdict["label"]
+                diagnosis, source = verdict["label"], verdict.get("source")
             else:
-                # server didn't return a judge diagnosis (judge unavailable) — fall
-                # back to the stored quick diagnosis so recovery still has a signal.
-                diagnosis = _read_diagnosis(client, trace_id, interval=diagnosis_poll_interval)
+                # server didn't return a diagnosis: read the stored one.
+                diagnosis, source = _read_diagnosis(
+                    client, trace_id, interval=diagnosis_poll_interval
+                )
         except Exception:
             # Sync path failed entirely (older server / network). Fall back to a plain
             # send + read of the quick diagnosis. Recovery degrades, never breaks.
             try:
-                trace_id = client.log_trace(**trace_kwargs)
-                diagnosis = _read_diagnosis(client, trace_id, interval=diagnosis_poll_interval)
+                trace_id = str(client.log_trace(**trace_kwargs))
+                diagnosis, source = _read_diagnosis(
+                    client, trace_id, interval=diagnosis_poll_interval
+                )
             except Exception:
-                trace_id = None  # could not record the attempt; route on needs_review
+                pass  # the attempt may not be recorded; route on needs_review
 
         return {
             "diagnosis": diagnosis,
+            "diagnosis_source": source,
             "attempt": state.get("attempt", 0) + 1,
-            "trace_ids": state.get("trace_ids", []) + [str(trace_id)],
+            "trace_ids": state.get("trace_ids", []) + [trace_id],
         }
 
     return retrieve_node, generate_node, evaluate_node
@@ -205,16 +265,25 @@ def _make_nodes(
 _SUCCESS = {"healthy_answer", "correct_refusal"}
 
 
-def _route(state: RecoveryState, max_attempts: int) -> str:
+def _route(
+    state: RecoveryState, max_attempts: int, retry_on_quick_diagnosis: bool = False
+) -> str:
     """Conditional edge: decide the next node from the diagnosis. THIS is the
     recovery logic — it maps a failure to the stage that should be retried."""
     diagnosis = state.get("diagnosis", "needs_review")
     attempt = state.get("attempt", 0)
 
+    if state.get("error") is not None:
+        return "failed"             # -> END; run() re-raises the caller's error
     if diagnosis in _SUCCESS:
         return "success"            # -> END
     if attempt >= max_attempts:
         return "give_up"            # -> END (bounded: no infinite loops)
+    if state.get("diagnosis_source") != "judge" and not retry_on_quick_diagnosis:
+        # Only the LLM judge is reliable enough to act on. The quick checks label
+        # many correct answers as failures, and each retry costs the caller
+        # another generation, so report the result instead of retrying on a guess.
+        return "unverified"         # -> END
     if diagnosis == "retrieval_miss":
         return "fix_retrieval"      # -> retrieve again, with more/rewritten context
     if diagnosis == "unsupported_claim":
@@ -235,12 +304,24 @@ def _route(state: RecoveryState, max_attempts: int) -> str:
 # State updates applied when we take a recovery branch (the "levers"). Each records
 # the recovery_action it took, so the next attempt's trace shows WHY it was retried —
 # enabling the dashboard to suggest fixes (e.g. lots of bump_retrieval -> raise top_k).
-def _bump_retrieval(state: RecoveryState) -> dict[str, Any]:
-    return {
-        "top_k": state.get("top_k", 3) + 2,                 # retrieve more
-        "query": f"{state['question']} (be specific and complete)",  # rewrite
-        "recovery_action": "bump_retrieval",
-    }
+def _make_bump_retrieval(rewrite: RewriteFn | None):
+    """The retrieval lever: retrieve more, and rewrite the query if the caller
+    supplied a rewriter. (It used to append "(be specific and complete)" to the
+    question, which shifts an embedding search away from what was asked.)"""
+
+    def bump_retrieval(state: RecoveryState) -> dict[str, Any]:
+        update: dict[str, Any] = {
+            "top_k": state.get("top_k", 3) + 2,
+            "recovery_action": "bump_retrieval",
+        }
+        if rewrite is not None:
+            try:
+                update["query"] = rewrite(state["question"]) or state["question"]
+            except Exception:  # a failing rewriter shouldn't end the run
+                logger.warning("TraceroAI: query rewrite failed; keeping the question", exc_info=True)
+        return update
+
+    return bump_retrieval
 
 
 def _tighten_generation(state: RecoveryState) -> dict[str, Any]:
@@ -250,6 +331,9 @@ def _tighten_generation(state: RecoveryState) -> dict[str, Any]:
 class RecoveryResult(TypedDict):
     answer: str
     diagnosis: str
+    # "judge" when the diagnosis is the LLM judge's; "embedding" or "lexical" (or
+    # None, from servers before 0.5) when it's a quick-check estimate.
+    diagnosis_source: str | None
     attempts: int
     succeeded: bool
     trace_ids: list[str]
@@ -275,9 +359,22 @@ class RecoveryAgent:
         project_id: str = "recovery-agent",
         model: str = "unknown",
         diagnosis_poll_interval: float = 1.5,
+        retry_on_quick_diagnosis: bool = False,
+        rewrite: RewriteFn | None = None,
     ) -> None:
+        """retry_on_quick_diagnosis: also retry when the server has no LLM judge
+        and the diagnosis is only a quick-check estimate. Off by default because
+        those estimates often flag correct answers, and each retry costs a
+        generation.
+
+        rewrite: optional question -> retrieval query function, used when
+        retrieval missed (e.g. an LLM call that expands the question). Without
+        it, a retry only retrieves more chunks.
+        """
         self.client = client
+        self._rewrite = rewrite
         self._max_attempts = max_attempts
+        self._retry_on_quick_diagnosis = retry_on_quick_diagnosis
         retrieve_node, generate_node, evaluate_node = _make_nodes(
             client, retrieve, generate, project_id, model,
             diagnosis_poll_interval=diagnosis_poll_interval,
@@ -290,7 +387,7 @@ class RecoveryAgent:
         g.add_node("generate", generate_node)
         g.add_node("evaluate", evaluate_node)
         # tiny nodes that apply the recovery levers before looping back
-        g.add_node("bump_retrieval", _bump_retrieval)
+        g.add_node("bump_retrieval", _make_bump_retrieval(self._rewrite))
         g.add_node("tighten_generation", _tighten_generation)
 
         g.add_edge(START, "retrieve")
@@ -300,10 +397,12 @@ class RecoveryAgent:
         # the conditional edge: route from evaluate based on the diagnosis
         g.add_conditional_edges(
             "evaluate",
-            lambda s: _route(s, self._max_attempts),
+            lambda s: _route(s, self._max_attempts, self._retry_on_quick_diagnosis),
             {
                 "success": END,
                 "give_up": END,
+                "unverified": END,
+                "failed": END,
                 "fix_retrieval": "bump_retrieval",
                 "fix_generation": "tighten_generation",
             },
@@ -343,9 +442,17 @@ class RecoveryAgent:
         start_top_k: int = 3,
     ) -> RecoveryResult:
         final = self._graph.invoke(
-            {"question": question, "query": question, "top_k": start_top_k, "attempt": 0},
+            {
+                "question": question,
+                "query": question,
+                "top_k": start_top_k,
+                "attempt": 0,
+                "run_id": str(uuid4()),
+            },
             {"recursion_limit": self._max_attempts * 4 + 5},
         )
+        if final.get("error") is not None:
+            raise final["error"]  # your retrieve()/generate() failed; the attempt is traced
         trace_ids = final.get("trace_ids", [])
 
         deep_verdict = None
@@ -358,6 +465,7 @@ class RecoveryAgent:
         return RecoveryResult(
             answer=final.get("answer", ""),
             diagnosis=final.get("diagnosis", "needs_review"),
+            diagnosis_source=final.get("diagnosis_source"),
             attempts=final.get("attempt", 0),
             succeeded=final.get("diagnosis", "") in _SUCCESS,
             trace_ids=trace_ids,

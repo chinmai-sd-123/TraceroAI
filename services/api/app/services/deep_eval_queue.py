@@ -11,6 +11,7 @@ app/worker.py; this module is what the API needs: enqueue + stats.
 from uuid import UUID
 
 import redis
+import redis.exceptions as redis_exceptions
 
 from app.core.config import get_settings
 
@@ -46,7 +47,7 @@ def enqueue_deep_eval_request(trace_id: UUID) -> bool:
     try:
         client.xadd(STREAM, {"trace_id": str(trace_id)}, maxlen=STREAM_MAXLEN, approximate=True)
         return True
-    except redis.exceptions.RedisError:
+    except redis_exceptions.RedisError:
         return False
 
 
@@ -66,18 +67,18 @@ def queue_stats() -> dict:
     if client is None:
         return empty
     try:
-        queued, pending = _group_backlog(client)
+        queued, pending = group_backlog(client)
         return {
             "redis_connected": True,
             "queued": queued + client.llen(LEGACY_LIST),
             "pending": pending,
             "dead_lettered": client.xlen(DEAD_LETTER_STREAM),
         }
-    except redis.exceptions.RedisError:
+    except redis_exceptions.RedisError:
         return empty
 
 
-def _group_backlog(client: redis.Redis) -> tuple[int, int]:
+def group_backlog(client: redis.Redis) -> tuple[int, int]:
     """(undelivered, pending) for the worker group."""
     if not client.exists(STREAM):
         return 0, 0
@@ -89,5 +90,6 @@ def _group_backlog(client: redis.Redis) -> tuple[int, int]:
     lag = group.get("lag")
     if lag is None:
         # Redis < 7 doesn't report lag; count entries after the group's cursor.
-        lag = len(client.xrange(STREAM, min=f"({group['last-delivered-id']}", count=STREAM_MAXLEN))
+        entries = client.xrange(STREAM, min=f"({group['last-delivered-id']}", count=STREAM_MAXLEN)
+        lag = len(entries or [])
     return int(lag), int(group["pending"])

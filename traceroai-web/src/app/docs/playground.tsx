@@ -4,20 +4,11 @@ import { useState } from "react";
 
 import { PlaygroundError, tryPlayground, type PlaygroundResult } from "@/lib/api";
 
-const DIAGNOSIS_STYLES: Record<string, string> = {
-  healthy_answer: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-  correct_refusal: "border-sky-500/30 bg-sky-500/10 text-sky-300",
-  retrieval_miss: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-  unsupported_claim: "border-red-500/30 bg-red-500/10 text-red-300",
-  wrong_answer: "border-red-500/30 bg-red-500/10 text-red-300",
-  needs_review: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
-};
+import { diagnosisName, diagnosisTone } from "../dashboard/ui";
 
-const SAMPLES = [
-  "How do I reset my password?",
-  "How long does a refund take?",
-  "Do you offer a free trial?",
-];
+const TONE = { pass: "bg-pass-soft text-pass", cause: "bg-cause-soft text-cause", warn: "bg-warn-soft text-warn", none: "bg-sunken text-ink-muted" };
+
+const SAMPLES = ["How do I reset my password?", "How long does a refund take?", "Do you offer a free trial?"];
 
 export function Playground() {
   const [question, setQuestion] = useState("");
@@ -33,38 +24,47 @@ export function Playground() {
     try {
       setResult(await tryPlayground(text));
     } catch (err) {
-      if (err instanceof PlaygroundError && err.rateLimited) {
-        setError(err.message);
-      } else {
-        setError("Couldn't reach the live API (it may be waking up — try again in ~30s).");
-      }
+      setError(
+        err instanceof PlaygroundError && err.rateLimited
+          ? err.message
+          : "Couldn't reach the API. If it's a hosted demo it may be waking up; try again in half a minute.",
+      );
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-      <div className="flex flex-col gap-3 sm:flex-row">
+    <div className="rounded border border-line-strong bg-surface p-5">
+      <form
+        className="flex flex-col gap-2 sm:flex-row"
+        onSubmit={(event) => {
+          event.preventDefault();
+          run(question);
+        }}
+      >
+        <label htmlFor="playground-question" className="sr-only">
+          Question
+        </label>
         <input
+          id="playground-question"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && run(question)}
-          placeholder="Ask the demo RAG a question…"
-          className="flex-1 rounded-md border border-zinc-800 bg-zinc-950/70 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-cyan-500/50 focus:outline-none"
+          maxLength={500}
+          placeholder="Ask the demo knowledge base a question"
+          className="flex-1 rounded border border-line-strong bg-surface px-3 py-2 text-sm placeholder:text-ink-faint focus:outline-2 focus:outline-accent"
         />
         <button
-          type="button"
-          onClick={() => run(question)}
+          type="submit"
           disabled={loading}
-          className="rounded-md bg-cyan-300 px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-200 disabled:opacity-50"
+          className="rounded bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:cursor-wait disabled:opacity-60"
         >
           {loading ? "Tracing…" : "Trace it"}
         </button>
-      </div>
+      </form>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <span className="text-xs text-zinc-600">Try:</span>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-ink-muted">Try:</span>
         {SAMPLES.map((s) => (
           <button
             key={s}
@@ -73,93 +73,73 @@ export function Playground() {
               setQuestion(s);
               run(s);
             }}
-            className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-zinc-200"
+            className="rounded-full border border-line-strong px-2.5 py-0.5 text-xs text-ink-muted hover:bg-sunken hover:text-ink"
           >
             {s}
           </button>
         ))}
       </div>
 
-      {error && <p className="mt-4 text-sm text-amber-400">{error}</p>}
-
-      {result && (
-        <div className="mt-6 space-y-4">
-          <div className="flex items-center justify-between gap-3 text-xs text-zinc-500">
-            <p className="line-clamp-1">
-              Query: <span className="text-zinc-300">{result.query}</span>
-            </p>
-            <span className="shrink-0 font-mono">{result.latency_ms}ms</span>
-          </div>
-
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-zinc-400">
-              Answer:{" "}
-              <span className="text-zinc-100">{result.answer}</span>
-            </p>
-            <span
-              className={`shrink-0 rounded-md border px-3 py-1 text-xs font-medium ${
-                DIAGNOSIS_STYLES[result.diagnosis.label] ?? DIAGNOSIS_STYLES.needs_review
-              }`}
-            >
-              {result.diagnosis.label.replaceAll("_", " ")}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span
-              className={`rounded px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
-                result.judged_by === "llm_judge"
-                  ? "bg-cyan-500/15 text-cyan-300"
-                  : "bg-zinc-700/40 text-zinc-400"
-              }`}
-            >
-              {result.judged_by === "llm_judge"
-                ? "LLM judge (deep eval)"
-                : "deterministic (fast)"}
-            </span>
-            <p className="text-xs leading-5 text-zinc-500">{result.diagnosis.reason}</p>
-          </div>
-
-          <details className="rounded-md border border-zinc-800 bg-zinc-950/40">
-            <summary className="cursor-pointer px-3 py-2 text-xs font-medium uppercase tracking-wide text-zinc-500 hover:text-zinc-300">
-              Prompt sent to LLM
-            </summary>
-            <pre className="overflow-auto border-t border-zinc-800 p-3 text-xs leading-5 text-zinc-400">
-              {result.prompt}
-            </pre>
-          </details>
-
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-              Retrieved context
-            </p>
-            <div className="space-y-2">
-              {result.chunks.map((c, i) => (
-                <div
-                  key={i}
-                  className="rounded-md border border-zinc-800 bg-zinc-950/60 p-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-zinc-300">{c.title}</span>
-                    <span className="font-mono text-xs text-zinc-500">
-                      score {c.score}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm leading-6 text-zinc-400">{c.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p className="text-xs text-zinc-600">
-            ↑ A real trace, evaluated live by the{" "}
-            {result.judged_by === "llm_judge"
-              ? "LLM judge"
-              : "fast deterministic pipeline"}
-            . Send your own with the SDK and it appears in the dashboard.
+      <div aria-live="polite">
+        {error && (
+          <p role="alert" className="mt-4 text-sm text-warn">
+            {error}
           </p>
-        </div>
-      )}
+        )}
+
+        {result && (
+          <div className="replay-in mt-5 space-y-4 border-t border-line pt-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <p className="text-sm">
+                <span className="text-ink-muted">Question</span> <span className="font-medium">{result.query}</span>
+              </p>
+              <span className="font-dash-mono text-xs text-ink-muted">{result.latency_ms} ms</span>
+            </div>
+
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`rounded px-1.5 py-px text-sm font-semibold ${TONE[diagnosisTone(result.diagnosis.label)]}`}>
+                  {diagnosisName(result.diagnosis.label)}
+                </span>
+                <span
+                  className={`rounded-[3px] border px-1.5 py-px text-xs ${
+                    result.judged_by === "llm_judge" ? "border-ink font-semibold" : "border-dashed border-ink-faint text-ink-muted"
+                  }`}
+                >
+                  {result.judged_by === "llm_judge" ? "Final · LLM judge" : "Preliminary · quick check"}
+                </span>
+              </div>
+              <p className="mt-1.5 text-sm text-ink-muted">{result.diagnosis.reason}</p>
+            </div>
+
+            <blockquote className="border-l border-line-strong pl-3 text-sm leading-6">{result.answer}</blockquote>
+
+            <div>
+              <p className="mb-2 text-xs font-semibold text-ink-muted">Retrieved context</p>
+              <ol className="divide-y divide-line rounded border border-line">
+                {result.chunks.map((c, i) => (
+                  <li key={i} className="px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-3 text-xs">
+                      <span className="font-semibold">{c.title}</span>
+                      <span className="font-dash-mono text-ink-muted">score {c.score}</span>
+                    </div>
+                    <p className="mt-1 text-sm leading-6 text-ink-muted">{c.text}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <details className="rounded border border-line">
+              <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-ink-muted hover:text-ink">
+                Prompt sent to the model
+              </summary>
+              <pre className="overflow-auto border-t border-line bg-sunken p-3 font-dash-mono text-xs leading-5 whitespace-pre-wrap">
+                {result.prompt}
+              </pre>
+            </details>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

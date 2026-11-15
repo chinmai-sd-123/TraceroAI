@@ -9,19 +9,26 @@ Instead of hand-assembling the log_trace(...) payload, wrap the RAG work:
 
 The context manager times the block automatically, fills latency.total_ms, marks
 the trace unanswered if an exception escapes, and sends it on exit. Sending is
-best-effort: a logging/network failure never breaks the caller's code or masks
-the caller's own exception (it warns and leaves trace_id as None).
+best-effort: a network failure never breaks the caller's code or masks the
+caller's own exception; it is logged on the "traceroai" logger.
+
+t.trace_id is set as soon as the block starts, so it can be stored alongside
+your own records (or shown to a user) before the trace is sent.
 """
 
 from __future__ import annotations
 
+import logging
 import time
-import warnings
 from typing import TYPE_CHECKING, Any
-from uuid import UUID
+from uuid import UUID, uuid4
+
+from traceroai._chunks import normalize_chunks
 
 if TYPE_CHECKING:
     from traceroai.client import TraceroClient
+
+logger = logging.getLogger("traceroai")
 
 
 class TraceContext:
@@ -46,24 +53,31 @@ class TraceContext:
         self._metadata = metadata
 
         self._start: float = 0.0
-        self.trace_id: UUID | None = None
+        self._entered = False
+        # When each piece was logged. Steps are timed from the previous logged
+        # step (or the start of the block), so log each piece right after the
+        # work it records.
+        self._marks: dict[str, float] = {}
+        self.trace_id: UUID = uuid4()
 
     # --- piece loggers (call these inside the `with` block) ---
 
     def log_retrieval(
         self,
-        chunks: list[dict[str, Any]],
+        chunks: list[Any],
         *,
         strategy: str = "vector",
         config: dict[str, Any] | None = None,
     ) -> None:
-        self._retrieval = {"strategy": strategy, "chunks": chunks}
+        self._mark("retrieval")
+        self._retrieval = {"strategy": strategy, "chunks": normalize_chunks(chunks)}
         if config is not None:
             self._retrieval["config"] = config
 
     def log_prompt(
         self, content: str, *, version: str | None = None, template_name: str | None = None
     ) -> None:
+        self._mark("prompt")
         self._prompt = {"content": content, "version": version, "template_name": template_name}
 
     def log_generation(
@@ -77,6 +91,7 @@ class TraceContext:
         prompt_tokens: int | None = None,
         completion_tokens: int | None = None,
     ) -> None:
+        self._mark("generation")
         self._generation = {
             "answer": answer,
             "answered": True,
@@ -96,14 +111,28 @@ class TraceContext:
                 "completion_tokens": completion_tokens,
             }
 
+    def _mark(self, step: str) -> None:
+        if self._entered:  # pieces logged outside the block aren't timed
+            self._marks.setdefault(step, time.perf_counter())
+
+    def _latency(self, total_ms: int) -> dict[str, int]:
+        latency = {"total_ms": total_ms}
+        previous = self._start
+        for step, key in (("retrieval", "retrieval_ms"), ("prompt", "prompt_build_ms"), ("generation", "generation_ms")):
+            if step in self._marks:
+                latency[key] = max(0, round((self._marks[step] - previous) * 1000))
+                previous = self._marks[step]
+        return latency
+
     # --- context manager protocol ---
 
     def __enter__(self) -> "TraceContext":
         self._start = time.perf_counter()
+        self._entered = True
         return self
 
     def __exit__(self, exc_type, exc, tb) -> bool:
-        total_ms = int((time.perf_counter() - self._start) * 1000)
+        total_ms = round((time.perf_counter() - self._start) * 1000)
 
         # A generation is only "answered" if one was logged and nothing blew up.
         if exc_type is not None:
@@ -121,21 +150,20 @@ class TraceContext:
             )
 
         # Telemetry is best-effort: a failure to send a trace must NEVER break the
-        # caller's app, nor mask the caller's own exception. On send failure we
-        # warn and leave trace_id as None.
+        # caller's app, nor mask the caller's own exception. log_trace doesn't
+        # raise by default; this also covers raise_on_error and stubbed clients.
         try:
-            self.trace_id = self._client.log_trace(
+            self._client.log_trace(
                 query=self._query,
                 retrieval=self._retrieval,
                 generation=self._generation,
                 prompt=self._prompt,
-                latency={"total_ms": total_ms},
+                latency=self._latency(total_ms),
                 project=self._project,
                 metadata=self._metadata,
+                trace_id=self.trace_id,
             )
         except Exception as send_error:  # noqa: BLE001 - intentionally broad
-            warnings.warn(
-                f"TraceroAI: failed to send trace: {send_error}", stacklevel=2
-            )
+            logger.warning("TraceroAI: failed to send trace %s: %s", self.trace_id, send_error)
 
         return False  # never suppress the caller's exception

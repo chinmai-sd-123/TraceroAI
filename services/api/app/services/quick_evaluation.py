@@ -2,16 +2,16 @@ from app.evaluators.answer_relevance import evaluate_answer_relevance
 from app.evaluators.context_relevance import evaluate_context_relevance
 from app.evaluators.diagnosis import diagnose_trace, is_refusal
 from app.evaluators.groundedness import evaluate_groundedness
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
 from app.services.embeddings import EmbeddingClient
 
 
 def run_quick_evaluation(
-    trace: TraceIngestRequest,
+    trace: Trace,
     *,
     semantic: bool = True,
     embedder: EmbeddingClient | None = None,
-) -> TraceIngestRequest:
+) -> Trace:
     """Run the quick evaluators and diagnosis on a trace.
 
     The server is the source of truth for evaluations, so any quick
@@ -38,13 +38,20 @@ def run_quick_evaluation(
     # A trace is a refusal if the model said so (answered=False) or the answer
     # text reads as a decline — diagnosed as correct_refusal, not a failure.
     refused = not trace.generation.answered or is_refusal(trace.generation.answer)
-    trace.diagnosis = diagnose_trace(quick_results, refused=refused)
+    # "embedding" only if a relevance check actually used embeddings; they fall
+    # back to term overlap on their own when the embeddings call fails.
+    used_embeddings = any(
+        (result.evaluator_version or "").startswith("embedding") for result in quick_results
+    )
+    trace.diagnosis = diagnose_trace(
+        quick_results, refused=refused, source="embedding" if used_embeddings else "lexical"
+    )
 
     return trace
 
 
 def _embed_relevance_inputs(
-    trace: TraceIngestRequest,
+    trace: Trace,
     embedder: EmbeddingClient | None = None,
 ) -> dict[str, list[float]] | None:
     """Embed [query, context, answer] in one batched call.

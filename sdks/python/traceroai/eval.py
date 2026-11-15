@@ -24,6 +24,7 @@ the SDK; the server grades.
 
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -31,6 +32,8 @@ from typing import Any, Callable
 import httpx
 
 from traceroai.client import TraceroClient
+
+logger = logging.getLogger("traceroai")
 
 RetrieveFn = Callable[[str, int], list[dict[str, Any]]]
 GenerateFn = Callable[[str, str], str]
@@ -56,14 +59,23 @@ class Variant:
 
 @dataclass
 class ExperimentResult:
-    eval_run_id: str | None
+    eval_run_id: str | None  # None if not posted, or if posting failed (see errors)
     recommendation: str
     variants: list[dict[str, Any]]
+    # Why cases couldn't be graded, or the run couldn't be posted. The variant
+    # results are complete either way.
+    errors: list[str] = field(default_factory=list)
+    # Every question's result per variant; "passed" is None when the case
+    # couldn't be graded.
+    cases: list[dict[str, Any]] = field(default_factory=list)
 
 
-def _grade(client: TraceroClient, question: str, expected: str, actual: str) -> bool | None:
+def _grade(
+    client: TraceroClient, question: str, expected: str, actual: str, errors: list[str]
+) -> bool | None:
     """Grade one answer via the server. Returns True/False, or None if the case
-    could not be graded (judge unavailable / error) — never a fabricated score."""
+    could not be graded (judge unavailable / error) — never a fabricated score.
+    Why a case couldn't be graded is appended to `errors`."""
     headers = {}
     if client.api_key:
         headers["Authorization"] = f"Bearer {client.api_key}"
@@ -75,9 +87,11 @@ def _grade(client: TraceroClient, question: str, expected: str, actual: str) -> 
             timeout=client.timeout_seconds * 3,  # grading is an LLM call
         )
         if resp.status_code != 200:
+            errors.append(f"grading returned HTTP {resp.status_code}: {resp.text[:200]}")
             return None
         return bool(resp.json().get("correct"))
-    except Exception:
+    except Exception as exc:
+        errors.append(f"grading failed: {type(exc).__name__}: {exc}")
         return None
 
 
@@ -91,10 +105,12 @@ def _run_variant(
     variant: Variant,
     retrieve: RetrieveFn,
     generate: GenerateFn,
+    errors: list[str],
 ) -> dict[str, Any]:
     correct = 0
     gradeable = 0
     latencies: list[int] = []
+    cases: list[dict[str, Any]] = []
 
     for case in dataset:
         start = time.perf_counter()
@@ -102,7 +118,17 @@ def _run_variant(
         answer = generate(case.question, _format_context(chunks))
         latencies.append(int((time.perf_counter() - start) * 1000))
 
-        verdict = _grade(client, case.question, case.expected_answer, answer)
+        verdict = _grade(client, case.question, case.expected_answer, answer, errors)
+        cases.append(
+            {
+                "variant_id": variant.variant_id,
+                "case_id": case.case_id,
+                "question": case.question,
+                "expected_answer": case.expected_answer,
+                "actual_answer": answer,
+                "passed": verdict,
+            }
+        )
         if verdict is None:
             continue  # ungradeable — excluded from accuracy, not counted wrong
         gradeable += 1
@@ -122,6 +148,7 @@ def _run_variant(
         "average_latency_ms": avg_latency,
         "metrics": [{"metric_name": "accuracy", "score": accuracy}],
         "_accuracy": accuracy,  # internal, for winner selection
+        "_cases": cases,  # internal, sent separately
     }
 
 
@@ -142,7 +169,8 @@ def run_experiment(
     if not dataset:
         raise ValueError("The dataset is empty.")
 
-    results = [_run_variant(client, dataset, v, retrieve, generate) for v in variants]
+    errors: list[str] = []
+    results = [_run_variant(client, dataset, v, retrieve, generate, errors) for v in variants]
 
     # Guard the all-ungradeable case: if NO variant had a single gradeable case (judge
     # down for the whole run), there's no honest winner — don't fabricate one.
@@ -175,6 +203,10 @@ def run_experiment(
     # Strip internal fields before sending.
     variants_payload = [{k: v for k, v in r.items() if not k.startswith("_")} for r in results]
     win_total = winner["passed_cases"] + winner["failed_cases"]
+    all_cases = [case for r in results for case in r["_cases"]]
+    # The server stores graded cases; ungradeable ones are counted in each
+    # variant's config instead.
+    graded_cases = [case for case in all_cases if case["passed"] is not None]
 
     payload = {
         "run_type": "experiment",
@@ -190,6 +222,7 @@ def run_experiment(
             "recommendation": recommendation,
         },
         "variants": variants_payload,
+        "cases": graded_cases,
     }
 
     eval_run_id: str | None = None
@@ -197,17 +230,35 @@ def run_experiment(
         headers = {"Content-Type": "application/json"}
         if client.api_key:
             headers["Authorization"] = f"Bearer {client.api_key}"
-        resp = httpx.post(
-            f"{client.base_url}/v1/eval-runs",
-            json=payload,
-            headers=headers,
-            timeout=client.timeout_seconds,
-        )
-        resp.raise_for_status()
-        eval_run_id = resp.json().get("eval_run_id")
+        # The run is finished (and the grading paid for) at this point: a failed
+        # upload is reported, not raised, so the results aren't lost with it.
+        try:
+            resp = httpx.post(
+                f"{client.base_url}/v1/eval-runs",
+                json=payload,
+                headers=headers,
+                timeout=client.timeout_seconds,
+            )
+            if resp.status_code == 422 and graded_cases:
+                # Older servers reject per-question results on
+                # experiments; send the variant totals alone.
+                errors.append("the server didn't accept per-question results; posted variant totals only")
+                resp = httpx.post(
+                    f"{client.base_url}/v1/eval-runs",
+                    json={**payload, "cases": []},
+                    headers=headers,
+                    timeout=client.timeout_seconds,
+                )
+            resp.raise_for_status()
+            eval_run_id = resp.json().get("eval_run_id")
+        except Exception as exc:
+            errors.append(f"posting the eval run failed: {type(exc).__name__}: {exc}")
+            logger.warning("TraceroAI: couldn't post the eval run: %s", exc)
 
     return ExperimentResult(
         eval_run_id=eval_run_id,
         recommendation=recommendation,
         variants=variants_payload,
+        errors=errors,
+        cases=all_cases,
     )

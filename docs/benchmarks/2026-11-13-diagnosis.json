@@ -1,0 +1,2244 @@
+{
+  "run_at": "2026-11-13T17:11:41+00:00",
+  "cases": 117,
+  "judge_model": "gpt-5.4-nano-2026-03-17",
+  "embedding_model": "text-embedding-3-small",
+  "tiers": {
+    "lexical": {
+      "accuracy": 0.5812,
+      "per_label": {
+        "healthy_answer": {
+          "support": 22,
+          "precision": 1.0,
+          "recall": 0.136
+        },
+        "correct_refusal": {
+          "support": 18,
+          "precision": 0.562,
+          "recall": 1.0
+        },
+        "retrieval_miss": {
+          "support": 20,
+          "precision": 0.526,
+          "recall": 1.0
+        },
+        "unsupported_claim": {
+          "support": 21,
+          "precision": 0.917,
+          "recall": 0.524
+        },
+        "wrong_answer": {
+          "support": 36,
+          "precision": 0.727,
+          "recall": 0.444
+        }
+      },
+      "by_construction": {
+        "handwritten": "7/9",
+        "healthy": "0/18",
+        "unsupported": "9/18",
+        "retrieval_miss": "18/18",
+        "correct_refusal": "18/18",
+        "wrong_refusal": "4/18",
+        "off_target": "12/18"
+      },
+      "verdicts": [
+        {
+          "case_id": "healthy_refund_timeline",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "healthy_region_change",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "unsupported_claim_refund_method",
+          "construction": "handwritten",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "retrieval_miss_office_for_refund",
+          "construction": "handwritten",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "healthy_upload_size",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "healthy_refund_window",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "unsupported_claim_upload_encryption",
+          "construction": "handwritten",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "unsupported_claim_refund_bonus",
+          "construction": "handwritten",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "retrieval_miss_password_reset",
+          "construction": "handwritten",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_window_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_window_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_window_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_window_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_refund_window_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_refund_window_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_speed_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_speed_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_speed_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_speed_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_refund_speed_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_refund_speed_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_renewal_refund_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_renewal_refund_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_renewal_refund_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_renewal_refund_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_renewal_refund_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_renewal_refund_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_plans_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_plans_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_plans_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_plans_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_plans_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_plans_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_upload_size_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_upload_size_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_upload_size_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_upload_size_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_upload_size_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_upload_size_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_api_free_plan_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_api_free_plan_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_api_free_plan_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_api_free_plan_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_api_free_plan_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_api_free_plan_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_reset_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_password_reset_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_password_reset_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_password_reset_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_password_reset_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_reset_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_encryption_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_encryption_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_encryption_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_encryption_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_encryption_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_encryption_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_rules_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_password_rules_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_password_rules_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_password_rules_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_password_rules_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_password_rules_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_invoices_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_invoices_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_invoices_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_invoices_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_invoices_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_invoices_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_failed_payment_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_failed_payment_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_failed_payment_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_failed_payment_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_failed_payment_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_failed_payment_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_annual_discount_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_annual_discount_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_annual_discount_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_annual_discount_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_annual_discount_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_annual_discount_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_account_deletion_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_account_deletion_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_account_deletion_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_account_deletion_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_account_deletion_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_account_deletion_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_export_formats_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_export_formats_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_export_formats_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_export_formats_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_export_formats_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_export_formats_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_roles_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_roles_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_roles_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_roles_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_roles_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_roles_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_support_response_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_support_response_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_support_response_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_support_response_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_support_response_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_support_response_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_chat_hours_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_chat_hours_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_chat_hours_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_chat_hours_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_chat_hours_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_chat_hours_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_rate_limit_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_rate_limit_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        }
+      ]
+    },
+    "embedding": {
+      "accuracy": 0.7607,
+      "per_label": {
+        "healthy_answer": {
+          "support": 22,
+          "precision": 0.933,
+          "recall": 0.636
+        },
+        "correct_refusal": {
+          "support": 18,
+          "precision": 0.944,
+          "recall": 0.944
+        },
+        "retrieval_miss": {
+          "support": 20,
+          "precision": 1.0,
+          "recall": 0.85
+        },
+        "unsupported_claim": {
+          "support": 21,
+          "precision": 0.765,
+          "recall": 0.619
+        },
+        "wrong_answer": {
+          "support": 36,
+          "precision": 0.966,
+          "recall": 0.778
+        }
+      },
+      "by_construction": {
+        "handwritten": "8/9",
+        "healthy": "10/18",
+        "unsupported": "11/18",
+        "retrieval_miss": "15/18",
+        "correct_refusal": "17/18",
+        "wrong_refusal": "17/18",
+        "off_target": "11/18"
+      },
+      "verdicts": [
+        {
+          "case_id": "healthy_refund_timeline",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "healthy_region_change",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "unsupported_claim_refund_method",
+          "construction": "handwritten",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "retrieval_miss_office_for_refund",
+          "construction": "handwritten",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "healthy_upload_size",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "healthy_refund_window",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "unsupported_claim_upload_encryption",
+          "construction": "handwritten",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "unsupported_claim_refund_bonus",
+          "construction": "handwritten",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "retrieval_miss_password_reset",
+          "construction": "handwritten",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_window_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_refund_window_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_refund_window_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_window_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_refund_window_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_refund_window_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_refund_speed_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_refund_speed_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_refund_speed_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_speed_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_refund_speed_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_refund_speed_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_renewal_refund_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_renewal_refund_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_renewal_refund_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_renewal_refund_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_renewal_refund_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_renewal_refund_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_plans_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_plans_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_plans_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_plans_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_plans_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_plans_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_upload_size_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_upload_size_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_upload_size_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_upload_size_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_upload_size_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_upload_size_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_api_free_plan_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_api_free_plan_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_api_free_plan_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_api_free_plan_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_api_free_plan_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_api_free_plan_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_password_reset_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_password_reset_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_password_reset_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_password_reset_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_password_reset_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_reset_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_encryption_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_encryption_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_encryption_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_encryption_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_encryption_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_encryption_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_rules_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_password_rules_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_password_rules_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_password_rules_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_password_rules_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_rules_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_invoices_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_invoices_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_invoices_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_invoices_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_invoices_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_invoices_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_failed_payment_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_failed_payment_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_failed_payment_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_failed_payment_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_failed_payment_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_failed_payment_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_annual_discount_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_annual_discount_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_annual_discount_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_annual_discount_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_annual_discount_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_annual_discount_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_account_deletion_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_account_deletion_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_account_deletion_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_account_deletion_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_account_deletion_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_account_deletion_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_export_formats_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_export_formats_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_export_formats_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_export_formats_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_export_formats_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_export_formats_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_roles_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_roles_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_roles_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_roles_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_roles_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_roles_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_support_response_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_support_response_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_support_response_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_support_response_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_support_response_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_support_response_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_chat_hours_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_chat_hours_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_chat_hours_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_chat_hours_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_chat_hours_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_chat_hours_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "needs_review"
+        },
+        {
+          "case_id": "constructed_rate_limit_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_rate_limit_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_rate_limit_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "needs_review"
+        }
+      ]
+    },
+    "judge": {
+      "accuracy": 0.9402,
+      "per_label": {
+        "healthy_answer": {
+          "support": 22,
+          "precision": 0.955,
+          "recall": 0.955
+        },
+        "correct_refusal": {
+          "support": 18,
+          "precision": 1.0,
+          "recall": 0.944
+        },
+        "retrieval_miss": {
+          "support": 20,
+          "precision": 1.0,
+          "recall": 0.95
+        },
+        "unsupported_claim": {
+          "support": 21,
+          "precision": 0.808,
+          "recall": 1.0
+        },
+        "wrong_answer": {
+          "support": 36,
+          "precision": 0.97,
+          "recall": 0.889
+        }
+      },
+      "by_construction": {
+        "handwritten": "8/9",
+        "healthy": "18/18",
+        "unsupported": "18/18",
+        "retrieval_miss": "17/18",
+        "correct_refusal": "17/18",
+        "wrong_refusal": "18/18",
+        "off_target": "14/18"
+      },
+      "verdicts": [
+        {
+          "case_id": "healthy_refund_timeline",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "healthy_region_change",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "unsupported_claim_refund_method",
+          "construction": "handwritten",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "retrieval_miss_office_for_refund",
+          "construction": "handwritten",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "healthy_upload_size",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "healthy_refund_window",
+          "construction": "handwritten",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "unsupported_claim_upload_encryption",
+          "construction": "handwritten",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "unsupported_claim_refund_bonus",
+          "construction": "handwritten",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "retrieval_miss_password_reset",
+          "construction": "handwritten",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_window_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_refund_window_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_refund_window_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_window_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_refund_window_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_refund_window_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_refund_speed_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_refund_speed_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_refund_speed_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_refund_speed_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_refund_speed_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_refund_speed_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_renewal_refund_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_renewal_refund_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_renewal_refund_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_renewal_refund_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_renewal_refund_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_renewal_refund_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_plans_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_plans_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_plans_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_plans_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_plans_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_plans_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_upload_size_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_upload_size_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_upload_size_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_upload_size_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_upload_size_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_upload_size_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_api_free_plan_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_api_free_plan_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_api_free_plan_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_api_free_plan_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_api_free_plan_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_api_free_plan_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_reset_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_password_reset_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_password_reset_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_password_reset_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_password_reset_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_reset_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_encryption_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_encryption_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_encryption_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_encryption_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_encryption_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_encryption_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_rules_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_password_rules_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_password_rules_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_password_rules_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_password_rules_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_password_rules_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_invoices_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_invoices_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_invoices_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_invoices_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_invoices_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_invoices_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_failed_payment_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_failed_payment_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_failed_payment_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_failed_payment_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_failed_payment_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_failed_payment_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_annual_discount_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_annual_discount_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_annual_discount_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_annual_discount_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_annual_discount_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_annual_discount_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_account_deletion_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_account_deletion_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_account_deletion_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_account_deletion_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_account_deletion_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_account_deletion_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_export_formats_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_export_formats_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_export_formats_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_export_formats_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_export_formats_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_export_formats_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_roles_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_roles_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_roles_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_roles_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_roles_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_roles_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_support_response_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_support_response_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_support_response_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_support_response_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_support_response_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_support_response_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_chat_hours_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_chat_hours_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_chat_hours_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_chat_hours_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_chat_hours_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_chat_hours_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_healthy",
+          "construction": "healthy",
+          "expected": "healthy_answer",
+          "actual": "healthy_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_unsupported",
+          "construction": "unsupported",
+          "expected": "unsupported_claim",
+          "actual": "unsupported_claim"
+        },
+        {
+          "case_id": "constructed_rate_limit_retrieval_miss",
+          "construction": "retrieval_miss",
+          "expected": "retrieval_miss",
+          "actual": "retrieval_miss"
+        },
+        {
+          "case_id": "constructed_rate_limit_correct_refusal",
+          "construction": "correct_refusal",
+          "expected": "correct_refusal",
+          "actual": "correct_refusal"
+        },
+        {
+          "case_id": "constructed_rate_limit_wrong_refusal",
+          "construction": "wrong_refusal",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        },
+        {
+          "case_id": "constructed_rate_limit_off_target",
+          "construction": "off_target",
+          "expected": "wrong_answer",
+          "actual": "wrong_answer"
+        }
+      ],
+      "runs": 3,
+      "self_agreement": 0.9658,
+      "accuracy_per_run": [
+        0.9402,
+        0.9573,
+        0.9573
+      ]
+    }
+  }
+}

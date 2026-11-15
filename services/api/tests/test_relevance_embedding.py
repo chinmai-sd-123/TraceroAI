@@ -8,7 +8,7 @@ therefore the label.
 
 from app.evaluators.answer_relevance import evaluate_answer_relevance
 from app.evaluators.context_relevance import evaluate_context_relevance
-from app.schemas.traces import TraceIngestRequest
+from app.schemas.traces import Trace
 
 
 class StubEmbedder:
@@ -21,8 +21,8 @@ class StubEmbedder:
         return [self._vectors.get(t, [0.0, 1.0]) for t in texts]
 
 
-def make_trace(query: str, chunk_text: str, answer: str) -> TraceIngestRequest:
-    return TraceIngestRequest.model_validate(
+def make_trace(query: str, chunk_text: str, answer: str) -> Trace:
+    return Trace.model_validate(
         {
             "query": {"original": query},
             "retrieval": {"chunks": [{"rank": 1, "chunk_id": "c1", "text": chunk_text}]},

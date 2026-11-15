@@ -15,6 +15,10 @@ class _FakeResp:
         self.status_code = status
         self._payload = payload
 
+    @property
+    def text(self) -> str:
+        return str(self._payload)
+
     def json(self) -> dict:
         return self._payload
 
@@ -119,3 +123,84 @@ def test_requires_two_variants(monkeypatch):
             retrieve=_retrieve, generate=lambda q, c: "a",
             variants=[Variant("a", "A")], project_id="t",
         )
+
+
+def test_a_failed_upload_keeps_the_results(monkeypatch) -> None:
+    def fake_post(url, json=None, headers=None, timeout=None):
+        if url.endswith("/v1/eval/grade"):
+            return _FakeResp(200, {"correct": True, "reason": "stub"})
+        raise E.httpx.ConnectError("API unreachable")
+
+    monkeypatch.setattr(E.httpx, "post", fake_post)
+    result = run_experiment(
+        client=TraceroClient(base_url="http://x", flush_on_exit_seconds=0),
+        dataset=[Case("c1", "q", "a")],
+        retrieve=lambda q, k: [{"text": "ctx"}],
+        generate=lambda q, c: "a",
+        variants=[Variant("v1", "one", top_k=1), Variant("v2", "two", top_k=2)],
+    )
+
+    assert result.eval_run_id is None
+    assert len(result.variants) == 2  # the paid-for results are still here
+    assert any("posting the eval run failed" in e for e in result.errors)
+
+
+def test_ungradeable_cases_say_why(monkeypatch) -> None:
+    _patch_server(monkeypatch, correct_if=lambda a: True, grade_status=503)
+    result = run_experiment(
+        client=TraceroClient(base_url="http://x", flush_on_exit_seconds=0),
+        dataset=[Case("c1", "q", "a")],
+        retrieve=lambda q, k: [],
+        generate=lambda q, c: "a",
+        variants=[Variant("v1", "one"), Variant("v2", "two")],
+        post=False,
+    )
+    assert result.errors and "HTTP 503" in result.errors[0]
+
+
+def test_experiment_sends_each_graded_question_per_variant(monkeypatch):
+    sent: dict = {}
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        if url.endswith("/v1/eval/grade"):
+            # c2 can't be graded for the first variant.
+            if "where" in json["question"].lower() and "k=3" in json["actual"]:
+                return _FakeResp(503, {})
+            return _FakeResp(200, {"correct": "refund" in json["actual"].lower()})
+        sent.update(json)
+        return _FakeResp(201, {"eval_run_id": "run-abc"})
+
+    monkeypatch.setattr(E.httpx, "post", fake_post)
+    dataset = [Case("c1", "How long does a refund take?", "5-7 days"), Case("c2", "Where is it sent?", "card")]
+    result = run_experiment(
+        client=_client(), dataset=dataset, retrieve=_retrieve,
+        generate=lambda q, ctx: f"refund answer {ctx}" if "refund" in q.lower() else f"other {ctx}",
+        variants=[Variant("k3", "top_k=3", top_k=3), Variant("k5", "top_k=5", top_k=5)],
+    )
+
+    assert [(c["variant_id"], c["case_id"], c["passed"]) for c in sent["cases"]] == [
+        ("k3", "c1", True), ("k5", "c1", True), ("k5", "c2", False),
+    ]  # the ungradeable case isn't sent
+    assert len(result.cases) == 4  # but the caller sees every case
+    assert next(c for c in result.cases if c["variant_id"] == "k3" and c["case_id"] == "c2")["passed"] is None
+
+
+def test_an_older_server_still_gets_the_totals(monkeypatch):
+    posts: list[dict] = []
+
+    def fake_post(url, json=None, headers=None, timeout=None):
+        if url.endswith("/v1/eval/grade"):
+            return _FakeResp(200, {"correct": True})
+        posts.append(json)
+        # Older servers reject experiment cases.
+        return _FakeResp(422, {}) if json["cases"] else _FakeResp(201, {"eval_run_id": "run-old"})
+
+    monkeypatch.setattr(E.httpx, "post", fake_post)
+    result = run_experiment(
+        client=_client(), dataset=[Case("c1", "q", "a")], retrieve=_retrieve, generate=lambda q, c: "a",
+        variants=[Variant("k3", "a", top_k=3), Variant("k5", "b", top_k=5)],
+    )
+
+    assert result.eval_run_id == "run-old"
+    assert [len(p["cases"]) for p in posts] == [2, 0]
+    assert any("per-question" in e for e in result.errors)

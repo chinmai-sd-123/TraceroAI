@@ -7,7 +7,10 @@ from typing import Literal
 
 # Anchor .env to the repo root so config loads regardless of the working
 # directory the API is launched from (env_file="..." is otherwise CWD-relative).
-ENV_FILE = Path(__file__).resolve().parents[4] / ".env"
+# In the Docker image the app sits at /app/app/core/config.py, which has no repo
+# root above it; there, configuration comes from the environment only.
+_PARENTS = Path(__file__).resolve().parents
+ENV_FILE = _PARENTS[4] / ".env" if len(_PARENTS) > 4 else None
 
 
 class Settings(BaseSettings):
@@ -29,14 +32,67 @@ class Settings(BaseSettings):
     # An ingest request authenticated with a known key is stamped with that
     # project; unknown/absent keys fall back to the client-provided project.
     project_api_keys: dict[str, str] = Field(default_factory=dict)
-    # Whether writes (traces, eval runs, grading) require a valid key from
-    # project_api_keys (else 401). Unset = required in staging/production, optional
-    # in development/testing (see core/tenancy.api_key_required). Reads (the
-    # dashboard) aren't gated yet — that comes with real user login.
+    # Keys that may read every project and write to any (the dashboard server
+    # uses one). JSON list: TRACEROAI_ADMIN_API_KEYS='["<long random key>"]'.
+    admin_api_keys: list[str] = Field(default_factory=list)
+    # Projects that callers without a key may read when keys are required, e.g.
+    # a public demo: TRACEROAI_PUBLIC_READ_PROJECTS='["playground"]'.
+    public_read_projects: list[str] = Field(default_factory=list)
+    # Whether requests must carry a valid key. Unset = required in
+    # staging/production, optional in development/testing (see
+    # core/tenancy.api_key_required). When required, writes without a key get a
+    # 401 and reads without a key see only public_read_projects.
     require_api_key: bool | None = None
     # Extra browser origins allowed by CORS (the deployed frontend URL).
     # JSON list, e.g. TRACEROAI_CORS_ORIGINS='["https://traceroai.vercel.app"]'.
     cors_origins: list[str] = Field(default_factory=list)
+    # Largest request body the API accepts, in bytes (413 above it). One trace
+    # with dozens of full-text chunks fits comfortably in the default.
+    max_request_bytes: int = Field(default=1_000_000, gt=0)
+    # Database connection pool per process. Requests hold a connection only for
+    # their queries (evaluation never holds one across LLM calls), so the
+    # defaults serve far more concurrent requests than their sum.
+    db_pool_size: int = Field(default=5, ge=1)
+    db_max_overflow: int = Field(default=10, ge=0)
+    db_pool_timeout_seconds: float = Field(default=10.0, gt=0)
+    # Give up opening a database connection after this many seconds (libpq's
+    # minimum is 2).
+    db_connect_timeout_seconds: int = Field(default=5, ge=2)
+    # Threads for in-process deep evaluation when Redis is unavailable.
+    fallback_eval_workers: int = Field(default=2, ge=1)
+    # How many reverse proxies in front of the API append to X-Forwarded-For
+    # (e.g. 1 behind Render or a single nginx). 0 = no proxy: use the socket
+    # address. Used to tell anonymous callers apart for rate limits.
+    trusted_proxy_count: int = Field(default=0, ge=0)
+    # The public "try it" endpoint (POST /v1/playground). It writes a trace and,
+    # with a judge configured, makes three LLM calls per request, without a key.
+    playground_enabled: bool = False
+    # Deep-eval worker (python -m app.worker).
+    # Jobs processed in parallel by one worker process.
+    worker_concurrency: int = Field(default=1, ge=1)
+    # How long a job may run before another worker takes it over. Must exceed
+    # the slowest job: three judge calls of up to 60 s, each retried twice by
+    # the provider client, plus embeddings.
+    worker_visibility_timeout_seconds: int = Field(default=600, ge=30)
+    # A trace still "pending" this long after ingest, with nothing left in the
+    # queue, lost its job (process restart, queue trimmed) and is queued again.
+    stalled_evaluation_seconds: int = Field(default=900, ge=60)
+    # Port for the worker's Prometheus metrics (http://host:port/metrics); unset
+    # = no metrics server. The API serves its own at /metrics.
+    worker_metrics_port: int | None = None
+    # Per key (per address without a key), per minute.
+    ingest_rate_limit_per_minute: int = Field(default=1200, ge=1)
+    grade_rate_limit_per_minute: int = Field(default=120, ge=1)
+    # Delete traces older than this many days (the worker checks hourly; or run
+    # python -m app.retention). Unset = keep traces forever.
+    trace_retention_days: int | None = Field(default=None, ge=1)
+    # Feedback entries kept per trace; further feedback gets a 409.
+    max_feedback_per_trace: int = Field(default=100, ge=1)
+    # An empty environment variable is a real value and overrides .env: running
+    # with TRACEROAI_OPENAI_API_KEY= or TRACEROAI_REDIS_URL= switches that service
+    # off even when .env (which may point at production) sets it. The JSON
+    # settings therefore need valid JSON ({} or []), never an empty string;
+    # infra/docker-compose.yml defaults them that way.
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore")
 
     @field_validator("judge_base_url", mode="before")

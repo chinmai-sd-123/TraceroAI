@@ -1,8 +1,22 @@
 import {
   type ExperimentEvalRun,
   type RegressionEvalRun,
-} from "./mock-eval-runs";
-import { type MockTrace, type TraceDiagnosis } from "./mock-traces";
+} from "./eval-run-types";
+import {
+  type DeepStatus,
+  type DiagnosisSource,
+  type Trace,
+  type TraceDiagnosis,
+} from "./trace-types";
+
+const DIAGNOSIS_SOURCES: readonly DiagnosisSource[] = ["lexical", "embedding", "judge"];
+const DEEP_STATUSES: readonly DeepStatus[] = ["pending", "complete", "partial", "failed", "skipped"];
+
+// A known value from the API, or undefined (older traces, or a value this build
+// doesn't know yet).
+function oneOf<T extends string>(value: string | null | undefined, known: readonly T[]) {
+  return known.includes(value as T) ? (value as T) : undefined;
+}
 
 type ApiTrace = {
   trace_id: string;
@@ -78,10 +92,12 @@ type ApiTrace = {
         claims?: Array<{ claim: string; supported: boolean; reason: string }>;
       };
     }>;
+    deep_status?: string | null;
   };
   diagnosis: {
     label: TraceDiagnosis | string;
     reason?: string | null;
+    source?: string | null;
   };
   feedback?: Array<{
     rating: string;
@@ -121,6 +137,7 @@ export type ApiEvalRun = {
     passed?: boolean | null;
   }>;
   cases: Array<{
+    variant_id?: string | null; // set on experiment cases
     case_id: string;
     question: string;
     expected_answer?: string | null;
@@ -146,25 +163,287 @@ export type ApiEvalRun = {
   }>;
 };
 
+// Server rendering may reach the API on an internal address the browser can't
+// (http://api:8000 in Docker Compose), so the server prefers TRACEROAI_API_URL.
+// That variable is never sent to the browser; browser code uses the public URL.
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_TRACEROAI_API_URL || "http://127.0.0.1:8000";
+  (typeof window === "undefined" ? process.env.TRACEROAI_API_URL : undefined) ||
+  process.env.NEXT_PUBLIC_TRACEROAI_API_URL ||
+  "http://127.0.0.1:8000";
 
-export async function getTraces(projectId?: string): Promise<MockTrace[]> {
-  const url = projectId
-    ? `${API_BASE_URL}/v1/traces?project_id=${encodeURIComponent(projectId)}`
-    : `${API_BASE_URL}/v1/traces`;
+// The dashboard reads the API with TRACEROAI_API_KEY, from the server only: the
+// variable isn't NEXT_PUBLIC_, so Next.js never puts it in browser code. Use an
+// admin key to see every project, or a project key to show just one.
+function serverHeaders(): Record<string, string> {
+  const key =
+    typeof window === "undefined" ? process.env.TRACEROAI_API_KEY : undefined;
+  return key ? { Authorization: `Bearer ${key}` } : {};
+}
+
+export type ApiStatus = "ok" | "unreachable" | "unauthorized" | "degraded";
+
+/**
+ * Whether the dashboard can trust what it shows. Every data fetcher falls back
+ * to an empty result on failure, so without this an unreachable API, a wrong
+ * key and an empty project all look the same.
+ */
+export async function getApiStatus(): Promise<ApiStatus> {
   try {
-    const response = await fetch(url, { cache: "no-store" });
+    const ready = await fetch(`${API_BASE_URL}/health/ready`, { cache: "no-store" });
+    if (ready.status === 503) return "degraded";
+    const probe = await fetch(`${API_BASE_URL}/v1/traces?limit=1`, {
+      cache: "no-store",
+      headers: serverHeaders(),
+    });
+    if (probe.status === 401 || probe.status === 403) return "unauthorized";
+    return probe.ok ? "ok" : "degraded";
+  } catch {
+    return "unreachable";
+  }
+}
+
+export type FeedbackRating = "thumbs_up" | "thumbs_down";
+
+/** Server-side: record feedback on a trace with the dashboard's key. */
+export async function postFeedback(
+  traceId: string,
+  rating: FeedbackRating,
+  comment: string | null,
+): Promise<{ ok: true } | { ok: false; status: number }> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/traces/${encodeURIComponent(traceId)}/feedback`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...serverHeaders() },
+        body: JSON.stringify({ rating, comment }),
+        cache: "no-store",
+      },
+    );
+    return response.ok ? { ok: true } : { ok: false, status: response.status };
+  } catch {
+    return { ok: false, status: 0 };
+  }
+}
+
+export type TraceQuery = {
+  projectId?: string;
+  limit?: number;
+  cursor?: string;
+  diagnosis?: string;
+  q?: string;
+  since?: string;
+  model?: string;
+  environment?: string;
+  recoveryRunId?: string;
+  sort?: TraceSort;
+};
+
+export type TraceSort = "newest" | "oldest" | "slowest";
+
+export type TracePage = { traces: Trace[]; nextCursor: string | null };
+
+/** One page of traces, filtered and sorted on the server (newest first by default). */
+export async function getTraces(query: TraceQuery = {}): Promise<TracePage> {
+  const params = new URLSearchParams();
+  if (query.projectId) params.set("project_id", query.projectId);
+  if (query.limit) params.set("limit", String(query.limit));
+  if (query.cursor) params.set("cursor", query.cursor);
+  if (query.diagnosis) params.set("diagnosis", query.diagnosis);
+  if (query.q) params.set("q", query.q);
+  if (query.since) params.set("since", query.since);
+  if (query.model) params.set("model", query.model);
+  if (query.environment) params.set("environment", query.environment);
+  if (query.recoveryRunId) params.set("recovery_run_id", query.recoveryRunId);
+  if (query.sort && query.sort !== "newest") params.set("sort", query.sort);
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/traces?${params}`, {
+      cache: "no-store",
+      headers: serverHeaders(),
+    });
 
     if (!response.ok) {
-      return [];
+      return { traces: [], nextCursor: null };
     }
 
     const traces = (await response.json()) as ApiTrace[];
-    return traces.map(mapApiTraceToUiTrace);
+    return {
+      traces: traces.map(mapApiTraceToUiTrace),
+      nextCursor: response.headers.get("X-Next-Cursor"),
+    };
   } catch {
     // No fabricated data — an unreachable API shows an honest empty state.
-    return [];
+    return { traces: [], nextCursor: null };
+  }
+}
+
+export type TraceSummary = {
+  total: number;
+  healthy: number;
+  byDiagnosis: Record<string, number>;
+  bySource: Record<string, number>;
+  byModel: Record<string, number>;
+  byEnvironment: Record<string, number>;
+  latencyMs: { measured: number; avg: number | null; p50: number | null; p95: number | null };
+  costUsd: { priced: number; total: number | null; avg: number | null };
+};
+
+/** The time ranges the dashboard offers. "all" has no lower bound. */
+export const TIME_RANGES = {
+  "24h": { label: "Last 24 hours", hours: 24 },
+  "7d": { label: "Last 7 days", hours: 24 * 7 },
+  "30d": { label: "Last 30 days", hours: 24 * 30 },
+  all: { label: "All time", hours: null },
+} as const;
+export type TimeRange = keyof typeof TIME_RANGES;
+
+export function parseRange(value: string | undefined, fallback: TimeRange = "7d"): TimeRange {
+  return value && value in TIME_RANGES ? (value as TimeRange) : fallback;
+}
+
+/** ISO start of a range, or undefined for "all". */
+export function rangeSince(range: TimeRange): string | undefined {
+  const hours = TIME_RANGES[range].hours;
+  return hours === null ? undefined : new Date(Date.now() - hours * 3_600_000).toISOString();
+}
+
+export type TimeBucket = { start: string; total: number; healthy: number; p95Ms: number | null };
+
+/** Traces, healthy traces and p95 latency per hour (24h) or day (longer). */
+export async function getTimeseries(
+  projectId: string | undefined,
+  range: TimeRange,
+): Promise<{ bucket: "hour" | "day"; buckets: TimeBucket[] } | null> {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  // "All time" charts the last 90 days by day; older history isn't useful as a trend.
+  const since = rangeSince(range) ?? new Date(Date.now() - 90 * 86_400_000).toISOString();
+  params.set("since", since);
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/metrics/timeseries?${params}`, {
+      cache: "no-store",
+      headers: serverHeaders(),
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      bucket: "hour" | "day";
+      buckets: Array<{ start: string; total: number; healthy: number; p95_ms: number | null }>;
+    };
+    return {
+      bucket: data.bucket,
+      buckets: data.buckets.map((b) => ({
+        start: b.start,
+        total: b.total,
+        healthy: b.healthy,
+        p95Ms: b.p95_ms,
+      })),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export type RecoveryRun = {
+  runId: string;
+  question: string;
+  attempts: number;
+  traceIds: string[];
+  diagnoses: Array<string | null>; // one per attempt, in order
+  firstDiagnosis: string | null;
+  finalDiagnosis: string | null;
+  actions: Array<string | null>; // the lever pulled before each attempt (null on the first)
+  topK: Array<number | null>;
+  startedAt: string;
+  endedAt: string;
+};
+
+/** RecoveryAgent runs, most recently active first, grouped by the API. */
+export async function getRecoveryRuns(
+  projectId: string | undefined,
+  options: { range?: TimeRange; limit?: number } = {},
+): Promise<RecoveryRun[] | null> {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  const since = options.range ? rangeSince(options.range) : undefined;
+  if (since) params.set("since", since);
+  params.set("limit", String(options.limit ?? 50));
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/recovery-runs?${params}`, {
+      cache: "no-store",
+      headers: serverHeaders(),
+    });
+    if (!response.ok) return null;
+    const runs = (await response.json()) as Array<{
+      run_id: string;
+      question: string;
+      attempts: number;
+      trace_ids: string[];
+      diagnoses: Array<string | null>;
+      first_diagnosis: string | null;
+      final_diagnosis: string | null;
+      actions: Array<string | null>;
+      top_k: Array<number | null>;
+      started_at: string;
+      ended_at: string;
+    }>;
+    return runs.map((r) => ({
+      runId: r.run_id,
+      question: r.question,
+      attempts: r.attempts,
+      traceIds: r.trace_ids,
+      diagnoses: r.diagnoses,
+      firstDiagnosis: r.first_diagnosis,
+      finalDiagnosis: r.final_diagnosis,
+      actions: r.actions,
+      topK: r.top_k,
+      startedAt: r.started_at,
+      endedAt: r.ended_at,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+/** Headline numbers over every trace in scope, computed by the API in SQL. */
+export async function getSummary(
+  projectId?: string,
+  range: TimeRange = "all",
+  filters: { model?: string; environment?: string } = {},
+): Promise<TraceSummary | null> {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  const since = rangeSince(range);
+  if (since) params.set("since", since);
+  if (filters.model) params.set("model", filters.model);
+  if (filters.environment) params.set("environment", filters.environment);
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/metrics/summary?${params}`, {
+      cache: "no-store",
+      headers: serverHeaders(),
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      total: number;
+      healthy: number;
+      by_diagnosis: Record<string, number>;
+      by_source: Record<string, number>;
+      by_model?: Record<string, number>;
+      by_environment?: Record<string, number>;
+      latency_ms: TraceSummary["latencyMs"];
+      cost_usd: TraceSummary["costUsd"];
+    };
+    return {
+      total: data.total,
+      healthy: data.healthy,
+      byDiagnosis: data.by_diagnosis,
+      bySource: data.by_source,
+      byModel: data.by_model ?? {},
+      byEnvironment: data.by_environment ?? {},
+      latencyMs: data.latency_ms,
+      costUsd: data.cost_usd,
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -179,6 +458,8 @@ export type PlaygroundResult = {
 };
 
 export class PlaygroundError extends Error {
+  // True when the message is meant for the visitor as-is (rate limited, or the
+  // playground is switched off); otherwise the UI shows a generic message.
   rateLimited: boolean;
   constructor(message: string, rateLimited = false) {
     super(message);
@@ -205,6 +486,10 @@ export async function tryPlayground(question: string): Promise<PlaygroundResult>
     }
     throw new PlaygroundError(detail, true);
   }
+  if (response.status === 404) {
+    // Servers keep the playground off unless TRACEROAI_PLAYGROUND_ENABLED is set.
+    throw new PlaygroundError("The live playground isn't enabled on this server.", true);
+  }
   if (!response.ok) {
     throw new PlaygroundError(`Playground request failed (${response.status})`);
   }
@@ -215,6 +500,7 @@ export async function getProjects(): Promise<string[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/traces/projects`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
     if (!response.ok) {
       return [];
@@ -229,6 +515,7 @@ export async function getEvalRunProjects(): Promise<string[]> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/eval-runs/projects`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
     if (!response.ok) {
       return [];
@@ -248,6 +535,7 @@ export async function getJobStats(): Promise<JobStats> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/jobs/stats`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
 
     if (!response.ok) {
@@ -267,19 +555,25 @@ export async function getJobStats(): Promise<JobStats> {
   }
 }
 
-export async function getTrace(traceId: string): Promise<MockTrace | null> {
+export async function getTrace(traceId: string): Promise<Trace | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/v1/traces/${traceId}`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
 
     if (!response.ok) {
+      if (response.status !== 404) {
+        console.error(`getTrace(${traceId}): the API answered ${response.status}`);
+      }
       return null;
     }
 
     const trace = (await response.json()) as ApiTrace;
     return mapApiTraceToUiTrace(trace);
-  } catch {
+  } catch (error) {
+    // The page shows "not found"; the server log says why.
+    console.error(`getTrace(${traceId}) failed:`, error);
     return null;
   }
 }
@@ -294,6 +588,7 @@ export async function getEvalRuns(projectId?: string): Promise<{
   try {
     const response = await fetch(url, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
 
     if (!response.ok) {
@@ -319,6 +614,7 @@ export async function getEvalRun(evalRunId: string): Promise<ApiEvalRun | null> 
   try {
     const response = await fetch(`${API_BASE_URL}/v1/eval-runs/${evalRunId}`, {
       cache: "no-store",
+      headers: serverHeaders(),
     });
 
     if (!response.ok) {
@@ -332,7 +628,7 @@ export async function getEvalRun(evalRunId: string): Promise<ApiEvalRun | null> 
 }
 
 
-function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
+function mapApiTraceToUiTrace(trace: ApiTrace): Trace {
   const groundedness = findEval(trace, "groundedness");
   const contextRelevance = findEval(trace, "context_relevance");
   const answerRelevance = findEval(trace, "answer_relevance");
@@ -370,10 +666,11 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
       chunks: trace.retrieval.chunks.map((chunk) => ({
         rank: chunk.rank,
         chunkId: chunk.chunk_id,
-        documentTitle: chunk.document_title || "Untitled document",
-        section: chunk.section || "Unknown section",
-        source: chunk.source || "unknown",
-        score: chunk.final_score ?? 0,
+        // Leave unknowns empty rather than inventing labels or a 0 score.
+        documentTitle: chunk.document_title || chunk.source || chunk.chunk_id,
+        section: chunk.section || "",
+        source: chunk.source || "",
+        score: chunk.final_score ?? null,
         rrfScore: chunk.rrf_score ?? undefined,
         lexicalRank: chunk.lexical_rank ?? undefined,
         denseRank: chunk.dense_rank ?? undefined,
@@ -466,12 +763,19 @@ function mapApiTraceToUiTrace(trace: ApiTrace): MockTrace {
               typeof trace.metadata?.recovery_action === "string"
                 ? trace.metadata.recovery_action
                 : undefined,
+            runId:
+              typeof trace.metadata?.recovery_run_id === "string"
+                ? trace.metadata.recovery_run_id
+                : undefined,
+            topK: typeof trace.metadata?.top_k === "number" ? trace.metadata.top_k : undefined,
           }
         : undefined,
     diagnosis: {
       label: normalizeDiagnosis(trace.diagnosis.label),
       reason: trace.diagnosis.reason || "No diagnosis available.",
+      source: oneOf(trace.diagnosis.source, DIAGNOSIS_SOURCES),
     },
+    deepStatus: oneOf(trace.evaluations.deep_status, DEEP_STATUSES),
     feedback: (trace.feedback ?? []).map((item) => ({
       rating: item.rating,
       comment: item.comment ?? undefined,
@@ -561,12 +865,19 @@ function mapApiEvalRunToExperimentRun(run: ApiEvalRun): ExperimentEvalRun {
     (a, b) => b.healthyRate - a.healthyRate || a.avgLatencyMs - b.avgLatencyMs,
   )[0];
 
+  // What the experiment compared: the config keys whose values differ between
+  // variants (bookkeeping keys aside).
+  const configs = run.variants.map((v) => v.config ?? {});
+  const compared = [...new Set(configs.flatMap((c) => Object.keys(c)))].filter(
+    (key) => key !== "ungradeable_cases" && new Set(configs.map((c) => JSON.stringify(c[key]))).size > 1,
+  );
+
   return {
     id: run.eval_run_id,
     type: "experiment",
     timestamp: run.timestamp,
-    experimentName: run.pipeline.pipeline_version,
-    comparedParameter: "Variant",
+    experimentName: run.dataset.name || run.pipeline.pipeline_version,
+    comparedParameter: compared.join(", ") || "variant",
     values,
     recommendation: {
       value: winner?.value ?? "review",

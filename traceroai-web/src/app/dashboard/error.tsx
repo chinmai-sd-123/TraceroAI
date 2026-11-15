@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { AlertIcon } from "@/components/icons";
+import { PageFrame } from "./ui";
+
 export default function DashboardError({
   error,
   reset,
@@ -11,39 +14,35 @@ export default function DashboardError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Surface the error for debugging; in production this is where a real
-    // error reporter (Sentry, etc.) would hook in.
+    // Surface the error for debugging; an error reporter would hook in here.
     console.error(error);
   }, [error]);
 
   return (
-    <section className="flex min-h-[50vh] flex-col items-center justify-center text-center">
-      <p className="text-sm font-medium uppercase tracking-[0.18em] text-amber-300">
-        Something went wrong
-      </p>
-      <h1 className="mt-3 text-3xl font-semibold">Couldn’t load this page</h1>
-      <p className="mt-3 max-w-md text-sm leading-6 text-zinc-400">
-        An unexpected error occurred while rendering the dashboard. This is often
-        a transient API hiccup — try again.
-      </p>
-      {error.digest && (
-        <p className="mt-2 font-mono text-xs text-zinc-600">ref: {error.digest}</p>
-      )}
-      <div className="mt-6 flex gap-3">
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-md bg-cyan-300 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-200"
-        >
-          Try again
-        </button>
-        <Link
-          href="/dashboard"
-          className="rounded-md border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-zinc-100"
-        >
-          Back to overview
-        </Link>
+    <PageFrame>
+      <div role="alert" className="mx-auto mt-10 max-w-lg rounded border border-warn/40 bg-warn-soft px-6 py-6">
+        <h1 className="flex items-center gap-2 text-lg font-semibold">
+          <AlertIcon className="text-warn" />
+          This page couldn&apos;t load
+        </h1>
+        <p className="mt-2 text-sm leading-6">
+          Something failed while reading from the API. It is often a passing problem, so try again; if it
+          keeps happening, check the API&apos;s logs.
+        </p>
+        {error.digest && <p className="mt-2 font-dash-mono text-xs text-ink-muted">Reference {error.digest}</p>}
+        <div className="mt-5 flex gap-2">
+          <button
+            type="button"
+            onClick={reset}
+            className="rounded bg-accent px-3.5 py-1.5 text-sm font-medium text-white hover:bg-accent/90"
+          >
+            Try again
+          </button>
+          <Link href="/dashboard" className="rounded border border-line-strong bg-surface px-3.5 py-1.5 text-sm font-medium hover:bg-sunken">
+            Go to the overview
+          </Link>
+        </div>
       </div>
-    </section>
+    </PageFrame>
   );
 }

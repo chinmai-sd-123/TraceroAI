@@ -1,6 +1,6 @@
 import re
 
-from app.schemas.traces import EvaluationResult, TraceIngestRequest
+from app.schemas.traces import EvaluationResult, Trace
 
 
 EVALUATOR_NAME = "groundedness"
@@ -44,7 +44,7 @@ STOPWORDS = {
 }
 
 
-def evaluate_groundedness(trace: TraceIngestRequest) -> EvaluationResult:
+def evaluate_groundedness(trace: Trace) -> EvaluationResult:
     answer_terms = extract_terms(trace.generation.answer)
     context = " ".join(chunk.text for chunk in trace.retrieval.chunks)
     context_terms = extract_terms(context)
