@@ -163,7 +163,7 @@ jobs:
         run: $COMPOSE down -v
 
   web:
-    name: Web typecheck, lint and build
+    name: Web typecheck, lint, build and smoke test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -180,5 +180,9 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm run build
+      - name: Browser smoke test (public pages, dashboard with the API down)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e
       - name: Known vulnerabilities (shipped dependencies)
         run: npm audit --omit=dev --audit-level=high
