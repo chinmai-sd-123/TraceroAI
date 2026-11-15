@@ -1,25 +1,25 @@
-import { SkeletonBlock, SkeletonCard, SkeletonPanel } from "./skeleton";
+import { SkeletonBlock, SkeletonPage, SkeletonPanel } from "./skeleton";
 
 export default function DashboardLoading() {
   return (
-    <section>
-      <SkeletonBlock className="h-3 w-24" />
-      <SkeletonBlock className="mt-3 h-8 w-72" />
-      <SkeletonBlock className="mt-3 h-4 w-full max-w-2xl" />
-
-      <div className="mt-8 grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <SkeletonCard key={i} />
+    <SkeletonPage>
+      <div className="grid grid-cols-2 rounded border border-line sm:grid-cols-4" aria-hidden="true">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="border-line px-5 py-4 sm:[&:not(:first-child)]:border-l">
+            <SkeletonBlock className="h-3.5 w-16" />
+            <SkeletonBlock className="mt-2 h-7 w-20" />
+            <SkeletonBlock className="mt-3 h-7 w-full" />
+          </div>
         ))}
       </div>
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_1fr]">
-        <SkeletonPanel rows={5} />
-        <div className="space-y-6">
-          <SkeletonPanel rows={2} />
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-8">
+          <SkeletonPanel rows={4} />
+        </div>
+        <div className="lg:col-span-4">
           <SkeletonPanel rows={4} />
         </div>
       </div>
-    </section>
+    </SkeletonPage>
   );
 }

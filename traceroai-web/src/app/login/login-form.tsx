@@ -10,10 +10,10 @@ export function LoginForm({ next }: { next: string }) {
   });
 
   return (
-    <form action={action} className="mt-6 space-y-4">
+    <form action={action} className="mt-5 space-y-4">
       <input type="hidden" name="next" value={next} />
       <div>
-        <label htmlFor="password" className="block text-sm text-zinc-400">
+        <label htmlFor="password" className="block text-sm font-medium">
           Password
         </label>
         <input
@@ -23,20 +23,22 @@ export function LoginForm({ next }: { next: string }) {
           autoComplete="current-password"
           required
           autoFocus
-          className="mt-2 w-full rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 focus:border-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+          aria-invalid={state.error ? true : undefined}
+          aria-describedby={state.error ? "password-error" : undefined}
+          className="mt-1.5 w-full rounded border border-line-strong bg-surface px-3 py-2 text-sm focus:outline-2 focus:outline-accent"
         />
       </div>
       {state.error && (
-        <p role="alert" className="text-sm text-red-400">
+        <p id="password-error" role="alert" className="text-sm text-warn">
           {state.error}
         </p>
       )}
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-cyan-300 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-200 disabled:opacity-50"
+        className="w-full rounded bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Checking…" : "Open dashboard"}
+        {pending ? "Checking…" : "Open the dashboard"}
       </button>
     </form>
   );

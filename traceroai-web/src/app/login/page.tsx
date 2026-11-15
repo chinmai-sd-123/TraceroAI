@@ -21,10 +21,11 @@ export default async function LoginPage({
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#050505] px-4 text-zinc-100">
-      <div className="w-full max-w-sm rounded-lg border border-zinc-800 bg-zinc-900/60 p-6">
-        <h1 className="text-lg font-semibold">TraceroAI dashboard</h1>
-        <p className="mt-1 text-sm text-zinc-500">Enter the dashboard password.</p>
+    <main className="flex min-h-screen items-center justify-center bg-rail px-4">
+      <div className="w-full max-w-sm rounded border border-line-strong bg-surface p-6">
+        <p className="text-[15px] font-bold tracking-[-0.01em]">TraceroAI</p>
+        <h1 className="mt-4 text-lg font-semibold">Sign in to the dashboard</h1>
+        <p className="mt-1 text-sm text-ink-muted">This dashboard is protected by a shared password.</p>
         <LoginForm next={next} />
       </div>
     </main>

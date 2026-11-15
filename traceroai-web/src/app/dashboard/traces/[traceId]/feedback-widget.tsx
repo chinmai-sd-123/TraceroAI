@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import type { FeedbackRating as Rating } from "@/lib/api";
 
+import { ThumbDownIcon, ThumbUpIcon } from "@/components/icons";
 import { submitFeedback } from "./actions";
 
 export function FeedbackWidget({ traceId }: { traceId: string }) {
@@ -11,14 +12,16 @@ export function FeedbackWidget({ traceId }: { traceId: string }) {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   async function submit() {
     if (!rating) {
-      setError("Pick 👍 or 👎 first.");
+      setError("Choose Helpful or Not helpful first.");
       return;
     }
     setSubmitting(true);
     setError(null);
+    setSaved(false);
     try {
       const result = await submitFeedback(traceId, rating, comment);
       if (!result.ok) {
@@ -26,9 +29,10 @@ export function FeedbackWidget({ traceId }: { traceId: string }) {
         return;
       }
       setRating(null);
-      setComment(""); // the action refreshes the page, which shows the new entry
+      setComment(""); // the action refreshes the page, which lists the new entry
+      setSaved(true);
     } catch {
-      setError("Couldn't submit feedback. Try again.");
+      setError("Couldn't save the feedback. Try again.");
     } finally {
       setSubmitting(false);
     }
@@ -36,38 +40,51 @@ export function FeedbackWidget({ traceId }: { traceId: string }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
-        <RatingButton
-          active={rating === "thumbs_up"}
-          onClick={() => setRating("thumbs_up")}
-        >
-          👍 Helpful
-        </RatingButton>
-        <RatingButton
-          active={rating === "thumbs_down"}
-          onClick={() => setRating("thumbs_down")}
-        >
-          👎 Not helpful
-        </RatingButton>
+      <fieldset>
+        <legend className="sr-only">Rating</legend>
+        <div className="flex gap-2">
+          <RatingButton active={rating === "thumbs_up"} onClick={() => setRating("thumbs_up")}>
+            <ThumbUpIcon className={rating === "thumbs_up" ? "text-pass" : "text-ink-muted"} /> Helpful
+          </RatingButton>
+          <RatingButton active={rating === "thumbs_down"} onClick={() => setRating("thumbs_down")}>
+            <ThumbDownIcon className="text-ink-muted" /> Not helpful
+          </RatingButton>
+        </div>
+      </fieldset>
+
+      <div>
+        <label htmlFor="feedback-comment" className="mb-1 block text-sm text-ink-muted">
+          Note (optional)
+        </label>
+        <textarea
+          id="feedback-comment"
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
+          placeholder="What was wrong, or what should it have said?"
+          rows={3}
+          maxLength={2000}
+          className="w-full rounded border border-line-strong bg-surface px-3 py-2 text-sm placeholder:text-ink-faint focus:outline-2 focus:outline-accent"
+        />
       </div>
 
-      <textarea
-        value={comment}
-        onChange={(event) => setComment(event.target.value)}
-        placeholder="Optional comment…"
-        rows={2}
-        className="w-full rounded-md border border-zinc-800 bg-zinc-950/60 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-600 focus:outline-none"
-      />
-
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-warn">
+          {error}
+        </p>
+      )}
+      {saved && !error && (
+        <p role="status" className="text-sm text-pass">
+          Feedback saved.
+        </p>
+      )}
 
       <button
         type="button"
         onClick={submit}
         disabled={submitting}
-        className="rounded-md bg-cyan-300 px-4 py-2 text-sm font-semibold text-zinc-950 transition hover:bg-cyan-200 disabled:opacity-50"
+        className="rounded bg-accent px-3.5 py-1.5 text-sm font-medium text-white hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitting ? "Submitting…" : "Submit feedback"}
+        {submitting ? "Saving…" : "Save feedback"}
       </button>
     </div>
   );
@@ -86,10 +103,11 @@ function RatingButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-md border px-3 py-2 text-sm font-medium transition ${
+      aria-pressed={active}
+      className={`inline-flex items-center gap-2 rounded border px-3 py-1.5 text-sm ${
         active
-          ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-200"
-          : "border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-700"
+          ? "border-accent bg-accent-soft font-medium text-accent"
+          : "border-line-strong bg-surface text-ink hover:bg-sunken"
       }`}
     >
       {children}

@@ -1,5 +1,7 @@
 import type { ApiStatus } from "@/lib/api";
 
+import { AlertIcon } from "@/components/icons";
+
 // Shown above every dashboard page when the data below can't be trusted.
 // Deliberately doesn't print the API address: it may be an internal host.
 const MESSAGES: Record<Exclude<ApiStatus, "ok">, { title: string; body: string }> = {
@@ -21,12 +23,12 @@ export function ApiStatusBanner({ status }: { status: ApiStatus }) {
   if (status === "ok") return null;
   const message = MESSAGES[status];
   return (
-    <div
-      role="alert"
-      className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm"
-    >
-      <p className="font-medium text-amber-200">{message.title}</p>
-      <p className="mt-1 text-amber-200/80">{message.body}</p>
+    <div role="alert" className="flex gap-3 border-b border-warn/30 bg-warn-soft px-4 py-3 text-sm sm:px-8">
+      <AlertIcon className="mt-0.5 shrink-0 text-warn" />
+      <div>
+        <p className="font-semibold text-warn">{message.title}</p>
+        <p className="mt-0.5 text-ink">{message.body}</p>
+      </div>
     </div>
   );
 }
