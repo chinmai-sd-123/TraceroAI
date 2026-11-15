@@ -2,7 +2,7 @@
 #   api:     uvicorn app.main:app   (the default below)
 #   worker:  python -m app.worker
 #   migrate: python -m app.db.init_db
-FROM python:3.14-slim
+FROM python:3.15-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
