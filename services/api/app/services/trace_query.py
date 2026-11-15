@@ -17,7 +17,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import Float, Integer, cast, func, select, tuple_
+from sqlalchemy import Integer, cast, func, select, tuple_
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Session
 
@@ -192,7 +192,7 @@ def summary(db: Session, filters: TraceFilters) -> dict:
             .group_by(TraceRecord.diagnosis_label)
         ).all()
     }
-    source = TraceRecord.payload["diagnosis"]["source"].astext
+    source = TraceRecord.diagnosis_source
     by_source = {
         (key or "unknown"): count
         for key, count in db.execute(
@@ -227,7 +227,7 @@ def summary(db: Session, filters: TraceFilters) -> dict:
         ).where(*where)
     ).one()
 
-    cost_value = cast(TraceRecord.payload["generation"]["usage"]["cost_usd"].astext, Float)
+    cost_value = TraceRecord.cost_usd
     priced = cost_value > 0
     cost = db.execute(
         select(
