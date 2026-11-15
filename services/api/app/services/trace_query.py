@@ -236,6 +236,8 @@ def summary(db: Session, filters: TraceFilters) -> dict:
         ).where(*where)
     ).one()
 
+    priced_count, cost_total = cost[0], cost[1]  # the sum is NULL when nothing is priced
+
     total = sum(by_diagnosis.values())
     healthy = sum(by_diagnosis.get(label, 0) for label in HEALTHY_LABELS)
     return {
@@ -252,9 +254,9 @@ def summary(db: Session, filters: TraceFilters) -> dict:
             "p95": _round(latency[3]),
         },
         "cost_usd": {
-            "priced": cost[0],
-            "total": cost[1],
-            "avg": (cost[1] / cost[0]) if cost[0] else None,
+            "priced": priced_count,
+            "total": cost_total,
+            "avg": (cost_total / priced_count) if priced_count and cost_total is not None else None,
         },
     }
 
