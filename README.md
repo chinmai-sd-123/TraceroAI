@@ -2,10 +2,11 @@
 
 # TraceroAI
 
-**RAG observability, evaluation, and debugging — built like production infrastructure.**
+**Find the step that broke your RAG pipeline, and see the evidence.**
 
-When a RAG answer is wrong, TraceroAI shows *why*: whether the failure came from
-retrieval, the context, grounding, or the generated answer.
+When an answer is wrong, TraceroAI names the step that caused it (retrieval, grounding or
+the answer itself), shows why, and says whether an LLM judge or a cheaper estimate made
+the call. Open source, self-hosted, Postgres and one command.
 
 [![PyPI](https://img.shields.io/pypi/v/traceroai?color=06b6d4&label=pip%20install%20traceroai)](https://pypi.org/project/traceroai/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776ab)](https://www.python.org/)
@@ -18,24 +19,30 @@ retrieval, the context, grounding, or the generated answer.
 
 </div>
 
-![TraceroAI — debug RAG failures before they reach users](docs/media/landing-hero.png)
+![TraceroAI: the trace page for a failed answer, with the probable cause marked](docs/media/landing-hero.png)
 
 ---
 
 ## The problem
 
-A bad RAG answer is only a *symptom*. The real cause could be anywhere in the pipeline:
+A bad answer is a symptom. The cause could be anywhere in the pipeline:
 
 ```
 user query → retrieval → context selection → prompt → generation → answer
 ```
 
-Teams ship RAG systems with almost no visibility into *which stage* failed. Was the
-right document never retrieved? Was it retrieved but ignored? Did the model
-hallucinate beyond its context? "The answer is wrong" doesn't tell you where to look.
+Tracing tools record every step and leave you to find the broken one. Was the right
+document never retrieved? Retrieved but ignored? Did the model claim something its
+context doesn't say? "The answer is wrong" doesn't tell you where to look.
 
-**TraceroAI traces every RAG answer and diagnoses the failure stage**, so debugging
-becomes a lookup instead of a guess.
+**TraceroAI diagnoses every trace**: one named cause, tied to the step that failed, with
+the evidence and a note of who decided. Debugging becomes a lookup instead of a guess.
+
+Today that covers RAG pipelines instrumented with the Python SDK. Agents (tool calls,
+multi-step runs) and traces sent over OpenTelemetry are in development; see
+[the positioning decision](docs/adr/0001-failure-diagnosis-positioning.md) and
+[how traces will hold steps](docs/adr/0002-traces-made-of-steps.md). The words used
+throughout are defined in the [glossary](GLOSSARY.md).
 
 ## Demo
 
