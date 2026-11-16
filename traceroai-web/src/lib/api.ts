@@ -156,6 +156,11 @@ export type ApiEvalRun = {
     passed_cases: number;
     failed_cases: number;
     average_latency_ms?: number | null;
+    // Token totals the SDK reported, priced by the server.
+    model?: string | null;
+    prompt_tokens?: number | null;
+    completion_tokens?: number | null;
+    cost_usd?: number | null;
     metrics: Array<{
       metric_name: string;
       score?: number | null;

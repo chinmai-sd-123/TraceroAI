@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.core.tenancy import ReadScope, read_scope, write_project
 from app.db.session import get_db
 from app.schemas.eval_runs import EvalRunIngestRequest, EvalRunIngestResponse
+from app.schemas.traces import UsageTrace
+from app.services.cost import compute_cost_usd
 from app.services.eval_run_repository import EvalRunRepository, DuplicateEvalRunError
 
 
@@ -25,6 +27,13 @@ def ingest_eval_run(
     # Same rule as traces: a known key owns the project attribution.
     if project_id:
         payload.project.project_id = project_id
+    # Experiment variants are priced here from their token totals, never taken
+    # from the client; an unknown model or no tokens leaves the cost empty.
+    for variant in payload.variants:
+        variant.cost_usd = compute_cost_usd(
+            variant.model,
+            UsageTrace(prompt_tokens=variant.prompt_tokens, completion_tokens=variant.completion_tokens),
+        )
 
     repository = EvalRunRepository(db)
     try:

@@ -25,6 +25,11 @@ variant being run is passed to it:
     def my_generate(query, context, variant):
         return llm(prompt=PROMPTS[variant.extra["prompt"]], ...)
 
+generate() may also return (answer, usage), where usage is a dict with
+prompt_tokens, completion_tokens and model. Each variant then reports its token
+totals, and the server prices them, so variants can be compared on cost as well
+as accuracy.
+
 The harness is pure orchestration over httpx — no LLM key or judge code lives in
 the SDK; the server grades.
 """
@@ -130,12 +135,22 @@ def _run_variant(
     cases: list[dict[str, Any]] = []
     retrieve_extra = {"variant": variant} if _takes_variant(retrieve) else {}
     generate_extra = {"variant": variant} if _takes_variant(generate) else {}
+    prompt_tokens = completion_tokens = 0
+    usage_seen = False
+    models: set[str] = set()
 
     for case in dataset:
         start = time.perf_counter()
         chunks = retrieve(case.question, variant.top_k, **retrieve_extra)
-        answer = generate(case.question, _format_context(chunks), **generate_extra)
+        output = generate(case.question, _format_context(chunks), **generate_extra)
         latencies.append(int((time.perf_counter() - start) * 1000))
+        answer, usage = output if isinstance(output, tuple) else (output, None)
+        if isinstance(usage, dict):
+            usage_seen = True
+            prompt_tokens += int(usage.get("prompt_tokens") or 0)
+            completion_tokens += int(usage.get("completion_tokens") or 0)
+            if usage.get("model"):
+                models.add(str(usage["model"]))
 
         verdict = _grade(client, case.question, case.expected_answer, answer, errors)
         cases.append(
@@ -157,8 +172,16 @@ def _run_variant(
     accuracy = round(correct / gradeable, 3) if gradeable else 0.0
     avg_latency = round(sum(latencies) / len(latencies)) if latencies else 0
     ungradeable = len(dataset) - gradeable
+    # Token totals only when generate() reported usage; the server prices them
+    # from the model (one model per variant; with several it can't).
+    usage_fields: dict[str, Any] = {}
+    if usage_seen:
+        usage_fields = {"prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens}
+        if len(models) == 1:
+            usage_fields["model"] = next(iter(models))
 
     return {
+        **usage_fields,
         "variant_id": variant.variant_id,
         "name": variant.name,
         "config": {**variant.as_config(), "ungradeable_cases": ungradeable},
