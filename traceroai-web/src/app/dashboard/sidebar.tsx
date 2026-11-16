@@ -9,6 +9,7 @@ import {
   CodeIcon,
   DocsIcon,
   EvalRunsIcon,
+  IssuesIcon,
   OverviewIcon,
   RecoveryIcon,
   SearchIcon,
@@ -24,6 +25,7 @@ const GROUPS: Array<{ name?: string; items: Section[] }> = [
   {
     items: [
       { label: "Overview", href: "/dashboard", icon: OverviewIcon },
+      { label: "Issues", href: "/dashboard/issues", icon: IssuesIcon },
       { label: "Traces", href: "/dashboard/traces", icon: TracesIcon },
       { label: "Recovery runs", href: "/dashboard/recovery-runs", icon: RecoveryIcon },
     ],

@@ -6,6 +6,7 @@ import {
   TIME_RANGES,
   type TraceSummary,
   getEvalRuns,
+  getIssues,
   getRecoveryRuns,
   type RecoveryRun,
   getSummary,
@@ -20,6 +21,7 @@ import type { Trace } from "@/lib/trace-types";
 import { LAYOUT_COOKIE, parseLayout } from "@/lib/layout-prefs";
 
 import { LatencyChart, MiniBars, VolumeChart } from "./charts";
+import { IssueList } from "./issues/issue-list";
 import { CustomizeButton, LayoutEditor, PanelGrid, type PanelDef } from "./panel-grid";
 import { actionWords } from "./recovery-runs/recovery";
 import {
@@ -65,7 +67,7 @@ export default async function DashboardPage({
   const params = await searchParams;
   const project = params.project;
   const range = parseRange(params.range);
-  const [summary, series, recent, evalRuns, runs, cookieStore] = await Promise.all([
+  const [summary, series, recent, evalRuns, runs, cookieStore, issues] = await Promise.all([
     getSummary(project, range),
     getTimeseries(project, range),
     getTraces({
@@ -76,8 +78,12 @@ export default async function DashboardPage({
     getEvalRuns(project),
     getRecoveryRuns(project, { range, limit: 200 }),
     cookies(),
+    getIssues(project, { range, limit: 200 }),
   ]);
   const savedLayout = parseLayout(cookieStore.get(LAYOUT_COOKIE)?.value).overview;
+  // Regressed first, then open (the API's order); resolved ones don't need attention.
+  const attention = issues?.filter((i) => i.status !== "resolved") ?? null;
+  const regressedCount = attention?.filter((i) => i.status === "regressed").length ?? 0;
   const traces = recent.traces;
   const total = summary?.total ?? 0;
   const healthy = summary?.healthy ?? 0;
@@ -186,6 +192,32 @@ export default async function DashboardPage({
                     <Outcomes summary={summary} project={project} />
                   </Panel>
                 ),
+                issues: (
+                  <Panel
+                    title="Issues"
+                    description={
+                      attention === null
+                        ? "Failing traces grouped by cause."
+                        : `${attention.length} need${attention.length === 1 ? "s" : ""} attention in this range${
+                            regressedCount ? `, ${regressedCount} regressed` : ""
+                          }. Grouped by what failed and the top source.`
+                    }
+                    flush
+                    actions={
+                      <Link href={hrefWith("/dashboard/issues", { project })} className="text-sm text-accent hover:underline">
+                        All issues
+                      </Link>
+                    }
+                  >
+                    {attention === null ? (
+                      <Unavailable />
+                    ) : attention.length === 0 ? (
+                      <p className="px-5 pb-5 text-sm text-ink-muted">No open issues in this range.</p>
+                    ) : (
+                      <IssueList issues={attention.slice(0, 5)} compact />
+                    )}
+                  </Panel>
+                ),
                 failures: (
                   <Panel
                     title="Recent failures"
@@ -248,6 +280,7 @@ export default async function DashboardPage({
 const OVERVIEW_PANELS: PanelDef[] = [
   { id: "volume", title: "Traces over time", size: 8 },
   { id: "outcomes", title: "Outcomes", size: 4 },
+  { id: "issues", title: "Issues", size: 12 },
   { id: "failures", title: "Recent failures", size: 6 },
   { id: "latency", title: "p95 latency", size: 6 },
   { id: "coverage", title: "How sure the diagnoses are", size: 6 },

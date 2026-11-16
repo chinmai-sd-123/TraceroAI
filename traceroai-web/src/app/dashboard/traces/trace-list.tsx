@@ -28,6 +28,7 @@ export type TraceListFilters = {
   environment?: string;
   sort?: TraceSort;
   cursor?: string;
+  issue?: string; // an issue key: only the traces in that issue
 };
 
 const DIAGNOSIS_LABELS = new Set<TraceDiagnosis>([
@@ -59,6 +60,7 @@ function params(filters: TraceListFilters) {
     model: filters.model,
     environment: filters.environment,
     sort: filters.sort,
+    issue: filters.issue,
   };
 }
 
@@ -101,6 +103,7 @@ export function TraceFilters({
         {filters.diagnosis && <input type="hidden" name="diagnosis" value={filters.diagnosis} />}
         {filters.range && <input type="hidden" name="range" value={filters.range} />}
         {filters.sort && <input type="hidden" name="sort" value={filters.sort} />}
+        {filters.issue && <input type="hidden" name="issue" value={filters.issue} />}
         <label htmlFor="trace-search" className="sr-only">
           Search questions
         </label>
@@ -162,22 +165,25 @@ export function TraceFilters({
         </button>
       </form>
 
-      <nav aria-label="Filter by diagnosis">
-        <ul className="flex flex-wrap gap-1.5">
-          <li>
-            <FilterChip active={!filters.diagnosis} href={listHref({ ...base, diagnosis: undefined })}>
-              All <span className="text-ink-muted">{all.toLocaleString()}</span>
-            </FilterChip>
-          </li>
-          {labels.map(([label, count]) => (
-            <li key={label}>
-              <FilterChip active={filters.diagnosis === label} href={listHref({ ...base, diagnosis: label })}>
-                {diagnosisName(label)} <span className="text-ink-muted">{count.toLocaleString()}</span>
+      {/* One issue has one diagnosis, so the chips (whole-range counts) would mislead. */}
+      {!filters.issue && (
+        <nav aria-label="Filter by diagnosis">
+          <ul className="flex flex-wrap gap-1.5">
+            <li>
+              <FilterChip active={!filters.diagnosis} href={listHref({ ...base, diagnosis: undefined })}>
+                All <span className="text-ink-muted">{all.toLocaleString()}</span>
               </FilterChip>
             </li>
-          ))}
-        </ul>
-      </nav>
+            {labels.map(([label, count]) => (
+              <li key={label}>
+                <FilterChip active={filters.diagnosis === label} href={listHref({ ...base, diagnosis: label })}>
+                  {diagnosisName(label)} <span className="text-ink-muted">{count.toLocaleString()}</span>
+                </FilterChip>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }

@@ -40,6 +40,7 @@ class TraceFilters:
     since: datetime | None = None
     until: datetime | None = None
     recovery_run_id: str | None = None  # attempts of one RecoveryAgent run
+    issue_key: str | None = None  # traces in one issue (app/services/issues.py)
 
 
 TraceSort = Literal["newest", "oldest", "slowest"]
@@ -99,6 +100,8 @@ def _where(filters: TraceFilters) -> list:
         conditions.append(TraceRecord.created_at < filters.until)
     if filters.recovery_run_id:
         conditions.append(_recovery_run_id() == filters.recovery_run_id)
+    if filters.issue_key:
+        conditions.append(TraceRecord.issue_key == filters.issue_key)
     return conditions
 
 
