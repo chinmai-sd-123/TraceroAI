@@ -58,16 +58,18 @@ def list_issues(
     newest_first = TraceRecord.created_at.desc()
     rows = db.execute(
         select(
-            TraceRecord.project_id,
-            TraceRecord.issue_key,
-            func.count(),
-            func.count(func.distinct(TraceRecord.query_text)),
-            func.min(TraceRecord.created_at),
-            func.max(TraceRecord.created_at),
-            func.array_agg(aggregate_order_by(TraceRecord.trace_id, newest_first)),
-            func.array_agg(aggregate_order_by(TraceRecord.query_text, newest_first)),
-            state.resolved_at,
-            func.count().filter(state.resolved_at.is_not(None), TraceRecord.created_at > state.resolved_at),
+            TraceRecord.project_id.label("project_id"),
+            TraceRecord.issue_key.label("issue_key"),
+            func.count().label("count"),
+            func.count(func.distinct(TraceRecord.query_text)).label("questions"),
+            func.min(TraceRecord.created_at).label("first_seen"),
+            func.max(TraceRecord.created_at).label("last_seen"),
+            func.array_agg(aggregate_order_by(TraceRecord.trace_id, newest_first)).label("trace_ids"),
+            func.array_agg(aggregate_order_by(TraceRecord.query_text, newest_first)).label("texts"),
+            state.resolved_at.label("resolved_at"),
+            func.count()
+            .filter(state.resolved_at.is_not(None), TraceRecord.created_at > state.resolved_at)
+            .label("since_resolved"),
         )
         .outerjoin(
             state,
@@ -78,9 +80,15 @@ def list_issues(
     ).all()
 
     issues = []
-    for project_id, key, count, questions, first_seen, last_seen, trace_ids, texts, resolved_at, since_resolved in (
-        tuple(r) for r in rows
-    ):
+    for row in rows:
+        # Named columns, typed here: the row's own types are too broad to check.
+        m = row._mapping
+        key: str = m["issue_key"]
+        first_seen: datetime = m["first_seen"]
+        last_seen: datetime = m["last_seen"]
+        resolved_at: datetime | None = m["resolved_at"]
+        trace_ids: list = m["trace_ids"]
+        texts: list[str] = m["texts"]
         label, source = split_key(key)
         current = status_of(resolved_at, last_seen)
         if status is not None and current != status:
@@ -93,17 +101,17 @@ def list_issues(
                 break
         issues.append(
             {
-                "project_id": project_id,
+                "project_id": m["project_id"],
                 "issue_key": key,
                 "label": label,
                 "source": source,
                 "status": current,
-                "count": count,
-                "questions": questions,
+                "count": m["count"],
+                "questions": m["questions"],
                 "first_seen": first_seen.isoformat(),
                 "last_seen": last_seen.isoformat(),
                 "resolved_at": resolved_at.isoformat() if resolved_at else None,
-                "count_since_resolved": since_resolved,
+                "count_since_resolved": m["since_resolved"],
                 "latest_trace_id": str(trace_ids[0]),
                 "recent_questions": distinct_recent,
             }
