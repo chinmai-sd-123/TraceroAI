@@ -236,6 +236,7 @@ export type TraceQuery = {
   model?: string;
   environment?: string;
   recoveryRunId?: string;
+  issueKey?: string;
   sort?: TraceSort;
 };
 
@@ -255,6 +256,7 @@ export async function getTraces(query: TraceQuery = {}): Promise<TracePage> {
   if (query.model) params.set("model", query.model);
   if (query.environment) params.set("environment", query.environment);
   if (query.recoveryRunId) params.set("recovery_run_id", query.recoveryRunId);
+  if (query.issueKey) params.set("issue_key", query.issueKey);
   if (query.sort && query.sort !== "newest") params.set("sort", query.sort);
   try {
     const response = await fetch(`${API_BASE_URL}/v1/traces?${params}`, {
@@ -405,6 +407,93 @@ export async function getRecoveryRuns(
 }
 
 /** Headline numbers over every trace in scope, computed by the API in SQL. */
+export type IssueStatus = "open" | "regressed" | "resolved";
+
+/** Failing traces that share a cause: a failure label and the source of the top chunk. */
+export type Issue = {
+  projectId: string;
+  issueKey: string;
+  label: string;
+  source: string;
+  status: IssueStatus;
+  count: number;
+  questions: number;
+  firstSeen: string;
+  lastSeen: string;
+  resolvedAt: string | null;
+  countSinceResolved: number;
+  latestTraceId: string;
+  recentQuestions: string[];
+};
+
+/** Issues with failures in the range: regressed first, then open, then resolved. Null if the API failed. */
+export async function getIssues(
+  projectId: string | undefined,
+  options: { range?: TimeRange; status?: IssueStatus; limit?: number } = {},
+): Promise<Issue[] | null> {
+  const params = new URLSearchParams();
+  if (projectId) params.set("project_id", projectId);
+  const since = options.range ? rangeSince(options.range) : undefined;
+  if (since) params.set("since", since);
+  if (options.status) params.set("status", options.status);
+  params.set("limit", String(options.limit ?? 100));
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/issues?${params}`, { cache: "no-store", headers: serverHeaders() });
+    if (!response.ok) return null;
+    const issues = (await response.json()) as Array<{
+      project_id: string;
+      issue_key: string;
+      label: string;
+      source: string;
+      status: IssueStatus;
+      count: number;
+      questions: number;
+      first_seen: string;
+      last_seen: string;
+      resolved_at: string | null;
+      count_since_resolved: number;
+      latest_trace_id: string;
+      recent_questions: string[];
+    }>;
+    return issues.map((i) => ({
+      projectId: i.project_id,
+      issueKey: i.issue_key,
+      label: i.label,
+      source: i.source,
+      status: i.status,
+      count: i.count,
+      questions: i.questions,
+      firstSeen: i.first_seen,
+      lastSeen: i.last_seen,
+      resolvedAt: i.resolved_at,
+      countSinceResolved: i.count_since_resolved,
+      latestTraceId: i.latest_trace_id,
+      recentQuestions: i.recent_questions,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+/** Server-side: mark an issue resolved, or open again, with the dashboard's key. */
+export async function setIssueResolved(
+  projectId: string,
+  issueKey: string,
+  resolved: boolean,
+): Promise<{ ok: true } | { ok: false; status: number }> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/v1/issues/${resolved ? "resolve" : "reopen"}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...serverHeaders() },
+      body: JSON.stringify({ project_id: projectId, issue_key: issueKey }),
+      cache: "no-store",
+    });
+    return response.ok ? { ok: true } : { ok: false, status: response.status };
+  } catch {
+    return { ok: false, status: 0 };
+  }
+}
+
 export async function getSummary(
   projectId?: string,
   range: TimeRange = "all",

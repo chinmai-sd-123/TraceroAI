@@ -1,7 +1,9 @@
 import { TIME_RANGES, getSummary, getTraces, parseRange, rangeSince } from "@/lib/api";
 
 import { ListKeys } from "../list-keys";
-import { EmptyState, PageFrame, PageHeader, Segmented } from "../ui";
+import Link from "next/link";
+
+import { EmptyState, PageFrame, PageHeader, Segmented, diagnosisName } from "../ui";
 import {
   Pager,
   TraceFilters,
@@ -27,6 +29,7 @@ export default async function TracesPage({
     model?: string;
     environment?: string;
     sort?: string;
+    issue?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -40,6 +43,7 @@ export default async function TracesPage({
     environment: params.environment || undefined,
     sort: parseSort(params.sort),
     cursor: params.cursor,
+    issue: params.issue?.slice(0, 2000) || undefined,
   };
   const narrowed = Boolean(filters.model || filters.environment);
 
@@ -52,6 +56,7 @@ export default async function TracesPage({
       environment: filters.environment,
       sort: filters.sort,
       cursor: filters.cursor,
+      issueKey: filters.issue,
       limit: PAGE_SIZE,
       since: rangeSince(range),
     }),
@@ -90,6 +95,18 @@ export default async function TracesPage({
       />
 
       <div className="mt-5 space-y-4">
+        {filters.issue && (
+          <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded border border-line bg-sunken px-4 py-2.5 text-sm">
+            <span>
+              Showing one issue:{" "}
+              <strong className="font-semibold">{diagnosisName(filters.issue.split("|")[0])}</strong>, top source{" "}
+              <code className="font-dash-mono text-[0.8125rem]">{filters.issue.split("|").slice(1).join("|")}</code>
+            </span>
+            <Link href={listHref({ ...filters, issue: undefined, cursor: undefined })} className="text-accent hover:underline">
+              Show all traces
+            </Link>
+          </p>
+        )}
         <TraceFilters
           filters={filters}
           diagnosisCounts={counts}
