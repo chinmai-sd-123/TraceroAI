@@ -201,8 +201,20 @@ function RegressionCases({ run }: { run: ApiEvalRun }) {
   );
 }
 
+// Answers a variant produced: graded ones plus any the judge couldn't grade.
+function answersOf(v: ApiEvalRun["variants"][number]) {
+  const ungradeable = Number((v.config as { ungradeable_cases?: unknown })?.ungradeable_cases) || 0;
+  return v.passed_cases + v.failed_cases + ungradeable;
+}
+
+function formatUsd(usd: number) {
+  return usd < 1 ? `${(usd * 100).toFixed(usd < 0.01 ? 3 : 2)}¢` : `$${usd.toFixed(2)}`;
+}
+
 function ExperimentVariants({ run }: { run: ApiEvalRun }) {
   const best = Math.max(...run.variants.map((v) => v.passed_cases));
+  // Only when the SDK reported usage (generate() returned it).
+  const showUsage = run.variants.some((v) => v.prompt_tokens != null);
   return (
     <Panel title="Variants" description="Each variant answered the same labelled questions." className="mt-6" flush>
       <div className="overflow-x-auto">
@@ -213,6 +225,12 @@ function ExperimentVariants({ run }: { run: ApiEvalRun }) {
               <th scope="col" className="px-3 py-2 text-right font-medium">Passed</th>
               <th scope="col" className="px-3 py-2 text-right font-medium">Failed</th>
               <th scope="col" className="px-5 py-2 text-right font-medium">Average latency</th>
+              {showUsage && (
+                <>
+                  <th scope="col" className="px-3 py-2 text-right font-medium">Tokens per answer</th>
+                  <th scope="col" className="px-5 py-2 text-right font-medium">Cost per correct answer</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -229,6 +247,24 @@ function ExperimentVariants({ run }: { run: ApiEvalRun }) {
                 </td>
                 <td className="px-3 py-3 text-right text-ink-muted">{v.failed_cases}</td>
                 <td className="px-5 py-3 text-right text-ink-muted">{formatMs(v.average_latency_ms)}</td>
+                {showUsage && (
+                  <>
+                    <td className="px-3 py-3 text-right text-ink-muted tabular-nums">
+                      {v.prompt_tokens != null && answersOf(v) > 0
+                        ? Math.round(((v.prompt_tokens ?? 0) + (v.completion_tokens ?? 0)) / answersOf(v)).toLocaleString()
+                        : "not reported"}
+                    </td>
+                    <td className="px-5 py-3 text-right tabular-nums">
+                      {v.cost_usd != null && v.passed_cases > 0
+                        ? formatUsd(v.cost_usd / v.passed_cases)
+                        : v.cost_usd != null
+                          ? "no correct answers"
+                          : v.prompt_tokens != null
+                            ? "model not priced"
+                            : "not reported"}
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>

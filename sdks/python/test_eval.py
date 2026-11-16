@@ -253,3 +253,46 @@ def test_two_argument_functions_still_work(monkeypatch):
         post=False,
     )
     assert all(v["passed_cases"] == 1 for v in result.variants)
+
+
+def test_usage_from_generate_is_totalled_per_variant(monkeypatch):
+    posted = {}
+    calls = _patch_server(monkeypatch, correct_if=lambda a: True)
+
+    def generate(query, ctx, variant):
+        size = variant.extra["context"]
+        return "answer", {"prompt_tokens": size, "completion_tokens": 10, "model": "gpt-4o-mini"}
+
+    real_post = E.httpx.post
+
+    def capture(url, json=None, headers=None, timeout=None):
+        if url.endswith("/v1/eval-runs"):
+            posted.update(json)
+        return real_post(url, json=json, headers=headers, timeout=timeout)
+
+    monkeypatch.setattr(E.httpx, "post", capture)
+    result = run_experiment(
+        client=_client(),
+        dataset=[Case("c1", "q1", "a"), Case("c2", "q2", "a")],
+        retrieve=_retrieve,
+        generate=generate,
+        variants=[Variant("big", "big", extra={"context": 30000}), Variant("small", "small", extra={"context": 9000})],
+    )
+    by_id = {v["variant_id"]: v for v in result.variants}
+    assert by_id["big"]["prompt_tokens"] == 60000 and by_id["big"]["completion_tokens"] == 20
+    assert by_id["small"]["prompt_tokens"] == 18000 and by_id["small"]["model"] == "gpt-4o-mini"
+    assert {v["variant_id"]: v["prompt_tokens"] for v in posted["variants"]} == {"big": 60000, "small": 18000}
+    assert calls["post_run"] == 1
+
+
+def test_plain_string_answers_report_no_usage(monkeypatch):
+    _patch_server(monkeypatch, correct_if=lambda a: True)
+    result = run_experiment(
+        client=_client(),
+        dataset=[Case("c1", "q", "a")],
+        retrieve=_retrieve,
+        generate=lambda query, ctx: "answer",
+        variants=[Variant("k3", "k3", top_k=3), Variant("k5", "k5", top_k=5)],
+        post=False,
+    )
+    assert all("prompt_tokens" not in v for v in result.variants)

@@ -8,6 +8,7 @@ from app.schemas.traces import ProjectInfo
 from app.schemas.validation import (
     DATASET_ID_MAX_LENGTH,
     DATASET_NAME_MAX_LENGTH,
+    MODEL_MAX_LENGTH,
     VERSION_MAX_LENGTH,
     strip_nul,
 )
@@ -67,6 +68,14 @@ class ExperimentVariantResult(BaseModel):
     passed_cases: int = Field(default=0, ge=0)
     failed_cases: int = Field(default=0, ge=0)
     average_latency_ms: int | None = Field(default=None, ge=0)
+
+    # Token totals across the variant's answers, when the client reported usage.
+    # The server prices them from the model (cost_usd); a client-sent cost is
+    # replaced, as it is for traces.
+    model: str | None = Field(default=None, max_length=MODEL_MAX_LENGTH)
+    prompt_tokens: int | None = Field(default=None, ge=0)
+    completion_tokens: int | None = Field(default=None, ge=0)
+    cost_usd: float | None = Field(default=None, ge=0)
 
     metrics: list[EvalMetricSummary] = Field(default_factory=list)
 
