@@ -9,12 +9,10 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 - A diagnosis the LLM judge made now explains itself in the judge's words, and a
   grounding failure names the first claim the context doesn't support (for example
   `Unsupported: "On the request path, middlewares run from innermost to outermost."`).
-  It used to show a fixed sentence written for the term-overlap estimate. Found in
-  field trial 1.
+  It used to show a fixed sentence written for the term-overlap estimate.
 - Issues group grounding and answer failures by prompt version, and retrieval
-  failures by the top retrieved source (migration 0007). In field trial 1 five
-  unsupported claims with one cause, the prompt, appeared as five issues because
-  their top documents differed; they are now one.
+  failures by the top retrieved source (migration 0007). Unsupported claims with one
+  cause, the prompt, used to appear as one issue per top document; they are now one.
 - The API allows openai 3 (which uses httpx2 internally); the lock installs 3.51.0. Checked
   against the real provider: the diagnosis benchmark gives the same lexical (58.1%) and
   embedding (76.1%) accuracy, and 96.6% for the judge.
@@ -74,12 +72,11 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   its API down.
 - Experiments report cost: when `generate` returns `(answer, usage)`, each variant
   records its token totals, the server prices them, and the experiment page shows
-  tokens per answer and cost per correct answer. Found in field trial 2, where cost
-  was the main difference between LightRAG's settings.
+  tokens per answer and cost per correct answer.
 - `run_experiment` can compare more than `top_k`: when `retrieve` or `generate` takes a
   `variant` parameter, it receives the variant being run, so settings in
   `Variant.extra` (chunking, prompt, model) reach your pipeline. Two-argument
-  functions work as before. Found in the first field trial.
+  functions work as before.
 - Issues: failing traces grouped by what failed and the source of the top retrieved
   chunk (`GET /v1/issues`, migration 0006), with a page in the dashboard and a panel on
   the overview. Resolve an issue once it's fixed; a failure after that marks it

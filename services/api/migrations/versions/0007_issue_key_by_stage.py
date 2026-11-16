@@ -1,8 +1,8 @@
 """Group grounding and answer failures by prompt version, not by top source.
 
-Migration 0006 keyed every failing trace by its top retrieved source. In field
-trial 1 (LibreChat's rag_api) five unsupported claims had one cause, the prompt,
-but different top documents, so they showed up as five one-trace issues. A
+Migration 0006 keyed every failing trace by its top retrieved source, so
+unsupported claims with one cause, the prompt, but different top documents
+showed up as separate one-trace issues. A
 retrieval failure is about what was retrieved; a grounding or answer failure is
 about how the answer was produced. Now:
 

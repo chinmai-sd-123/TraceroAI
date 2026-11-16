@@ -84,7 +84,6 @@ playgrounds, hosted cloud). Those are well served elsewhere.
   `docs/evaluation-benchmark.md`, raw report in `docs/benchmarks/`. Re-run weekly.
 - SDK on PyPI (`traceroai`), source on GitHub, Apache-2.0.
 - No customers, testimonials, logos, usage numbers or press exist. Never invent them.
-  Field trials on real open-source projects (planned) will be the first external evidence.
 
 ## Product Principles
 
