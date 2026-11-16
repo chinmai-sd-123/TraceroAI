@@ -34,9 +34,9 @@ be shown to work before it ships.
 - **Works beside what teams already use.** Traces can come from the Python SDK or
   (planned) any OpenTelemetry source, so TraceroAI can sit next to Langfuse, LangSmith
   or an APM instead of replacing them.
-- **Failure to fix.** Recovery runs retry the step that failed; experiments compare
-  variants on labelled questions; (planned) repeated failures group into issues, and
-  issues become regression tests.
+- **Failure to fix.** Repeated failures group into issues; recovery runs retry the step
+  that failed; experiments compare variants on labelled questions; (planned) issues
+  become regression tests.
 - **Open source and self-hosted.** Apache-2.0. Postgres and one Docker Compose command;
   traces stay on the user's infrastructure.
 
@@ -59,9 +59,11 @@ playgrounds, hosted cloud). Those are well served elsewhere.
 - Today: RAG traces from the Python SDK (sync and async). Diagnoses: healthy answer,
   correct refusal, retrieval miss, unsupported claim, wrong answer, needs review.
   Sources: lexical, embedding, judge. Judge status: pending, complete, partial, failed,
-  skipped. Recovery runs, experiments with per-question results, feedback, retention.
+  skipped. Issues (failures grouped by cause, with open, resolved and regressed states),
+  recovery runs, experiments with per-question results, tokens and cost, feedback,
+  retention, and bundled demo data.
 - Planned (P3), not yet built: steps inside a trace (agents, tool calls), OpenTelemetry
-  ingest, agent failure diagnosis, issues, alerts, datasets and a regression gate.
+  ingest, agent failure diagnosis, alerts, datasets and a regression gate.
   Nothing planned may be presented as available.
 - Without a configured LLM judge, every diagnosis is an estimate; the interface must say
   so rather than present it as fact.

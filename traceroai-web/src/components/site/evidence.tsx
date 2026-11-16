@@ -60,7 +60,7 @@ export function TierTable() {
 const ACCURACY = [
   { tier: "Term overlap", value: 58.1, label: (n: number) => `${n.toFixed(1)}% (68 of 117)` },
   { tier: "Embedding similarity", value: 76.1, label: (n: number) => `${n.toFixed(1)}% (89 of 117)` },
-  { tier: "LLM judge", value: 95.7, low: 94.0, label: (n: number) => `94.0–${n.toFixed(1)}% over 3 runs`, strong: true },
+  { tier: "LLM judge", value: 95.7, low: 94.0, label: (n: number) => `${((n * 94.0) / 95.7).toFixed(1)}–${n.toFixed(1)}% over 3 runs`, strong: true },
 ];
 
 /** Measured accuracy per tier; the bars and figures count up once, on view. */
@@ -117,5 +117,54 @@ export function AccuracyTable() {
         </tbody>
       </table>
     </div>
+  );
+}
+
+// Per label, from docs/evaluation-benchmark.md (run of 2026-11-13). Judge
+// figures are from the first of its three runs.
+const PER_LABEL = [
+  { label: "Healthy answer", cases: 22, lexical: "1.00 / 0.14", embedding: "0.93 / 0.64", judge: "0.95 / 0.95" },
+  { label: "Correct refusal", cases: 18, lexical: "0.56 / 1.00", embedding: "0.94 / 0.94", judge: "1.00 / 0.94" },
+  { label: "Retrieval miss", cases: 20, lexical: "0.53 / 1.00", embedding: "1.00 / 0.85", judge: "1.00 / 0.95" },
+  { label: "Unsupported claim", cases: 21, lexical: "0.92 / 0.52", embedding: "0.77 / 0.62", judge: "0.81 / 1.00" },
+  { label: "Wrong answer", cases: 36, lexical: "0.73 / 0.44", embedding: "0.97 / 0.78", judge: "0.97 / 0.89" },
+];
+
+/** Precision and recall per diagnosis label, for each tier, behind a toggle. */
+export function PerLabelTable() {
+  return (
+    <details className="group mt-3 rounded border border-line">
+      <summary className="cursor-pointer px-4 py-2.5 text-sm font-medium text-accent">
+        Precision and recall per label
+      </summary>
+      <div className="overflow-x-auto border-t border-line">
+        <table className="w-full min-w-[34rem] border-collapse text-sm">
+          <caption className="px-4 pt-3 text-left text-xs text-ink-muted">
+            Precision is how often a label is right when it&apos;s given; recall is how many of the cases with that label
+            it finds. Judge figures are from the first of three runs.
+          </caption>
+          <thead>
+            <tr className="border-y border-line-strong bg-sunken text-left text-xs text-ink-muted">
+              <th scope="col" className="px-4 py-2 font-medium">Label</th>
+              <th scope="col" className="px-4 py-2 text-right font-medium">Cases</th>
+              <th scope="col" className="px-4 py-2 text-right font-medium">Term overlap P / R</th>
+              <th scope="col" className="px-4 py-2 text-right font-medium">Embedding P / R</th>
+              <th scope="col" className="px-4 py-2 text-right font-medium">Judge P / R</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line font-dash-mono text-[12.5px]">
+            {PER_LABEL.map((row) => (
+              <tr key={row.label}>
+                <th scope="row" className="px-4 py-2.5 text-left font-dash font-semibold text-sm">{row.label}</th>
+                <td className="px-4 py-2.5 text-right">{row.cases}</td>
+                <td className="px-4 py-2.5 text-right text-ink-muted">{row.lexical}</td>
+                <td className="px-4 py-2.5 text-right text-ink-muted">{row.embedding}</td>
+                <td className="px-4 py-2.5 text-right font-medium">{row.judge}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
   );
 }

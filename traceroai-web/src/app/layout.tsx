@@ -9,12 +9,13 @@ const SITE_URL = "https://www.traceroai.tech";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "TraceroAI: know which stage of your RAG pipeline failed",
+    default: "TraceroAI: find the step that broke your RAG pipeline",
     template: "%s | TraceroAI",
   },
   description:
-    "Open-source tracing and evaluation for RAG pipelines. TraceroAI checks retrieval, grounding and the answer for every response, names the stage that failed, and says whether an LLM judge or an estimate decided.",
+    "Open-source failure diagnosis for RAG pipelines. TraceroAI checks every answer, names the step that failed, shows the evidence, and says whether an LLM judge or an estimate decided. Self-hosted, Apache-2.0.",
   keywords: [
+    "RAG failure diagnosis",
     "RAG observability",
     "RAG evaluation",
     "LLM evaluation",
@@ -36,14 +37,14 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "TraceroAI",
-    title: "TraceroAI: know which stage of your RAG pipeline failed",
+    title: "TraceroAI: find the step that broke your RAG pipeline",
     description:
-      "Open-source tracing and evaluation for RAG. Every answer gets a diagnosis tied to a pipeline stage, and says whether an LLM judge or an estimate made it.",
+      "Open-source failure diagnosis for RAG pipelines. Every answer gets one diagnosis tied to a step, with the evidence, and says whether an LLM judge or an estimate made it.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "TraceroAI: know which stage of your RAG pipeline failed",
-    description: "Open-source tracing and evaluation for RAG pipelines, self-hosted with Docker Compose.",
+    title: "TraceroAI: find the step that broke your RAG pipeline",
+    description: "Open-source failure diagnosis for RAG pipelines, self-hosted with Docker Compose.",
   },
   verification: {
     google: "AE23jg8KjzUiTGdL2J1rXNCubATMZVbo4o5hDlyb4t8",
@@ -70,7 +71,8 @@ export default function RootLayout({
     >
       <body className="min-h-full antialiased">
         {children}
-        <Analytics />
+        {/* Only on the hosted site. A self-hosted copy sends nothing anywhere. */}
+        {process.env.VERCEL && <Analytics />}
       </body>
     </html>
   );

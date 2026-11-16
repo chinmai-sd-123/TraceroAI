@@ -3,32 +3,21 @@ import Link from "next/link";
 import { GitHubIcon } from "@/components/github-link";
 import { apiConfigured } from "@/lib/site-mode";
 
-export const GITHUB_URL = "https://github.com/chinmai-sd-123/TraceroAI";
-export const repoFile = (path: string) => `${GITHUB_URL}/blob/main/${path}`;
+import { SiteNav } from "./site-nav";
+
+import { GITHUB_URL, repoFile } from "@/lib/links";
+
+export { GITHUB_URL, repoFile };
 
 /** Top bar for the public pages (home and docs). */
 export function SiteHeader({ current }: { current?: "home" | "docs" }) {
-  const link = "rounded px-2 py-1 text-ink-muted hover:bg-sunken hover:text-ink";
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur-[2px]">
-      <div className="mx-auto flex h-14 max-w-[84rem] items-center gap-6 px-4 sm:px-8">
+    <header className="glass-bar sticky top-0 z-20 border-b border-line/80">
+      <div className="relative mx-auto flex h-14 max-w-[84rem] items-center gap-3 px-4 sm:gap-6 sm:px-8">
         <Link href="/" className="text-[15px] font-bold tracking-[-0.01em]" aria-current={current === "home" ? "page" : undefined}>
           TraceroAI
         </Link>
-        <nav aria-label="Site" className="hidden items-center gap-1 text-sm md:flex">
-          <Link href="/docs" className={link} aria-current={current === "docs" ? "page" : undefined}>
-            Docs
-          </Link>
-          <Link href="/#architecture" className={link}>
-            Architecture
-          </Link>
-          <Link href="/#accuracy" className={link}>
-            Accuracy
-          </Link>
-          <a href={repoFile("CHANGELOG.md")} className={link}>
-            Changelog
-          </a>
-        </nav>
+        <SiteNav current={current} />
         <div className="ml-auto flex items-center gap-2 text-sm">
           <a
             href={GITHUB_URL}
@@ -41,7 +30,14 @@ export function SiteHeader({ current }: { current?: "home" | "docs" }) {
             href={apiConfigured() ? "/dashboard" : "/docs/self-host/docker-compose"}
             className="rounded bg-accent px-3 py-1.5 font-medium text-white hover:bg-accent/90"
           >
-            {apiConfigured() ? "Open the dashboard" : "Self-host it"}
+            {apiConfigured() ? (
+              <>
+                <span className="sm:hidden">Dashboard</span>
+                <span className="max-sm:hidden">Open the dashboard</span>
+              </>
+            ) : (
+              "Self-host it"
+            )}
           </Link>
         </div>
       </div>
@@ -49,16 +45,17 @@ export function SiteHeader({ current }: { current?: "home" | "docs" }) {
   );
 }
 
-export function SiteFooter() {
+/** `flush`: no gap above, for a page that ends on its own band. */
+export function SiteFooter({ flush = false }: { flush?: boolean }) {
   const col = "space-y-2 text-sm";
   const a = "text-ink-muted hover:text-ink hover:underline";
   return (
-    <footer className="mt-24 border-t border-line bg-rail">
+    <footer className={`${flush ? "" : "mt-24 "}border-t border-line bg-rail`}>
       <div className="mx-auto grid max-w-[84rem] gap-10 px-4 py-12 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <p className="text-[15px] font-bold">TraceroAI</p>
           <p className="mt-2 max-w-sm text-sm text-ink-muted">
-            Open-source tracing, evaluation and diagnosis for retrieval-augmented generation. Apache-2.0 licensed.
+            Open-source failure diagnosis for RAG pipelines. Apache-2.0 licensed.
           </p>
         </div>
         <nav aria-label="Product" className={col}>
