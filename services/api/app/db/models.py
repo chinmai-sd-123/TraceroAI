@@ -6,6 +6,18 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
+# Must match migration 0006_issues (and FAILURE_LABELS in app/services/issues.py).
+ISSUE_KEY_SQL = (
+    "(CASE WHEN diagnosis_label IN "
+    "('retrieval_miss', 'low_context_relevance', 'unsupported_claim', 'wrong_answer', 'needs_review') "
+    "THEN diagnosis_label || '|' || COALESCE("
+    "NULLIF(payload -> 'retrieval' -> 'chunks' -> 0 ->> 'document_id', ''), "
+    "NULLIF(payload -> 'retrieval' -> 'chunks' -> 0 ->> 'source', ''), "
+    "NULLIF(payload -> 'retrieval' -> 'chunks' -> 0 ->> 'document_title', ''), "
+    "'(no context)') END)"
+)
+
+
 class TraceRecord(Base):
     __tablename__ = "traces"
     # Trace lists are newest first, usually within one project (see
@@ -41,6 +53,10 @@ class TraceRecord(Base):
             persisted=True,
         ),
     )
+
+    # The issue this trace belongs to when it failed (migration 0006): its failure
+    # label plus the source of its top chunk. Read-only, kept in step by Postgres.
+    issue_key: Mapped[str | None] = mapped_column(Text, Computed(ISSUE_KEY_SQL, persisted=True))
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False,)
 
@@ -97,3 +113,17 @@ class ApiKeyRecord(Base):
     )
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class IssueStateRecord(Base):
+    """Whether an issue was marked resolved, and when (migration 0006). An issue
+    with failures after resolved_at has regressed; see app/services/issues.py."""
+
+    __tablename__ = "issue_states"
+
+    project_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    issue_key: Mapped[str] = mapped_column(Text, primary_key=True)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
