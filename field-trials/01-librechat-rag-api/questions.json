@@ -1,0 +1,194 @@
+[
+ {
+  "page": "background-tasks.md",
+  "question": "How can I schedule work to run after returning an HTTP response in FastAPI, without making the client wait?",
+  "answer": "Use FastAPI background tasks: define a path operation parameter typed as `BackgroundTasks`, then add task functions to it. The tasks run after the response is sent.",
+  "quote": "You can define background tasks to be run *after* returning a response."
+ },
+ {
+  "page": "background-tasks.md",
+  "question": "What is required to use `BackgroundTasks` in a path operation function?",
+  "answer": "Import `BackgroundTasks` and declare a parameter in the path operation function with type `BackgroundTasks`. FastAPI creates the object and passes it into that parameter.",
+  "quote": "First, import `BackgroundTasks` and define a parameter in your *path operation function* with a type declaration of `BackgroundTasks`: "
+ },
+ {
+  "page": "background-tasks.md",
+  "question": "Can the background task function be synchronous or asynchronous?",
+  "answer": "Yes. Create a standard function to run in the background, and it can be `async def` or normal `def`. FastAPI will handle it correctly; in the email example, the write operation isn’t using `async`/`await`, so a normal `def` is used.",
+  "quote": "It can be an `async def` or normal `def` function, **FastAPI** will know how to handle it correctly."
+ },
+ {
+  "page": "bigger-applications.md",
+  "question": "How should an application structure modules across multiple files so that `app/main.py` can import router modules like `app/routers/items.py`?",
+  "answer": "Put code under an `app/` directory with `__init__.py` to make it a Python package, then create subpackages like `app/routers/` (with its own `__init__.py`) and modules like `items.py` and `users.py`. Then `app/main.py` can import submodules (e.g., `from .routers import items, users`).",
+  "quote": "And it has an empty file `app/__init__.py`, so it is a \"Python package\" (a collection of \"Python modules\"): `app`."
+ },
+ {
+  "page": "bigger-applications.md",
+  "question": "How can you define user-related path operations in a separate file while keeping them part of the same FastAPI application?",
+  "answer": "Create an `APIRouter` in the module that handles users (e.g., `app/routers/users.py`) and then include that router in the main `FastAPI` app using `app.include_router()`. The included routes become part of the main application’s routing and OpenAPI.",
+  "quote": "With `app.include_router()` we can add each `APIRouter` to the main `FastAPI` application."
+ },
+ {
+  "page": "bigger-applications.md",
+  "question": "How can you apply a common URL prefix, tags, responses, and dependencies to multiple item endpoints without repeating them on every path operation?",
+  "answer": "Create an `APIRouter` for the items module (e.g., `app/routers/items.py`) and pass `prefix='/items'`, `tags=['items']`, extra `responses`, and `dependencies=[...]` to the `APIRouter`. Since route paths must start with `/`, the `prefix` must not include a final `/`, resulting in paths like `/items/` and `/items/{item_id}`.",
+  "quote": "...the prefix must not include a final `/`."
+ },
+ {
+  "page": "body.md",
+  "question": "When declaring a request body in FastAPI, how does FastAPI choose between path, query, and body parameters?",
+  "answer": "If a function parameter matches a path parameter, FastAPI takes it from the path. If it’s a singular type (int, float, str, bool, etc) it’s treated as a query parameter. If it’s a Pydantic model type, it’s treated as the request body.",
+  "quote": "If the parameter is declared to be of the type of a **Pydantic model**, it will be interpreted as a request **body**."
+ },
+ {
+  "page": "body.md",
+  "question": "What does FastAPI do with a Pydantic model declared as the type of a function parameter used as the request body?",
+  "answer": "It reads the request body as JSON, converts types if needed, validates the data (returning clear errors on invalid data), provides the received data in the parameter (e.g., `item`), generates JSON Schema for the model, and includes those schemas in the OpenAPI schema and docs.",
+  "quote": "* Read the body of the request as JSON."
+ },
+ {
+  "page": "cors.md",
+  "question": "How does CORS define “origin,” and which URL differences count as different origins?",
+  "answer": "An origin is the combination of protocol, domain, and port. For example, http://localhost vs https://localhost are different because of protocol, and http://localhost:8080 vs http://localhost are different because of the port.",
+  "quote": "An origin is the combination of protocol (`http`, `https`), domain (`myapp.com`, `localhost`, `localhost.tiangolo.com`), and port (`80`, `443`, `8080`)."
+ },
+ {
+  "page": "cors.md",
+  "question": "What happens if allowed origins are configured with a wildcard \"*\" in CORS, especially regarding credentials?",
+  "answer": "Using \"*\" allows all origins, but only for certain types of communication; it excludes anything that involves credentials such as Cookies and Authorization headers (e.g., Bearer tokens). For correct behavior, specify allowed origins explicitly instead of using the wildcard.",
+  "quote": "But that will only allow certain types of communication, excluding everything that involves credentials: Cookies, Authorization headers like those used with Bearer Tokens, etc."
+ },
+ {
+  "page": "dependencies-index.md",
+  "question": "How can you define a reusable dependency in FastAPI for path operations, and what shape must it have?",
+  "answer": "Define the dependency as a function that can take the same parameters as a path operation function; it’s essentially a path operation function without the decorator and can return anything.",
+  "quote": "It is just a function that can take all the same parameters that a *path operation function* can take:"
+ },
+ {
+  "page": "first-steps.md",
+  "question": "How do I check that the app is working and what response should I expect at the root path?",
+  "answer": "Open a browser at `http://127.0.0.1:8000`. You should see a JSON response: `{\"message\": \"Hello World\"}`.",
+  "quote": "Open your browser at [http://127.0.0.1:8000](http://127.0.0.1:8000)."
+ },
+ {
+  "page": "first-steps.md",
+  "question": "Where can I view the interactive automatic API documentation and what UI provides it?",
+  "answer": "Go to `http://127.0.0.1:8000/docs` to view the automatic interactive API documentation provided by Swagger UI.",
+  "quote": "Now go to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)."
+ },
+ {
+  "page": "first-steps.md",
+  "question": "How do I configure the FastAPI app entrypoint and what should the value be if the app is in backend/main.py?",
+  "answer": "In `pyproject.toml`, set `[tool.fastapi] entrypoint` to `main:app` for a top-level `main.py`. If the app is at `backend/main.py`, set `entrypoint = \"backend.main:app\"` so the `fastapi` command imports `from backend.main import app`.",
+  "quote": "entrypoint = \"backend.main:app\""
+ },
+ {
+  "page": "handling-errors.md",
+  "question": "How should I return an HTTP error response from my FastAPI path function when a client requests a non-existent item?",
+  "answer": "Use FastAPI's `HTTPException` and `raise` it from your code. For a non-existent item, raise an exception with status code `404` (not found).",
+  "quote": "Because it's a Python exception, you don't `return` it, you `raise` it."
+ },
+ {
+  "page": "handling-errors.md",
+  "question": "What happens to the rest of a path operation function if I raise an `HTTPException` inside a utility function called by that path operation?",
+  "answer": "Raising `HTTPException` inside the utility function terminates the request immediately; the rest of the path operation function code will not run, and FastAPI sends the HTTP error to the client.",
+  "quote": "it won't run the rest of the code in the *path operation function*, it will terminate that request right away"
+ },
+ {
+  "page": "handling-errors.md",
+  "question": "Can the `detail` field of FastAPI's `HTTPException` be something other than a string?",
+  "answer": "Yes. You can pass any value that can be converted to JSON as the `detail` parameter, such as a `dict` or `list`; FastAPI converts it to JSON automatically.",
+  "quote": "you can pass any value that can be converted to JSON as the parameter `detail`, not only `str`."
+ },
+ {
+  "page": "handling-errors.md",
+  "question": "When overriding exception handling, which `HTTPException` class should my handler be registered for so it also catches Starlette-raised errors?",
+  "answer": "When registering an exception handler, register it for Starlette's `HTTPException`, since FastAPI's `HTTPException` inherits from Starlette's and Starlette components may raise Starlette's `HTTPException`.",
+  "quote": "But when you register an exception handler, you should register it for Starlette's `HTTPException`."
+ },
+ {
+  "page": "middleware.md",
+  "question": "How do you create an HTTP middleware in FastAPI, and what does it receive?",
+  "answer": "Create middleware using the decorator `@app.middleware(\"http\")` on top of a function. The middleware function receives the `request` and a `call_next` function that takes the request, calls the corresponding path operation, and returns the response so you can further modify it.",
+  "quote": "To create a middleware you use the decorator `@app.middleware(\"http\")` on top of a function."
+ },
+ {
+  "page": "middleware.md",
+  "question": "If multiple middlewares are added, what is the order in which they run on the request path and on the response path?",
+  "answer": "When multiple middlewares are added, each wraps the application in a stack. The last added middleware is outermost; on the request path the outermost runs first, and on the response path it runs last. For `MiddlewareA` then `MiddlewareB`: Request = MiddlewareB → MiddlewareA → route; Response = route → MiddlewareA → MiddlewareB.",
+  "quote": "On the request path, the *outermost* middleware runs first. On the response path, it runs last."
+ },
+ {
+  "page": "middleware.md",
+  "question": "When using middleware, when do cleanup code from dependencies with `yield` and background tasks run relative to middleware?",
+  "answer": "If you have dependencies with `yield`, the exit code runs after the middleware. If there are any background tasks, they run after all the middleware.",
+  "quote": "If you have dependencies with `yield`, the exit code will run *after* the middleware."
+ },
+ {
+  "page": "path-params.md",
+  "question": "How does FastAPI pass a path parameter value to the handler function?",
+  "answer": "The value from the path parameter (e.g., item_id) is passed to your function as an argument with the same name (item_id). For /items/foo, the handler receives item_id as \"foo\" and returns it in JSON.",
+  "quote": "The value of the path parameter `item_id` will be passed to your function as the argument `item_id`."
+ },
+ {
+  "page": "path-params.md",
+  "question": "Why must the route '/users/me' be declared before '/users/{user_id}'?",
+  "answer": "Because path operations are evaluated in order, '/users/{user_id}' would also match '/users/me' and treat \"me\" as user_id unless the fixed route is declared first. The first matching path operation is always used.",
+  "quote": "Because *path operations* are evaluated in order, you need to make sure that the path for `/users/me` is declared before the one for `/users/{user_id}`:"
+ },
+ {
+  "page": "query-params.md",
+  "question": "How does the system decide whether a function parameter is a path parameter or a query parameter?",
+  "answer": "Parameters that are not part of the path parameters are automatically interpreted as query parameters, and FastAPI determines which is which by parameter names (not declaration order).",
+  "quote": "When you declare other function parameters that are not part of the path parameters, they are automatically interpreted as \"query\" parameters."
+ },
+ {
+  "page": "query-params.md",
+  "question": "If a query parameter has an integer type and is not provided in the URL, what value will it take, and how does the framework handle types?",
+  "answer": "Query parameters can be optional and have default values. Integer-typed query parameters are converted from the URL’s string values to the declared Python type and validated.",
+  "quote": "In the example above they have default values of `skip=0` and `limit=10`."
+ },
+ {
+  "page": "query-params.md",
+  "question": "What boolean query parameter values map to True/False, and what happens for an empty or unrecognized boolean value?",
+  "answer": "For a boolean query parameter, values such as `0`, `false`, `off`, and `no` are converted to False. If the parameter is omitted, FastAPI uses its default (False in the example). An empty value like `?short=` or an unrecognized value like `?short=maybe` causes a `422` validation error.",
+  "quote": "An empty value (`?short=`) or an unrecognized value (for example, `?short=maybe`) produces a `422` validation error."
+ },
+ {
+  "page": "response-model.md",
+  "question": "How does the response model return type help ensure the API returns the correct data shape and not invalid data?",
+  "answer": "FastAPI uses the declared return type to validate the returned data. If the returned data is invalid (for example, a required field is missing), the app code is considered broken and FastAPI returns a server error instead of returning incorrect data.",
+  "quote": "If the data is invalid (e.g. you are missing a field), it means that *your* app code is broken, not returning what it should, and it will return a server error instead of returning incorrect data."
+ },
+ {
+  "page": "response-model.md",
+  "question": "If a function return type and `response_model` are both specified, which one does FastAPI use?",
+  "answer": "`response_model` takes priority over the function return type. If both are declared, FastAPI uses `response_model` for validation, documentation, and converting/filtering the output data.",
+  "quote": "If you declare both a return type and a `response_model`, the `response_model` will take priority and be used by FastAPI."
+ },
+ {
+  "page": "security-first-steps.md",
+  "question": "How does a FastAPI backend expect the frontend to send the OAuth2 token when calling protected endpoints?",
+  "answer": "The frontend sends an `Authorization` header whose value is `Bearer ` plus the token string (for example, `Authorization: Bearer foobar`).",
+  "quote": "So, to authenticate with our API, it sends a header `Authorization` with a value of `Bearer ` plus the token."
+ },
+ {
+  "page": "security-first-steps.md",
+  "question": "What does FastAPI’s `OAuth2PasswordBearer` require you to configure with `tokenUrl`, and how is that URL interpreted?",
+  "answer": "You pass `tokenUrl` to `OAuth2PasswordBearer`; it declares the URL the client should use to send `username` and `password` to get a token. If it’s relative (e.g., `token`), it becomes `./token` relative to the API base path.",
+  "quote": "When we create an instance of the `OAuth2PasswordBearer` class we pass in the `tokenUrl` parameter."
+ },
+ {
+  "page": "security-first-steps.md",
+  "question": "If a request doesn’t include a properly formatted OAuth2 Authorization header, what response does FastAPI send?",
+  "answer": "If FastAPI doesn’t see an `Authorization` header, or if the value doesn’t start with `Bearer `, it responds with a 401 `UNAUTHORIZED` error directly.",
+  "quote": "If it doesn't see an `Authorization` header, or the value doesn't have a `Bearer ` token, it will respond with a 401 status code error (`UNAUTHORIZED`) directly."
+ },
+ {
+  "page": "security-first-steps.md",
+  "question": "After setting up the `OAuth2PasswordBearer` dependency, what type does the dependency provide to your path operation function?",
+  "answer": "Using the `oauth2_scheme` dependency with `Depends` provides a `str` token assigned to the path operation function parameter (named `token`).",
+  "quote": "This dependency will provide a `str` that is assigned to the parameter `token` of the *path operation function*."
+ }
+]

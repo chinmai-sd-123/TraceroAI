@@ -87,7 +87,43 @@ def diagnose_trace(
 ) -> DiagnosisTrace:
     diagnosis = _diagnose(evaluations, refused=refused)
     diagnosis.source = source
+    if source == "judge" and not refused:
+        diagnosis.reason = _judge_reason(diagnosis, evaluations) or diagnosis.reason
     return diagnosis
+
+
+# Which check a failing diagnosis rests on, for using that check's own reason.
+_BLAMED_CHECK = {
+    "retrieval_miss": "context_relevance",
+    "unsupported_claim": "groundedness",
+    "wrong_answer": "answer_relevance",
+}
+
+
+def _judge_reason(diagnosis: DiagnosisTrace, evaluations: list[EvaluationResult]) -> str | None:
+    """The judge's own explanation for the check the diagnosis rests on.
+
+    The fixed sentences in _diagnose are written for every source; when the
+    judge decided, its reason is more specific ("2 of 8 claims are not
+    supported"), and for grounding failures the first unsupported claim, with
+    the judge's note on it, says what was wrong.
+    """
+    check = _BLAMED_CHECK.get(diagnosis.label)
+    blamed = next((e for e in evaluations if e.evaluator_name == check), None)
+    if blamed is None or not blamed.reason:
+        return None
+    reason = blamed.reason.strip()
+    if check == "groundedness":
+        claims = blamed.details.get("claims") if isinstance(blamed.details, dict) else None
+        unsupported = next(
+            (c for c in claims or [] if isinstance(c, dict) and c.get("supported") is False and c.get("claim")),
+            None,
+        )
+        if unsupported:
+            reason = f'{reason} Unsupported: "{unsupported["claim"]}"'
+            if unsupported.get("reason"):
+                reason += f" ({unsupported['reason']})"
+    return reason
 
 
 def _diagnose(evaluations: list[EvaluationResult], *, refused: bool) -> DiagnosisTrace:
@@ -120,7 +156,7 @@ def _diagnose(evaluations: list[EvaluationResult], *, refused: bool) -> Diagnosi
     if groundedness and groundedness.label == "fail":
         return DiagnosisTrace(
             label="unsupported_claim",
-            reason="The answer contains terms that are not supported by the retrieved context.",
+            reason="The answer makes claims the retrieved context doesn't support.",
         )
 
     if answer_relevance and answer_relevance.label == "fail":
