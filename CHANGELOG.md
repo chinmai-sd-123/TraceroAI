@@ -6,6 +6,9 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 ## Unreleased
 
 ### Changed
+- The API allows openai 3 (which uses httpx2 internally); the lock installs 3.51.0. Checked
+  against the real provider: the diagnosis benchmark gives the same lexical (58.1%) and
+  embedding (76.1%) accuracy, and 96.6% for the judge.
 - The dashboard summary reads the diagnosis source and cost from stored generated
   columns (migration 0005) instead of parsing every trace's JSON: 147 ms instead of
   777 ms at 50,000 traces. The migration rewrites the traces table once.
