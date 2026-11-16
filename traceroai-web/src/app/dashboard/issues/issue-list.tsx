@@ -52,7 +52,7 @@ export function IssueList({ issues, compact = false }: { issues: Issue[]; compac
               <div className="flex flex-wrap items-center gap-2">
                 <StatusChip status={issue.status} />
                 <DiagnosisBadge label={issue.label} size="sm" />
-                <span className="text-sm text-ink-muted">top source</span>
+                <span className="text-sm text-ink-muted">{issue.groupedBy === "prompt_version" ? "prompt" : "top source"}</span>
                 <code className="truncate font-dash-mono text-[0.8125rem] text-ink">{issue.source}</code>
               </div>
               <Link href={issueTracesHref(issue)} className="mt-2 block text-[15px] leading-6 hover:underline">

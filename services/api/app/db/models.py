@@ -6,15 +6,24 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
 
-# Must match migration 0006_issues (and FAILURE_LABELS in app/services/issues.py).
+# Must match the latest issue-key migration, 0007_issue_key_by_stage (a test
+# compares them), and the labels in app/services/issues.py. Retrieval failures
+# are keyed by the top retrieved source; grounding and answer failures by the
+# prompt version, since that's where their cause usually lies.
 ISSUE_KEY_SQL = (
-    "(CASE WHEN diagnosis_label IN "
-    "('retrieval_miss', 'low_context_relevance', 'unsupported_claim', 'wrong_answer', 'needs_review') "
+    "(CASE "
+    "WHEN diagnosis_label IN ('retrieval_miss', 'low_context_relevance', 'needs_review') "
     "THEN diagnosis_label || '|' || COALESCE("
     "NULLIF(payload -> 'retrieval' -> 'chunks' -> 0 ->> 'document_id', ''), "
     "NULLIF(payload -> 'retrieval' -> 'chunks' -> 0 ->> 'source', ''), "
     "NULLIF(payload -> 'retrieval' -> 'chunks' -> 0 ->> 'document_title', ''), "
-    "'(no context)') END)"
+    "'(no context)') "
+    "WHEN diagnosis_label IN ('unsupported_claim', 'wrong_answer') "
+    "THEN diagnosis_label || '|' || COALESCE("
+    "NULLIF(payload -> 'prompt' ->> 'version', ''), "
+    "NULLIF(payload -> 'prompt' ->> 'template_name', ''), "
+    "'(no prompt version)') "
+    "END)"
 )
 
 
