@@ -235,6 +235,13 @@ export default function DocsPage() {
               development mode, where API keys are optional; see{" "}
               <a href="#auth" className="text-accent underline">API keys</a> before exposing it to a network.
             </P>
+            <P>
+              To see the dashboard with data before instrumenting anything, start it with{" "}
+              <Code>--profile demo</Code>. That replays 30 recorded runs from the recovery-agent example (three
+              recovery runs and an experiment among them) into a project called <Code>demo</Code>, and your stack
+              diagnoses them as they arrive. Remove them with{" "}
+              <Code>docker compose -f infra/docker-compose.yml run --rm demo python -m app.demo --remove</Code>.
+            </P>
           </DocSection>
 
           <DocSection id="trace" title="Send traces">
