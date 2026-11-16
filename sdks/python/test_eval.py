@@ -204,3 +204,52 @@ def test_an_older_server_still_gets_the_totals(monkeypatch):
     assert result.eval_run_id == "run-old"
     assert [len(p["cases"]) for p in posts] == [2, 0]
     assert any("per-question" in e for e in result.errors)
+
+
+def test_variant_settings_reach_retrieve_and_generate(monkeypatch):
+    # Comparing chunking or prompts, not just top_k: functions that declare a
+    # `variant` parameter get the variant being run.
+    _patch_server(monkeypatch, correct_if=lambda a: a.startswith("strict"))
+    seen = []
+
+    def retrieve(query, top_k, variant):
+        seen.append(("retrieve", variant.variant_id, variant.extra["chunking"]))
+        return [{"text": "ctx"}]
+
+    def generate(query, ctx, variant):
+        seen.append(("generate", variant.variant_id, variant.extra["prompt"]))
+        return f"{variant.extra['prompt']} answer"
+
+    result = run_experiment(
+        client=_client(),
+        dataset=[Case("c1", "q", "a")],
+        retrieve=retrieve,
+        generate=generate,
+        variants=[
+            Variant("base", "default prompt", extra={"prompt": "plain", "chunking": "1500/100"}),
+            Variant("strict", "strict prompt", extra={"prompt": "strict", "chunking": "800/200"}),
+        ],
+        post=False,
+    )
+
+    assert seen == [
+        ("retrieve", "base", "1500/100"),
+        ("generate", "base", "plain"),
+        ("retrieve", "strict", "800/200"),
+        ("generate", "strict", "strict"),
+    ]
+    by_id = {v["variant_id"]: v for v in result.variants}
+    assert by_id["strict"]["passed_cases"] == 1 and by_id["base"]["passed_cases"] == 0
+
+
+def test_two_argument_functions_still_work(monkeypatch):
+    _patch_server(monkeypatch, correct_if=lambda a: True)
+    result = run_experiment(
+        client=_client(),
+        dataset=[Case("c1", "q", "a")],
+        retrieve=_retrieve,
+        generate=lambda query, ctx: "answer",
+        variants=[Variant("k3", "k3", top_k=3), Variant("k5", "k5", top_k=5)],
+        post=False,
+    )
+    assert all(v["passed_cases"] == 1 for v in result.variants)
