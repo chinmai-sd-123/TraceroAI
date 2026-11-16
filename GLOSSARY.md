@@ -79,7 +79,3 @@ questions, each question a **case**.
 **Dataset** *(planned)*
 A saved set of cases, built from traces or issues, that experiments and the regression
 gate run against.
-
-**Field trial** *(planned)*
-Using TraceroAI on a real open-source project to improve its results, and feeding what
-breaks back into TraceroAI.

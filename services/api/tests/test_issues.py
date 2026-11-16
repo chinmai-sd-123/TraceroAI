@@ -98,21 +98,21 @@ def test_failures_group_by_label_and_top_source(project) -> None:
 
 
 def test_grounding_failures_group_by_prompt_version_not_top_source(project) -> None:
-    # Field trial 1: unsupported claims with one cause (the prompt) but different
-    # top documents showed up as one issue each.
+    # Unsupported claims with one cause (the prompt) but different top documents
+    # used to show up as one issue each.
     for source in ("middleware", "cors", "body"):
-        _trace(project, f"about {source}", source=source, label="unsupported_claim", prompt_version="librechat")
+        _trace(project, f"about {source}", source=source, label="unsupported_claim", prompt_version="v1")
     _trace(project, "about paths", source="path-params", label="unsupported_claim", prompt_version="grounded")
     _trace(project, "no version", source="cors", label="wrong_answer")
 
     issues = {i["issue_key"]: i for i in _issues(project)}
     assert set(issues) == {
-        "unsupported_claim|librechat",
+        "unsupported_claim|v1",
         "unsupported_claim|grounded",
         "wrong_answer|(no prompt version)",
     }
-    assert issues["unsupported_claim|librechat"]["count"] == 3
-    assert issues["unsupported_claim|librechat"]["grouped_by"] == "prompt_version"
+    assert issues["unsupported_claim|v1"]["count"] == 3
+    assert issues["unsupported_claim|v1"]["grouped_by"] == "prompt_version"
 
 
 def test_a_changed_diagnosis_moves_the_trace(project) -> None:

@@ -1,6 +1,6 @@
 """A judge-decided diagnosis explains itself in the judge's words.
 
-Found in field trial 1: the dashboard showed "The answer contains terms that are
+The dashboard used to show "The answer contains terms that are
 not supported by the retrieved context" (wording for the term-overlap estimate)
 while the judge's own result named the claim that was wrong.
 """

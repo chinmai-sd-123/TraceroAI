@@ -64,8 +64,7 @@ def test_case_results_must_match_the_variant_counts() -> None:
 
 
 def test_variants_are_priced_by_the_server_from_their_tokens() -> None:
-    # Field trial 2: comparing LightRAG settings, cost was the main difference and
-    # experiments didn't record it.
+    # Cost often separates variants that score the same, so the server prices them.
     body = _experiment([])
     body["variants"][0].update(model="gpt-4o-mini", prompt_tokens=600_000, completion_tokens=10_000, cost_usd=999.0)
     body["variants"][1].update(model="gpt-4o-mini", prompt_tokens=180_000, completion_tokens=10_000)
