@@ -6,6 +6,15 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 ## Unreleased
 
 ### Changed
+- A diagnosis the LLM judge made now explains itself in the judge's words, and a
+  grounding failure names the first claim the context doesn't support (for example
+  `Unsupported: "On the request path, middlewares run from innermost to outermost."`).
+  It used to show a fixed sentence written for the term-overlap estimate. Found in
+  field trial 1.
+- Issues group grounding and answer failures by prompt version, and retrieval
+  failures by the top retrieved source (migration 0007). In field trial 1 five
+  unsupported claims with one cause, the prompt, appeared as five issues because
+  their top documents differed; they are now one.
 - The API allows openai 3 (which uses httpx2 internally); the lock installs 3.51.0. Checked
   against the real provider: the diagnosis benchmark gives the same lexical (58.1%) and
   embedding (76.1%) accuracy, and 96.6% for the judge.

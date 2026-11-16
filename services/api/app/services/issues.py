@@ -1,10 +1,11 @@
 """Issues: failing traces grouped by what failed and where.
 
-An issue key is a failure label plus the source of the trace's top retrieved
-chunk, computed by Postgres (TraceRecord.issue_key, migration 0006). Counts and
-dates come straight from the traces, so they can't drift. The only stored state
-is when someone marked an issue resolved; an issue that failed again after that
-has regressed.
+An issue key is a failure label plus what that kind of failure usually comes
+down to, computed by Postgres (TraceRecord.issue_key, migrations 0006 and 0007):
+the top retrieved source for retrieval failures, the prompt version for
+grounding and answer failures. Counts and dates come straight from the traces,
+so they can't drift. The only stored state is when someone marked an issue
+resolved; an issue that failed again after that has regressed.
 """
 
 from __future__ import annotations
@@ -24,11 +25,18 @@ FAILURE_LABELS = ("retrieval_miss", "low_context_relevance", "unsupported_claim"
 
 IssueStatus = Literal["open", "regressed", "resolved"]
 
+# What the second part of an issue key is, by label. Must match ISSUE_KEY_SQL.
+GROUPED_BY_PROMPT = ("unsupported_claim", "wrong_answer")
+
 
 def split_key(issue_key: str) -> tuple[str, str]:
-    """(label, source) from an issue key."""
+    """(label, source or prompt version) from an issue key."""
     label, _, source = issue_key.partition("|")
     return label, source
+
+
+def grouped_by(label: str) -> Literal["prompt_version", "top_source"]:
+    return "prompt_version" if label in GROUPED_BY_PROMPT else "top_source"
 
 
 def status_of(resolved_at: datetime | None, last_seen: datetime) -> IssueStatus:
@@ -105,6 +113,7 @@ def list_issues(
                 "issue_key": key,
                 "label": label,
                 "source": source,
+                "grouped_by": grouped_by(label),
                 "status": current,
                 "count": m["count"],
                 "questions": m["questions"],
