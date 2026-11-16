@@ -263,6 +263,17 @@ schema is created on first start. Point the SDK at it:
 client = TraceroClient(base_url="http://localhost:8000")
 ```
 
+To have something to look at straight away, add the demo data: 30 recorded runs from the
+recovery-agent example (real answers, diagnosed by your stack as it starts), three
+recovery runs and an experiment, in a project called `demo`:
+
+```bash
+docker compose -f infra/docker-compose.yml --profile demo up --build
+```
+
+Remove it later with
+`docker compose -f infra/docker-compose.yml run --rm demo python -m app.demo --remove`.
+
 Traces are scored by the deterministic checks out of the box. To add the LLM judge, export
 `TRACEROAI_OPENAI_API_KEY` (and optionally `TRACEROAI_JUDGE_MODEL`,
 `TRACEROAI_JUDGE_BASE_URL`, `TRACEROAI_EMBEDDING_MODEL`) before `up`.
