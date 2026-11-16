@@ -414,7 +414,8 @@ export type Issue = {
   projectId: string;
   issueKey: string;
   label: string;
-  source: string;
+  source: string; // the top retrieved source, or the prompt version (see groupedBy)
+  groupedBy: "top_source" | "prompt_version";
   status: IssueStatus;
   count: number;
   questions: number;
@@ -445,6 +446,7 @@ export async function getIssues(
       issue_key: string;
       label: string;
       source: string;
+      grouped_by: "top_source" | "prompt_version";
       status: IssueStatus;
       count: number;
       questions: number;
@@ -460,6 +462,7 @@ export async function getIssues(
       issueKey: i.issue_key,
       label: i.label,
       source: i.source,
+      groupedBy: i.grouped_by,
       status: i.status,
       count: i.count,
       questions: i.questions,

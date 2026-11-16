@@ -32,7 +32,7 @@ export default async function IssuesPage({
     <PageFrame>
       <PageHeader
         title="Issues"
-        description="Failing traces grouped by what failed and the top source the retriever returned. Resolve an issue once it's fixed; if it fails again, it comes back as regressed."
+        description="Failing traces grouped by cause: retrieval failures by the top source the retriever returned, grounding and answer failures by prompt version. Resolve an issue once it's fixed; if it fails again, it comes back as regressed."
         actions={
           <Segmented
             label="Time range"

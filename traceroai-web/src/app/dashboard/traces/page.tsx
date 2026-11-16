@@ -99,7 +99,8 @@ export default async function TracesPage({
           <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded border border-line bg-sunken px-4 py-2.5 text-sm">
             <span>
               Showing one issue:{" "}
-              <strong className="font-semibold">{diagnosisName(filters.issue.split("|")[0])}</strong>, top source{" "}
+              <strong className="font-semibold">{diagnosisName(filters.issue.split("|")[0])}</strong>,{" "}
+              {["unsupported_claim", "wrong_answer"].includes(filters.issue.split("|")[0]) ? "prompt" : "top source"}{" "}
               <code className="font-dash-mono text-[0.8125rem]">{filters.issue.split("|").slice(1).join("|")}</code>
             </span>
             <Link href={listHref({ ...filters, issue: undefined, cursor: undefined })} className="text-accent hover:underline">

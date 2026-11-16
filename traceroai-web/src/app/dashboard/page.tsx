@@ -200,7 +200,7 @@ export default async function DashboardPage({
                         ? "Failing traces grouped by cause."
                         : `${attention.length} need${attention.length === 1 ? "s" : ""} attention in this range${
                             regressedCount ? `, ${regressedCount} regressed` : ""
-                          }. Grouped by what failed and the top source.`
+                          }. Grouped by what failed and where.`
                     }
                     flush
                     actions={
