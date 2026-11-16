@@ -162,6 +162,7 @@ def list_traces(
     until: datetime | None = None,
     sort: TraceSort = "newest",
     recovery_run_id: str | None = Query(default=None, max_length=100, description="Attempts of one recovery run"),
+    issue_key: str | None = Query(default=None, max_length=2000, description="Traces in one issue"),
     db: Session = Depends(get_db),
     scope: ReadScope = Depends(read_scope),
 ) -> list[dict]:
@@ -180,6 +181,7 @@ def list_traces(
         since=since,
         until=until,
         recovery_run_id=recovery_run_id,
+        issue_key=issue_key,
     )
     try:
         records, next_cursor = list_page(db, filters, limit=limit, cursor=cursor, sort=sort)

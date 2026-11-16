@@ -57,6 +57,11 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 - Docs: an HTTP API reference and a troubleshooting section.
 - CI runs a browser smoke test of the production build, including the dashboard with
   its API down.
+- Issues: failing traces grouped by what failed and the source of the top retrieved
+  chunk (`GET /v1/issues`, migration 0006), with a page in the dashboard and a panel on
+  the overview. Resolve an issue once it's fixed; a failure after that marks it
+  regressed. A trace moves to the right issue when the judge changes its diagnosis.
+  `GET /v1/traces?issue_key=` lists one issue's traces.
 - Demo data for a first run: `docker compose -f infra/docker-compose.yml --profile demo up`
   (or `python -m app.demo`) replays 30 recorded runs, three recovery runs and an
   experiment into a `demo` project; the stack diagnoses them as they arrive. Running it
