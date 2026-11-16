@@ -11,6 +11,7 @@ changed in TraceroAI. Results that don't improve are reported too.
 | Trial | Project | What it found |
 |---|---|---|
 | [1](01-librechat-rag-api/) | LibreChat's rag_api | A prompt that invites answers from memory; four places TraceroAI needed work, three fixed |
+| [2](02-lightrag/) | LightRAG | Default settings send three times the context for no measured gain; experiments now report cost |
 
 Rules each trial follows:
 

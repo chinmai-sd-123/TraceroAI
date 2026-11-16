@@ -61,3 +61,28 @@ def test_case_results_must_match_the_variant_counts() -> None:
     # k2 claims 1 passed and 1 failed, but its cases say 2 passed.
     body = _experiment([_case("k2", "q1", True), _case("k2", "q2", True)])
     assert client.post("/v1/eval-runs", json=body).status_code == 422
+
+
+def test_variants_are_priced_by_the_server_from_their_tokens() -> None:
+    # Field trial 2: comparing LightRAG settings, cost was the main difference and
+    # experiments didn't record it.
+    body = _experiment([])
+    body["variants"][0].update(model="gpt-4o-mini", prompt_tokens=600_000, completion_tokens=10_000, cost_usd=999.0)
+    body["variants"][1].update(model="gpt-4o-mini", prompt_tokens=180_000, completion_tokens=10_000)
+    assert client.post("/v1/eval-runs", json=body).status_code == 201
+
+    variants = {v["variant_id"]: v for v in client.get(f"/v1/eval-runs/{body['eval_run_id']}").json()["variants"]}
+    big, small = variants["k2"]["cost_usd"], variants["k4"]["cost_usd"]
+    assert big is not None and small is not None
+    assert big != 999.0  # the client's number is replaced
+    assert big > small > 0
+    assert variants["k2"]["prompt_tokens"] == 600_000
+
+
+def test_a_variant_without_usage_or_with_an_unknown_model_has_no_cost() -> None:
+    body = _experiment([])
+    body["variants"][1].update(model="model-nobody-prices", prompt_tokens=1000, completion_tokens=10)
+    assert client.post("/v1/eval-runs", json=body).status_code == 201
+    variants = {v["variant_id"]: v for v in client.get(f"/v1/eval-runs/{body['eval_run_id']}").json()["variants"]}
+    assert variants["k2"]["cost_usd"] is None
+    assert variants["k4"]["cost_usd"] is None

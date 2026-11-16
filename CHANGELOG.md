@@ -66,6 +66,10 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 - Docs: an HTTP API reference and a troubleshooting section.
 - CI runs a browser smoke test of the production build, including the dashboard with
   its API down.
+- Experiments report cost: when `generate` returns `(answer, usage)`, each variant
+  records its token totals, the server prices them, and the experiment page shows
+  tokens per answer and cost per correct answer. Found in field trial 2, where cost
+  was the main difference between LightRAG's settings.
 - `run_experiment` can compare more than `top_k`: when `retrieve` or `generate` takes a
   `variant` parameter, it receives the variant being run, so settings in
   `Variant.extra` (chunking, prompt, model) reach your pipeline. Two-argument
