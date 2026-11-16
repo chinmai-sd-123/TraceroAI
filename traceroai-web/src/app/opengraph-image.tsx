@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 // The link preview: the headline and the stage sequence the product draws,
 // with grounding as the probable cause.
 
-export const alt = "TraceroAI: know which stage of your RAG pipeline failed.";
+export const alt = "TraceroAI: find the step that broke.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -32,7 +32,7 @@ export default function OpengraphImage() {
         <div style={{ display: "flex", fontSize: 30, fontWeight: 700 }}>TraceroAI</div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", fontSize: 76, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2, maxWidth: 900 }}>
-            Know which stage of your RAG pipeline failed.
+            Find the step that broke.
           </div>
           <div style={{ display: "flex", marginTop: 48, border: "2px solid #c5ccd6" }}>
             {STAGES.map((stage, i) => (
@@ -57,7 +57,7 @@ export default function OpengraphImage() {
           </div>
         </div>
         <div style={{ display: "flex", fontSize: 26, color: "#4f5a6b" }}>
-          Open-source tracing and evaluation for RAG · self-hosted · Apache-2.0
+          Open-source failure diagnosis for RAG pipelines · self-hosted · Apache-2.0
         </div>
       </div>
     ),

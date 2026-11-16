@@ -6,6 +6,8 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 ## Unreleased
 
 ### Changed
+- Vercel Analytics loads only on the hosted site. A self-hosted copy sends nothing
+  anywhere.
 - A diagnosis the LLM judge made now explains itself in the judge's words, and a
   grounding failure names the first claim the context doesn't support (for example
   `Unsupported: "On the request path, middlewares run from innermost to outermost."`).
@@ -40,6 +42,14 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   (counted per server instance) and has a sign-out button.
 
 ### Added
+- A new home page. It follows one real failed run from the example app from top to
+  bottom: its case file assembles in the hero, its 18-line trace folds into a
+  three-line diagnosis, its layers come apart on a "light table", and a red line ties
+  those chapters to the recovery run that fixed it. New sections cover what it can
+  diagnose and what it works with (planned items are marked Planned), issues, and
+  per-label precision and recall from the benchmark.
+- The site header's Product, Docs and Open source items open panels that say what's
+  behind each link, by hover, click or keyboard.
 - The docs are now 26 pages in seven sections (getting started, concepts, instrument,
   diagnose and fix, reference, self-host, try it), written in MDX, with search over a
   static index (it works on a self-hosted or offline copy), "On this page" and

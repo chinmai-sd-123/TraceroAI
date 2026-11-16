@@ -1,9 +1,20 @@
 import { expect, test } from "@playwright/test";
 
-test("the landing page renders", async ({ page }) => {
+test("the landing page renders, opens its case and its menus", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Find the step that broke." })).toBeVisible();
   await expect(page.getByText("pip install traceroai").first()).toBeVisible();
+
+  // The hero's case file reaches its verdict.
+  await expect(page.getByRole("article", { name: "Case file for trace 5f7bf901" }).getByText("Unsupported claim")).toBeVisible({
+    timeout: 10_000,
+  });
+
+  // Header panels open by click and close with Escape.
+  await page.getByRole("button", { name: "Product" }).click();
+  await expect(page.getByRole("link", { name: /Measured accuracy/ })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("link", { name: /Measured accuracy/ })).toBeHidden();
 });
 
 test("the docs render, navigate and search", async ({ page }) => {

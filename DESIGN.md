@@ -12,6 +12,7 @@ colors:
   unclear-amber-soft: "#fbf0e1"
   report-white: "#ffffff"
   docket-rail: "#eef2f6"
+  light-table: "#ffffff"
   sunken: "#f4f6f9"
   rule: "#dfe4ea"
   rule-strong: "#c5ccd6"
@@ -105,7 +106,7 @@ Density is that of a working tool used for long investigations. Lists are compac
 
 How sure we are is drawn rather than coloured. A verdict the LLM judge made is solid and called Final. One an estimate made (term overlap, embedding similarity) is hatched and called Preliminary. When the judge overrules an estimate, the estimate stays on the record, struck through.
 
-The home page and the docs use the same system. The home page reads as a short technical report on TraceroAI, with a contents rail, and it moves: but every animation acts out what the product does to a real trace (a stage is checked, a verdict stamps in, the judge overrules an estimate), using real data from the example app. Nothing moves for decoration.
+The home page and the docs use the same system. The home page follows one real failed run from the example app (trace 5f7bf901) from top to bottom: its case file opens in the hero, its trace folds into a verdict, it is taken apart on the light table, and a red thread ties those chapters to the recovery run that fixed it. Every animation acts out what the product does to that run, with its real data. Nothing moves for decoration.
 
 **Key Characteristics:**
 - White work areas on a tinted docket rail; structure from 1px rules, never shadows.
@@ -128,13 +129,14 @@ A cool, institutional palette: one navy for everything interactive, and status c
 
 ### Neutral
 - **Report White** (`report-white`): page and panel background.
-- **Docket Rail** (`docket-rail`): the sidebar and the login backdrop.
+- **Docket Rail** (`docket-rail`): the sidebar, the login backdrop, and the room the home page's light table stands in.
+- **Light Table** (`light-table`): pure white on the rail tint, so the table reads as lit from below. Used by the light table only.
 - **Sunken** (`sunken`): table headers, row hover, code and JSON blocks, the list beside an open trace.
 - **Rule** and **Rule Strong** (`rule`, `rule-strong`): dividers and panel borders; the strong rule frames inputs, the stage docket and table heads.
 - **Ink**, **Ink Muted**, **Ink Faint**: body text, secondary text and labels, placeholders and stage numbers. A failed stage that is not the cause is drawn in Ink Muted.
 
 ### Named Rules
-**The One Red Rule.** Red appears only on the probable cause. A second failing stage is ink; an error message is amber; a failed eval case says "Failed" in ink. If something red is not the reason an answer went wrong, it is the wrong colour. The one deliberate exception is the reviewer's stroke drawn under "failed." in the home page headline.
+**The One Red Rule.** Red appears only on the probable cause. A second failing stage is ink; an error message is amber; a failed eval case says "Failed" in ink. If something red is not the reason an answer went wrong, it is the wrong colour. Two marks on the home page belong to the same rule: the reviewer's stroke under "broke." in the headline, and the red thread, which is the cause's trail through the page.
 
 **The Drawn Certainty Rule.** Certainty is shown by fill, not by another colour: solid for the LLM judge, a 135° hatch (2px line, 4.5px repeat, in the element's own colour) for estimates. Every verdict on screen is one or the other.
 
@@ -156,9 +158,11 @@ A cool, institutional palette: one navy for everything interactive, and status c
 ### Named Rules
 **The No Eyebrow Rule.** Headings carry their own weight. No labels, pills or uppercase lines above headings, and no tracked-out caps anywhere. A sentence of context goes below the heading.
 
-**Display** (700, clamp(2.4rem, 5.2vw, 4.4rem), -0.035em): the home page headline only. Section headings on the public pages are 700 at 1.75rem.
+**Display** (700, clamp(2.75rem, 6.4vw, 4.75rem), -0.042em, set 0.04em into the margin so the glyphs align optically): the home page headline only. Section headings on the home page are 700 at 2.5rem (-0.03em); in the docs, 1.75rem.
 
 ## Layout
+
+The home page alternates white and the rail tint by act: white for the hero and the explanation, the tint for the light table, white again, and the tint for the closing band ("Run it yourself"), which repeats the headline and runs into the footer. The trace printout sits only on the hero's right side, behind the case file, so the headline is on calm paper; below 1280px it's hidden.
 
 The shell is a 14rem docket rail beside the work area from the `lg` breakpoint (1024px); below it the rail collapses into a top bar with the project select and a horizontally scrolling nav. From `lg` the rail can collapse to a 4rem strip of icons (labels move to tooltips and `aria-label`s). One round toggle straddles the rail's right edge near the top, in the same place open or collapsed, and `[` does the same; the column width eases over 200ms. Ordinary pages sit in a 76rem container with 16px side gutters on phones and 32px from `sm` up.
 
@@ -177,10 +181,14 @@ The viewer's layout lives in one cookie (`traceroai_layout`), so the server rend
 
 ## Elevation & Depth
 
-The system is flat. There are no shadows. Depth comes from tone (white work on the tinted rail, sunken table heads and code blocks) and from 1px rules. Panels are bordered, not lifted.
+The system is flat. Depth comes from tone (white work on the tinted rail, sunken table heads and code blocks) and from 1px rules. Panels are bordered, not lifted.
+
+The one exception is **paper lying on a surface**: the `.sheet` elevation (a hairline plus one soft contact shadow) on the home page's case file, the light table's sheets, and the header's panels, which float over the page. Nothing else casts a shadow.
+
+**Translucency, only over content.** Frosted glass is used where something sits on top of other content, and nowhere else: the site header (`.glass-bar`, its frosting on a layer behind it so its panels can blur the page), the header's panels (`.glass-strong`), the hero case file over the trace printout (`.glass-card`, blurred hard enough that text behind it is only a haze), and the light table's sheets, which are acetates (`.acetate`): each shows the layers beneath it, softened. Every one has an opaque fallback where `backdrop-filter` isn't supported.
 
 ### Named Rules
-**The Ruled Page Rule.** Structure is drawn with 1px lines in `rule` or `rule-strong`. A container that needs to stand apart gets a border, never a shadow or a coloured side stripe.
+**The Ruled Page Rule.** Structure is drawn with 1px lines in `rule` or `rule-strong`. A container that needs to stand apart gets a border, never a shadow or a coloured side stripe (paper on a surface excepted, above).
 
 ## Shapes
 
@@ -211,6 +219,7 @@ Plain and restrained.
 - **Rail:** wordmark, project select, an "Open a trace by id" field, then grouped items with 16px icons (1.5px stroke). The active item is a solid navy block with white text and icon; hover is white on the rail.
 - **Tabs:** underline tabs as links (each tab has a URL). Active is a 2px navy underline and 600 weight; on phones the row scrolls and fades at the right edge.
 - **Time range:** segmented links (24h, 7d, 30d, All); the active segment is solid navy.
+- **Site header (public pages):** Product, Docs and Open source each open a panel on hover (after a short pause, so passing over doesn't open it), on click, or with ArrowDown. A panel is a grid of links, each with a title and one line on what's behind it; Product's panel adds the home page's case. Esc closes and returns focus; moving between items switches panels at once. It's a disclosure (button and links), not an ARIA menu. On phones one Menu button lists all three groups.
 
 ### Stage Sequence (signature component)
 Three segments in pipeline order: Retrieval, Grounding, Answer. In lists each segment is a 20px by 8px bar; on the trace page it becomes the stage docket, three ruled columns, each with its number, name, verdict word, the question its check asks, the reason given, and who decided it ("Final: decided by the LLM judge" or "Preliminary: estimated from term overlap"). The blamed stage's column takes the soft red ground and a "Probable cause" tag. Segment colour: red for the cause, ink muted for another failure, green for passed, amber for unclear, strong rule for not checked. Fill: solid when judged, hatched when estimated. Every sequence carries a text label for screen readers.
@@ -219,18 +228,20 @@ Three segments in pipeline order: Retrieval, Grounding, Answer. In lists each se
 The one dark element: ink (`#14202e`) ground, light text, Plex Mono at 13px, comments, strings and keywords lightly tinted. Tabs above when there's more than one snippet (arrow keys move between them), and a copy button in its dark variant.
 
 ### Contents rail (public pages)
-The home page and docs list their sections in a sticky rail. A navy-tinted highlight glides to the section being read; each item has a small marker, hollow ahead, solid navy once passed, ringed while current.
+The docs list a page's sections in a sticky rail. A navy-tinted highlight glides to the section being read; each item has a small marker, hollow ahead, solid navy once passed, ringed while current.
 
 ### Provenance Mark
 A small bordered mark next to every diagnosis: a solid ink border reading "Final · LLM judge", or a dashed border reading "Preliminary · term-overlap estimate" (plus "judge pending" or "judge failed" when that applies). In tables it shows the word alone, with the method in the tooltip and screen-reader text.
 
 ### Motion (public pages)
-One family of moves, all from the product's vocabulary, eased out (`cubic-bezier(0.16, 1, 0.3, 1)`), and every one settles to its finished state under reduced motion:
-- **Investigation replay** (home hero): a real trace plays through question, typed answer, each stage scanned and stamped, the estimate struck as the judge takes over, then the probable cause and recovery run. Cycles three real cases; pausable.
-- **Anatomy of a diagnosis**: a pinned, scroll-driven walk through one real trace, from retrieval to the judge checking each claim, to the red and green stamps. On phones it shows the finished trace.
-- **Trace stream**: rows of stage-sequence marks drifting past on a canvas; they slow and lift under the pointer, and hovering one names it.
-- **Trace record backdrop**: the hero's background is a real stored trace in faint 11px mono; the cursor brings it into focus in navy.
-- **Reveals**: figures wipe up into view once; headings wipe in with scroll-driven CSS where supported; numbers count up once.
+One family of moves, all from the product's vocabulary, eased out (`cubic-bezier(0.16, 1, 0.3, 1)`), and every one settles to its finished state under reduced motion. The home page has three moments; everything else is quiet.
+- **The case opens** (hero): the case file comes into focus from a soft blur, then the run assembles once, in about four seconds: the question types in, the answer prints, each stage is checked, a hand-drawn red ring closes around Grounding, the estimate is struck as the judge takes over, and the verdict lands, large. It's built for a three-second read: the retrieved chunks fold into one line that opens, and the verdict is above the fold at 1280×720. Replay restarts it. In the hero, red appears three times: the headline stroke, the ring (with its stage bar), and the verdict.
+- **The red thread**: one 1.5px red line from under the case file, down the left gutter past a pin at each chapter about the run, to the recovery run's healthy attempt. It draws as the reader scrolls, with a small tip where it's being drawn. Desktop only; phones get small red pins instead.
+- **The light table**: a pinned section where the run's five layers (question, context, answer, the judge's checks, verdict) lift apart in perspective, then each is pulled out of the stack in turn. The answer layer is red throughout. Clicking a layer lays it flat for reading (Esc returns). CSS 3D on real elements, no canvas. Phones and reduced motion get the five sheets as a grid.
+- **The benchmark stream** (under the hero): the 117 labelled cases behind the accuracy figures, in three rows (term overlap, embeddings, the judge), each mark a stage sequence drawn as the dashboard draws one, a ring on every wrong diagnosis. The rows drift in alternating directions; the pointer slows them and names the case. Data from `docs/benchmarks`, nothing invented.
+- **Between sections** (CSS scroll-driven, static where unsupported): headings, intro text and the main figures come into focus from a soft blur as they scroll in; the light table's room dims as you arrive and brightens as you leave; a stage's red bar draws across; the rule between numbered steps draws down; rows that are a sequence (issues, recovery attempts) arrive in order; side-by-side pairs (a figure and its code) meet from the left and the right.
+- **Routes diagram** (Works with what you run): available routes carry a navy packet into TraceroAI and out to what it produces; planned routes are dashed and still.
+- Smaller: the trace in section two folds from 18 lines to three as you scroll; the trace record behind the hero comes into focus under the cursor; headings wipe in; figures and numbers reveal once; the terminal types its commands once.
 - **Footer wordmark**: "TraceroAI" at 21vw in translucent navy fading to nothing.
 
 ## Do's and Don'ts

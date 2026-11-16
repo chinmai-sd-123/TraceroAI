@@ -2,8 +2,8 @@
 
 import { useRef, type ReactNode } from "react";
 
-/** Tracks the pointer over the hero so the grid can light up around it
- * (the .spotlight layer reads --mx / --my). Mouse only. */
+/** Tracks the pointer over the hero so the backdrop can light up around it
+ * (the lit layer reads --mx / --my). Mouse only. */
 export function Spotlight({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement | null>(null);
   return (
@@ -29,11 +29,11 @@ export function Spotlight({ children, className = "" }: { children: ReactNode; c
 /** The headline, its words rising in turn, with a reviewer's red stroke
  * drawn under the last word. Pure CSS: it runs before hydration. */
 export function HeroTitle() {
-  const words = ["Know", "which", "stage", "of", "your", "RAG", "pipeline"];
+  const words = ["Find", "the", "step", "that"];
   return (
     <h1
       id="title"
-      className="max-w-[17ch] text-[clamp(2.4rem,5.2vw,4.4rem)] leading-[1.04] font-bold tracking-[-0.035em] text-balance"
+      className="max-w-[11ch] text-[clamp(2.75rem,6.4vw,4.75rem)] leading-[0.98] font-bold tracking-[-0.042em] text-balance [margin-left:-0.04em]"
     >
       {/* Spaces sit between the word boxes: inside an inline-block they collapse. */}
       {words.map((word, i) => (
@@ -44,9 +44,9 @@ export function HeroTitle() {
         </span>
       ))}
       <span className="title-word relative inline-block whitespace-nowrap" style={{ animationDelay: `${120 + words.length * 70}ms` }}>
-        failed.
+        broke.
         <svg
-          className="title-stroke absolute -bottom-[0.12em] left-[-0.04em] h-[0.32em] w-[105%] overflow-visible"
+          className="title-stroke absolute -bottom-[0.1em] left-[-0.03em] h-[0.3em] w-[104%] overflow-visible"
           viewBox="0 0 200 20"
           preserveAspectRatio="none"
           aria-hidden="true"

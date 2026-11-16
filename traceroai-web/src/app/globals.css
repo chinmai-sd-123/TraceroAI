@@ -32,6 +32,8 @@
   --color-pass-soft: #e6f2ec;
   --color-warn: #95500a;
   --color-warn-soft: #fbf0e1;
+  /* The light table: pure white on the rail tint, so it reads as lit. */
+  --color-table: #ffffff;
 }
 
 * {
@@ -143,7 +145,6 @@ div.replay-stamp { display: block; }
   background-image: linear-gradient(var(--color-cause-soft), var(--color-cause-soft));
   background-repeat: no-repeat;
   background-color: transparent;
-  text-decoration-line: underline;
   animation: replay-mark 600ms ease-out both;
 }
 .probe { animation: probe-travel ease-in-out both; }
@@ -176,11 +177,16 @@ div.replay-stamp { display: block; }
   word-break: break-word;
   color: color-mix(in srgb, var(--color-ink) 9%, transparent);
 }
-.trace-record { mask-image: linear-gradient(to bottom, black 55%, transparent 98%); }
+/* Only on the right, behind the case file: the headline sits on calm paper. */
+.trace-record {
+  mask-image: linear-gradient(to bottom, black 55%, transparent 98%), linear-gradient(to right, transparent 42%, black 78%);
+  mask-composite: intersect;
+}
 /* The lit copy: navy text, visible only in a circle around the pointer. */
 .trace-record-lit .trace-record-text { color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
 .trace-record-lit {
-  mask-image: radial-gradient(circle 190px at var(--mx, -999px) var(--my, -999px), black 25%, transparent 75%);
+  mask-image: radial-gradient(circle 190px at var(--mx, -999px) var(--my, -999px), black 25%, transparent 75%), linear-gradient(to right, transparent 42%, black 78%);
+  mask-composite: intersect;
   opacity: 0;
   transition: opacity 300ms ease-out;
 }
@@ -198,7 +204,6 @@ div.replay-stamp { display: block; }
 .crop.bl { bottom: -1px; left: -1px; border-bottom-width: 1px; border-left-width: 1px; }
 .crop.br { bottom: -1px; right: -1px; border-bottom-width: 1px; border-right-width: 1px; }
 
-.trace-stream { mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); }
 
 @media (prefers-reduced-motion: reduce) {
   .replay-in, .replay-stamp, .replay-mark, .probe, .probe-ring, .reveal[data-reveal="shown"] { animation: none; }
@@ -263,6 +268,96 @@ div.replay-stamp { display: block; }
 @media (prefers-reduced-motion: reduce) {
   .footer-wordmark { transition: none; }
 }
+/* --- Home page: the case file, the light table, the red thread ------------ */
+
+/* The one exception to the no-shadow rule: paper lying on a surface. Used on
+   the hero case file and the light table's sheets only. */
+.sheet {
+  box-shadow:
+    0 1px 0 rgb(20 32 46 / 0.04),
+    0 18px 36px -24px rgb(20 32 46 / 0.28);
+}
+/* Two sheets of the case file peek out behind the top one. */
+.case-stack { position: relative; isolation: isolate; }
+.case-stack::before,
+.case-stack::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+.case-stack::before { transform: translate(7px, 7px) rotate(1.2deg); }
+.case-stack::after { transform: translate(-5px, 11px) rotate(-1deg); }
+
+/* The reviewer's ring around the failing stage, drawn once. */
+@keyframes ring-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.case-ring path {
+  stroke-dasharray: 1;
+  animation: ring-draw 650ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+/* Context sheets slide in from the right. */
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateX(28px) rotate(1.5deg); }
+  to { opacity: 1; transform: none; }
+}
+.sheet-in { animation: sheet-in 520ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* The light table's room: the rail tint, so the table itself reads as lit. */
+.light-table-room { background: var(--color-rail); }
+.light-table {
+  background: var(--color-table);
+  border: 1px solid var(--color-line);
+  box-shadow:
+    0 0 0 6px rgb(255 255 255 / 0.55),
+    0 30px 70px -40px rgb(20 32 46 / 0.35);
+}
+.lt-stage { width: min(32rem, 100%); }
+.lt-stack {
+  position: relative;
+  height: 17rem;
+  transform-style: preserve-3d;
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lt-sheet {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transition:
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 220ms ease-out;
+}
+
+/* The red thread: drawn as the reader scrolls (see red-thread.tsx). */
+.red-thread path { fill: none; stroke: var(--color-cause); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.red-thread circle { fill: var(--color-surface); stroke: var(--color-cause); stroke-width: 1.5; transition: fill 200ms ease-out; }
+.red-thread circle[data-reached] { fill: var(--color-cause); }
+/* Phones: no line; each thing it ties together keeps a small red pin. */
+.thread-pin { display: none; }
+@media (max-width: 1023px) {
+  .thread-pin { display: inline-block; width: 7px; height: 7px; border-radius: 9999px; background: var(--color-cause); }
+}
+
+/* Tree to verdict: rows fold away, three remain. */
+.tree-row { transition: color 300ms ease-out; }
+
+/* The terminal types its commands once. */
+@keyframes caret-blink { 50% { opacity: 0; } }
+.term-caret { display: inline-block; width: 0.55em; height: 1.05em; vertical-align: -2px; background: #e6ebf2; animation: caret-blink 900ms steps(1) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .case-ring path { animation: none; stroke-dasharray: none; }
+  .sheet-in { animation: none; }
+  .lt-stack, .lt-sheet { transition: none; }
+  .term-caret { animation: none; }
+}
+
 .is-resizing, .is-resizing * { cursor: col-resize !important; user-select: none !important; }
 
 /* Overview panels resizing or moving: the group morphs, the snapshots don't
@@ -284,4 +379,163 @@ div.replay-stamp { display: block; }
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 160ms;
+}
+
+/* Header panels open with a short drop; instant under reduced motion. */
+@keyframes nav-panel-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.nav-panel { animation: nav-panel-in 160ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .nav-panel { animation: none; }
+}
+
+/* --- Between sections: scroll-driven, only where the motion explains -------
+   Static where scroll-driven animations aren't supported, and off under
+   reduced motion. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* The room dims as the reader walks up to the light table, so the table
+       reads as lit; it brightens again on the way out. */
+    @keyframes room-dim {
+      0% { background-color: var(--color-canvas); }
+      6%, 94% { background-color: var(--color-rail); }
+      100% { background-color: var(--color-canvas); }
+    }
+    .light-table-room {
+      animation: room-dim linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+
+    /* A stage's verdict bar draws across as it comes into view. */
+    @keyframes draw-x {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    .draw-x {
+      transform-origin: left;
+      animation: draw-x linear both;
+      animation-timeline: view();
+      animation-range: entry 20% cover 35%;
+    }
+
+    /* Steps in a sequence: the rule between their numbers draws as you read. */
+    @keyframes draw-y {
+      from { transform: scaleY(0); }
+      to { transform: scaleY(1); }
+    }
+    .step-rail {
+      transform-origin: top;
+      animation: draw-y linear both;
+      animation-timeline: view();
+      animation-range: entry 30% cover 70%;
+    }
+
+    /* Rows that are a sequence (issues, recovery attempts) arrive in order:
+       each row's own entry staggers them naturally. */
+    @keyframes row-rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+    .rise-rows > * {
+      animation: row-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 10% entry 90%;
+    }
+  }
+}
+
+/* Side-by-side pairs (a figure and its code, two example runs) meet in the
+   middle: the left one slides in from the left, the right one from the right.
+   Desktop only, where they actually sit side by side. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) and (min-width: 1280px) {
+    @keyframes from-left {
+      from { opacity: 0; transform: translateX(-40px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes from-right {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: none; }
+    }
+    .meet > :first-child,
+    .meet > :last-child {
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 30%;
+    }
+    .meet > :first-child { animation-name: from-left; }
+    .meet > :last-child { animation-name: from-right; }
+  }
+}
+
+/* The benchmark stream fades in and out at its edges. */
+.stream-fade { mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent); }
+/* Its labels line up with the page's content edge; the marks run full bleed. */
+.stream-grid { --edge: 1rem; grid-template-columns: calc(var(--edge) + 7.75rem) minmax(0, 1fr); }
+.stream-labels { padding-left: var(--edge); }
+@media (min-width: 640px) {
+  .stream-grid, .stream-labels { --edge: max(2rem, calc((100vw - 84rem) / 2 + 2rem)); }
+  .stream-grid { grid-template-columns: calc(var(--edge) + 9.5rem) minmax(0, 1fr); }
+}
+
+/* Translucency, only where something sits on top of other content: the
+   header and its panels over the page, the case file over the hero's printout,
+   and the light table's sheets, which are acetates: each shows the layers
+   beneath it, softened. Opaque where backdrop-filter isn't supported. */
+.glass { background: rgb(255 255 255 / 0.96); }
+/* The header's frosting lives on a layer behind it, so the header isn't a
+   backdrop root and its panels can blur the page itself. */
+.glass-bar { isolation: isolate; }
+.glass-bar::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgb(255 255 255 / 0.96); }
+.glass-strong { background: rgb(255 255 255 / 0.98); }
+.glass-card { background: rgb(255 255 255 / 0.97); }
+.acetate { background: var(--color-surface); }
+.acetate-fault { background: var(--color-cause-soft); }
+@supports (backdrop-filter: blur(1px)) {
+  .glass { background: rgb(255 255 255 / 0.74); backdrop-filter: blur(18px) saturate(1.5); }
+  .glass-bar::before { background: rgb(255 255 255 / 0.74); backdrop-filter: blur(18px) saturate(1.5); }
+  .glass-strong { background: rgb(255 255 255 / 0.9); backdrop-filter: blur(32px) saturate(1.6); }
+  /* Over text (the hero's printout), blur hard enough that it's only a haze. */
+  .glass-card { background: rgb(255 255 255 / 0.84); backdrop-filter: blur(26px) saturate(1.4); }
+  .acetate { background: rgb(255 255 255 / 0.74); backdrop-filter: blur(2.5px); }
+  .acetate-fault { background: rgb(253 236 234 / 0.8); backdrop-filter: blur(2.5px); }
+  .case-stack::before,
+  .case-stack::after { background: rgb(255 255 255 / 0.6); backdrop-filter: blur(6px); }
+}
+
+/* Coming into focus: headings, intro text and the main figures start soft and
+   slightly low, and sharpen as they scroll in. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes focus-in {
+      from { opacity: 0.15; filter: blur(10px); transform: translateY(14px); }
+      to { opacity: 1; filter: none; transform: none; }
+    }
+    .focus-in {
+      animation: focus-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
+  }
+}
+
+/* The case file arrives once, coming into focus, then plays its sequence. */
+@keyframes case-arrive {
+  from { opacity: 0; filter: blur(12px); transform: translateY(16px) scale(0.985); }
+  to { opacity: 1; filter: none; transform: none; }
+}
+.case-arrive { animation: case-arrive 900ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .case-arrive { animation: none; }
+}
+
+/* The closing band: the page ends on the rail tint, with the headline again. */
+.closing-band { background: var(--color-rail); }
+@media (max-width: 1279px) {
+  /* Without the case file's column the printout would sit behind the text. */
+  .trace-record { display: none; }
 }
