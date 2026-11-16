@@ -1,0 +1,33 @@
+export const meta = {
+  description: "Every trace ends with one diagnosis: what went wrong, the stage it blames, and why.",
+};
+
+A diagnosis is the single conclusion for a trace. It has a label, a reason, its source
+(who decided), and the stage it blames. Every trace has exactly one.
+
+<DiagnosisTable />
+
+## How it's reached
+
+Three checks look at each trace:
+
+- **Context relevance**: does the retrieved context match the question?
+- **Groundedness**: is every claim in the answer supported by that context? The judge
+  splits the answer into claims and checks each one.
+- **Answer relevance**: does the answer address the question?
+
+A refusal ("the context doesn't say") is checked first: it's a correct refusal if the
+context really lacked the answer, and a wrong answer if the context had it. Otherwise
+the first check that failed, in the order above, decides the diagnosis. All three
+passing makes a healthy answer; checks that can't decide make "needs review".
+
+## Healthy
+
+"Healthy answer" and "correct refusal" both count as healthy: the pipeline did the
+right thing. Everything else is a failure, except "needs review", which asks for a
+person to look.
+
+## Who decided
+
+A diagnosis can come from a cheap estimate or from the LLM judge, and the dashboard
+always says which. See [Estimates and judge verdicts](/docs/concepts/estimates-and-verdicts).

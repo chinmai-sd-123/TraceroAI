@@ -1,0 +1,48 @@
+export const meta = {
+  description: "How often each tier of checks diagnoses a trace correctly, measured on 117 labelled traces and re-run every week.",
+};
+
+## The numbers
+
+Measured on 117 labelled traces (22 healthy answers, 18 correct refusals, 20 retrieval
+misses, 21 unsupported claims, 36 wrong answers):
+
+| Tier | Accuracy |
+|---|---|
+| Term overlap | 58.1% (68 of 117) |
+| Embedding (`text-embedding-3-small`) | 76.1% (89 of 117) |
+| LLM judge (`gpt-5.4-nano`) | 94.0–95.7% over three runs |
+
+The judge gave the same label in all three runs for 96.6% of the cases. The
+[full report](https://github.com/chinmai-sd-123/TraceroAI/blob/main/docs/evaluation-benchmark.md)
+has precision and recall per label, and every verdict.
+
+## Where it goes wrong
+
+- **Term overlap** rarely recognises a correct answer worded differently from the
+  source (3 of 22 healthy answers), and labels most refusals correct even when the
+  context held the answer.
+- **Embeddings** are mostly undecided rather than wrong: 21 of their 28 misses are
+  "needs review".
+- **The judge** sometimes calls a reworded claim unsupported ("outside auditors" for
+  "third-party auditors").
+
+## Kept honest
+
+The benchmark runs every week in CI against the real judge and fails if judge accuracy
+or self-agreement drops below 90%. You can run it yourself:
+
+```bash
+cd services/api
+python -m app.eval.benchmark --repeat 3 --report report.json
+```
+
+It makes real provider calls (a few cents with a small model).
+
+## Experiment grading is separate
+
+[Experiments](/docs/fix/experiments) grade answers against expected answers with a
+single judge call. Checked by hand on real projects, that grader disagreed with a
+careful reading on about 1 in 6 answers, mostly by failing long answers that were
+right. Treat small differences between experiment variants with care, and read the
+answers when a result decides something.

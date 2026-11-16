@@ -127,7 +127,7 @@ export default async function DashboardPage({
               {range === "all" ? (
                 <>
                   Send one with the Python SDK and it appears here within seconds.{" "}
-                  <Link href="/docs#trace" className="text-accent underline">
+                  <Link href="/docs/instrument/python-sdk" className="text-accent underline">
                     See how
                   </Link>
                   .

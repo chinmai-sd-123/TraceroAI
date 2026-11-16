@@ -33,10 +33,10 @@ export function SelfHostNotice() {
         <code className="font-dash-mono text-[0.8125rem] text-ink">TRACEROAI_API_URL</code>.
       </p>
       <p className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-        <Link href="/docs#self-host" className="text-accent hover:underline">
+        <Link href="/docs/self-host/docker-compose" className="text-accent hover:underline">
           Self-hosting guide
         </Link>
-        <Link href="/docs#config" className="text-accent hover:underline">
+        <Link href="/docs/reference/configuration" className="text-accent hover:underline">
           Configuration
         </Link>
         <a href={GITHUB_URL} className="text-accent hover:underline">

@@ -1,0 +1,38 @@
+export const meta = {
+  description: "Moving to a newer TraceroAI: migrations, what rewrites a table, and what stays compatible.",
+};
+
+## The steps
+
+1. Pull the new version.
+2. Run the migrations, before the new API or worker starts (command below).
+3. Start the API, the worker and the dashboard.
+
+```bash
+cd services/api
+python -m app.db.init_db
+```
+
+With Docker Compose the migrations run on `up`: the `migrate` service goes first, and
+the API and worker wait for it.
+
+## Migrations that rewrite the traces table
+
+Some migrations add stored columns, which rewrites the `traces` table once while
+holding a lock. On a large table, run them at a quiet time.
+
+| Migration | What it does |
+|---|---|
+| 0005 | Stores the diagnosis source and cost as columns, for a faster dashboard summary |
+| 0006 | Adds issues: the issue key column and the table of resolved issues |
+| 0007 | Groups grounding and answer failures by prompt version. Issues you had marked resolved under the old grouping lose that mark |
+
+## Compatibility
+
+- **SDK and server:** an older SDK keeps working with a newer server. A newer SDK
+  posting an experiment with per-question results to an older server falls back to
+  sending the totals only.
+- **API:** endpoints under `/v1` keep their meaning. New optional fields and query
+  parameters can appear.
+- **Changes** are listed in the
+  [changelog](https://github.com/chinmai-sd-123/TraceroAI/blob/main/CHANGELOG.md).

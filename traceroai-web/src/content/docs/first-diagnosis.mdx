@@ -1,0 +1,46 @@
+export const meta = {
+  description: "What the trace page tells you, from the top: the question, the verdict, the findings for each stage, and the execution.",
+};
+
+Open any trace in the dashboard. The page reads from the top down, from what went
+wrong to the evidence for it.
+
+## The verdict
+
+Under the question you'll see the probable cause, for example **Retrieval miss**, with
+the reason in a sentence. When the LLM judge decided, the reason is the judge's own
+words; for an unsupported claim it quotes the claim the context doesn't back, such as
+`Unsupported: "On the request path, middlewares run from innermost to outermost."`
+
+Next to it is a mark that says who decided:
+
+- **Final**: the LLM judge's verdict.
+- **Preliminary**: an estimate from term overlap or embedding similarity, used until
+  the judge answers, or when no judge is configured.
+
+[Estimates and judge verdicts](/docs/concepts/estimates-and-verdicts) explains the
+difference and why it matters.
+
+## Findings by stage
+
+Three columns, one per stage: Retrieval (did the context match the question?),
+Grounding (is every claim supported by that context?) and Answer (does it address the
+question?). Each shows the check's result, its reason, and who decided. The column the
+diagnosis blames is tinted red and tagged "Probable cause". Selecting a column opens
+that step below.
+
+## The execution
+
+Every step in order, drawn to time where the SDK measured it: the query, retrieval,
+the prompt, generation, evaluation, feedback and the raw trace. Select a step to see
+what went in and what came out: for retrieval, each chunk with its rank, source and
+score; for generation, the model, parameters, tokens and cost.
+
+## What to do next
+
+- If the retrieval column failed, look at the chunks: was the right document there?
+- If grounding failed, compare the unsupported claim with the chunks.
+- If it's part of a recovery run, the strip at the top shows every attempt and what
+  changed between them.
+
+[Investigate failures](/docs/fix/investigate) covers going from one trace to the fix.

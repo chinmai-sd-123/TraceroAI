@@ -1,0 +1,10 @@
+export const meta = {
+  description: "Ask a small demo knowledge base a question; your API answers it, checks it, and shows the trace.",
+};
+
+The playground sends your question to the API's demo knowledge base. The server
+retrieves, answers and evaluates it, and the trace appears below. It needs
+`TRACEROAI_PLAYGROUND_ENABLED=true` on the API it talks to; leave that off on anything
+public, since it makes LLM calls without a key.
+
+<Playground />

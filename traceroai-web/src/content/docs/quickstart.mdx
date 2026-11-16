@@ -1,0 +1,67 @@
+export const meta = {
+  description: "Run TraceroAI on your machine, look around with demo data, then send a trace from your own code. About five minutes.",
+};
+
+## 1. Run the stack
+
+You need Docker. This starts Postgres, Redis, the API, the evaluation worker and the
+dashboard, with demo data so there's something to look at:
+
+```bash
+git clone https://github.com/chinmai-sd-123/TraceroAI.git
+cd TraceroAI
+docker compose -f infra/docker-compose.yml --profile demo up --build
+```
+
+When it settles, open the dashboard at `http://localhost:3000` and pick the `demo`
+project. The API is at `http://localhost:8000`, with interactive API docs at `/docs`.
+
+The demo data is 30 recorded runs from the recovery-agent example: real answers, which
+your stack evaluates and diagnoses as they arrive. Without a provider key every
+diagnosis is an estimate, marked Preliminary. To have the LLM judge decide, stop the
+stack, set a key and start it again:
+
+```bash
+export TRACEROAI_OPENAI_API_KEY=sk-...
+docker compose -f infra/docker-compose.yml --profile demo up
+```
+
+## 2. Install the SDK
+
+```bash
+pip install traceroai
+```
+
+Python 3.10 or later. Its only dependency is `httpx`.
+
+## 3. Send a trace
+
+Wrap the code that answers a question. Log each piece right after the work it records,
+and TraceroAI times every step:
+
+```python
+from traceroai import TraceroClient
+
+client = TraceroClient(base_url="http://localhost:8000")
+
+with client.trace("How long does a refund take?") as t:
+    chunks = retrieve(question, top_k=3)                 # your retriever
+    t.log_retrieval(chunks, strategy="hybrid")
+    answer = generate(question, chunks)                  # your LLM call
+    t.log_generation(answer, model="gpt-4o-mini")
+
+client.flush()   # in a short script: wait for the trace to send
+print(t.trace_id)
+```
+
+Open the trace in the dashboard (paste its id into "Open a trace by id"). The
+diagnosis appears within a second, and the judge's verdict replaces it a few seconds
+later if a provider key is set.
+
+## Next
+
+- [Read your first diagnosis](/docs/first-diagnosis)
+- [Python SDK](/docs/instrument/python-sdk): the decorator, the low-level call, and
+  what to log
+- Remove the demo data when you're done:
+  `docker compose -f infra/docker-compose.yml run --rm demo python -m app.demo --remove`

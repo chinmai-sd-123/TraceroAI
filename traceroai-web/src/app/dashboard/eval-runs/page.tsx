@@ -25,7 +25,7 @@ export default async function EvalRunsPage({
           <EmptyState title={`No eval runs yet${project ? ` in ${project}` : ""}`}>
             Run one from your own pipeline with{" "}
             <code className="font-dash-mono text-[0.8125rem] text-ink">traceroai.eval.run_experiment</code>.{" "}
-            <Link href="/docs#experiments" className="text-accent underline">
+            <Link href="/docs/fix/experiments" className="text-accent underline">
               See how
             </Link>
             .

@@ -1,0 +1,37 @@
+export const meta = {
+  description:
+    "TraceroAI finds the step that broke your RAG pipeline and shows the evidence. Open source, self-hosted, Postgres and one command.",
+};
+
+When an answer is wrong, a trace shows you everything that happened, and leaves you to
+work out which part failed. TraceroAI does that part. Every trace gets one diagnosis:
+the stage that failed (retrieval, grounding or the answer itself), the reason, and a
+note of who decided, an LLM judge or a cheaper estimate.
+
+## What you get
+
+- **A diagnosis for every trace.** "Retrieval miss: the context is about CORS, not
+  middleware" rather than a score to interpret.
+- **Stated confidence.** Each diagnosis says whether the judge made it (Final) or a
+  quick estimate did (Preliminary), and the accuracy of both is
+  [measured and published](/docs/concepts/accuracy).
+- **Issues.** Failing traces with the same cause are grouped, so a hundred failures
+  become a few things to fix.
+- **Ways to fix.** A recovery agent that retries the stage that failed, and
+  experiments that compare versions of your pipeline on labelled questions, with the
+  cost of each.
+- **Your servers.** One Docker Compose command runs everything on Postgres. Traces
+  leave only if you configure an LLM provider for the judge.
+
+## What it isn't
+
+TraceroAI isn't a general LLM observability platform: no prompt management, gateway or
+hosted cloud. It does one job, finding why an answer failed, and works next to whatever
+else you use. Today it diagnoses RAG pipelines instrumented with the Python SDK;
+agents and traces sent over OpenTelemetry are in development.
+
+## Where to start
+
+1. [Quickstart](/docs/quickstart): run the stack and send your first trace.
+2. [Read your first diagnosis](/docs/first-diagnosis): what the trace page tells you.
+3. [Investigate failures](/docs/fix/investigate): from issue to fix.

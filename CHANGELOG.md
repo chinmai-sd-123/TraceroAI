@@ -42,6 +42,12 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   (counted per server instance) and has a sign-out button.
 
 ### Added
+- The docs are now 26 pages in seven sections (getting started, concepts, instrument,
+  diagnose and fix, reference, self-host, try it), written in MDX, with search over a
+  static index (it works on a self-hosted or offline copy), "On this page" and
+  previous and next links. New pages cover issues, estimates and judge verdicts,
+  accuracy, async code, delivery, a production checklist and upgrading. Links to the
+  old single page (`/docs#config` and the like) land on the new pages.
 - Database migrations (Alembic), Dockerfiles, and a Docker Compose stack with the API,
   worker and dashboard.
 - Diagnoses record their source (`lexical`, `embedding` or `judge`), and traces their

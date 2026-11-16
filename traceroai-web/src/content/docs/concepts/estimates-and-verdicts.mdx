@@ -1,0 +1,47 @@
+export const meta = {
+  description: "Diagnoses come from three tiers of checks. The dashboard marks each one Preliminary or Final, and they mean different things.",
+};
+
+## The three tiers
+
+| Tier | When it runs | Needs | Marked |
+|---|---|---|---|
+| Term overlap | The moment a trace arrives, no network | Nothing | Preliminary |
+| Embedding similarity | In the background | A provider key | Preliminary |
+| LLM judge | In the background | A provider key | Final |
+
+The quick check gives every trace a diagnosis straight away. With a provider key,
+embeddings and then the judge run in the background, and the judge's verdict replaces
+the estimate. Without a key, every diagnosis stays an estimate, and the dashboard says
+so.
+
+## Why the difference matters
+
+Estimates are often wrong in a particular way: term overlap rarely recognises a correct
+answer worded differently from its source. On the labelled set it gets 58% of
+diagnoses right; the judge gets 94–96%. See [Accuracy](/docs/concepts/accuracy).
+
+So act on Final diagnoses. The [recovery agent](/docs/fix/recovery-agent) retries only
+on judge verdicts by default, for the same reason: retrying on an estimate often
+"fixes" an answer that was fine.
+
+## Judge status
+
+Each trace also records where the judge got to:
+
+| Status | Meaning |
+|---|---|
+| `pending` | Waiting for the judge |
+| `complete` | All three checks done |
+| `partial` | Some checks failed to run; the diagnosis uses the ones that did |
+| `failed` | The judge couldn't run; the estimate stands |
+| `skipped` | No judge configured |
+
+When the worker is running (with Redis), a check that never completes, after a worker
+restart for example, is picked up again by a periodic sweep.
+
+## Bring your own model
+
+The judge works with any OpenAI-compatible endpoint: set
+`TRACEROAI_JUDGE_BASE_URL` and `TRACEROAI_JUDGE_MODEL` to use another provider or a
+model you host. See [Configuration](/docs/reference/configuration).

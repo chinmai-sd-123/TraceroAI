@@ -1,0 +1,61 @@
+export const meta = {
+  description: "The SDK is a thin client over these endpoints, so any language can send traces and read diagnoses.",
+};
+
+Send the key as `Authorization: Bearer <key>`. Your API serves the full schema, with
+every field, at `/docs` (OpenAPI), for example `http://localhost:8000/docs`.
+
+## Traces
+
+| Endpoint | What it does |
+|---|---|
+| `POST /v1/traces` | Send a trace. Returns 202 with its id; the judge runs in the background. The same `trace_id` twice stores one trace |
+| `GET /v1/traces` | List traces. Filters: `project_id`, `diagnosis`, `model`, `environment`, `q`, `since`, `until`, `recovery_run_id`, `issue_key`; `sort=newest`, `oldest` or `slowest`; `limit` up to 200, with the next page's cursor in the `X-Next-Cursor` header |
+| `GET /v1/traces/{id}` | One trace with its evaluations, diagnosis and feedback |
+| `DELETE /v1/traces/{id}` | Delete a trace. A project key can delete only its own project's |
+| `POST /v1/traces/{id}/feedback` | Record `thumbs_up` or `thumbs_down`, with an optional comment |
+| `GET /v1/traces/projects` | The projects the key can read |
+
+A minimal trace:
+
+```json
+{
+  "project": { "project_id": "my-app" },
+  "query": { "original": "How long does a refund take?" },
+  "retrieval": { "chunks": [{ "rank": 1, "chunk_id": "c1", "text": "Refunds take 5 to 7 business days." }] },
+  "generation": { "model": "gpt-4o-mini", "answer": "5 to 7 business days." }
+}
+```
+
+## Issues
+
+| Endpoint | What it does |
+|---|---|
+| `GET /v1/issues` | Failing traces grouped by cause, regressed first. Filters: `project_id`, `since`, `status` (`open`, `regressed`, `resolved`) |
+| `POST /v1/issues/resolve` | Mark an issue resolved: `{"project_id": "...", "issue_key": "..."}` |
+| `POST /v1/issues/reopen` | Mark it open again |
+
+## Summaries
+
+| Endpoint | What it does |
+|---|---|
+| `GET /v1/metrics/summary` | Totals for a project and time range: counts by diagnosis, source, model and environment; latency; cost |
+| `GET /v1/metrics/timeseries` | Traces, healthy traces and p95 latency per hour or day |
+| `GET /v1/recovery-runs` | Recovery agent runs, each with its attempts, diagnoses and what the agent changed |
+
+## Evaluation
+
+| Endpoint | What it does |
+|---|---|
+| `POST /v1/eval-runs` | Upload an eval run or an experiment (what `run_experiment` sends) |
+| `GET /v1/eval-runs`, `GET /v1/eval-runs/{id}` | List eval runs, or read one |
+| `POST /v1/eval/grade` | Grade one answer against an expected answer with the judge, without storing anything |
+| `GET /v1/jobs/stats` | The judge queue: waiting, in progress and failed jobs |
+
+## Health
+
+| Endpoint | What it does |
+|---|---|
+| `GET /health` | Liveness |
+| `GET /health/ready` | Readiness: the database is reachable |
+| `GET /metrics` | Prometheus metrics |

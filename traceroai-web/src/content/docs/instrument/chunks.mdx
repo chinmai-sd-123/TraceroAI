@@ -1,0 +1,40 @@
+export const meta = {
+  description: "Pass your retriever's output as it is: dicts, strings or LangChain documents.",
+};
+
+`log_retrieval` (and `log_trace`) accept your retriever's output in the forms retrievers
+usually return it, so you rarely need to convert anything.
+
+| You pass | It becomes |
+|---|---|
+| A dict with a `text` field | A chunk with that text and the dict's other fields |
+| A string | A chunk with that text |
+| A LangChain `Document` | A chunk with its `page_content`, and these metadata keys mapped across: `id` or `chunk_id`, `document_id` or `doc_id`, `title` or `document_title`, `source`, `section`, and `score` (as `final_score`) |
+
+Missing `rank`s and `chunk_id`s are filled in from position, and chunks with no text are
+left out, so a trace is never rejected because of a chunk's shape.
+
+## Fields worth sending
+
+```python
+t.log_retrieval([
+    {
+        "text": "Refunds take 5 to 7 business days.",
+        "document_id": "refunds.md",       # used to group retrieval failures into issues
+        "document_title": "Refund policy",
+        "section": "Timing",
+        "final_score": 0.82,               # your retriever's score, shown on the trace
+    },
+    ...
+], strategy="hybrid", config={"final_top_k": 3})
+```
+
+The first chunk's `document_id` (or `source`, or `document_title`) names the issue a
+retrieval failure joins, so send one if you can. Scores are shown as you send them;
+TraceroAI doesn't invent any.
+
+## Limits
+
+At most 200 chunks per trace, and the whole request must fit
+`TRACEROAI_MAX_REQUEST_BYTES` (1 MB by default). Send fewer or shorter chunks, or raise
+the limit.

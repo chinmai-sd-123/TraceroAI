@@ -38,7 +38,7 @@ export function SiteHeader({ current }: { current?: "home" | "docs" }) {
           </a>
           {/* With no API behind this site (public pages only), point at self-hosting. */}
           <Link
-            href={apiConfigured() ? "/dashboard" : "/docs#self-host"}
+            href={apiConfigured() ? "/dashboard" : "/docs/self-host/docker-compose"}
             className="rounded bg-accent px-3 py-1.5 font-medium text-white hover:bg-accent/90"
           >
             {apiConfigured() ? "Open the dashboard" : "Self-host it"}
@@ -68,7 +68,7 @@ export function SiteFooter() {
             {apiConfigured() ? (
               <Link className={a} href="/dashboard">Dashboard</Link>
             ) : (
-              <Link className={a} href="/docs#self-host">Self-hosting</Link>
+              <Link className={a} href="/docs/self-host/docker-compose">Self-hosting</Link>
             )}
           </p>
           <p><a className={a} href="https://pypi.org/project/traceroai/">Python SDK on PyPI</a></p>
