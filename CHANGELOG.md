@@ -57,6 +57,10 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 - Docs: an HTTP API reference and a troubleshooting section.
 - CI runs a browser smoke test of the production build, including the dashboard with
   its API down.
+- `run_experiment` can compare more than `top_k`: when `retrieve` or `generate` takes a
+  `variant` parameter, it receives the variant being run, so settings in
+  `Variant.extra` (chunking, prompt, model) reach your pipeline. Two-argument
+  functions work as before. Found in the first field trial.
 - Issues: failing traces grouped by what failed and the source of the top retrieved
   chunk (`GET /v1/issues`, migration 0006), with a page in the dashboard and a panel on
   the overview. Resolve an issue once it's fixed; a failure after that marks it

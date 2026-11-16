@@ -18,12 +18,20 @@ the result to /v1/eval-runs so it shows on your project's dashboard.
         project_id="my-app",
     )
 
+To compare more than top_k (chunking, prompts, models), put the settings in each
+Variant's `extra` and give retrieve() or generate() a `variant` parameter; the
+variant being run is passed to it:
+
+    def my_generate(query, context, variant):
+        return llm(prompt=PROMPTS[variant.extra["prompt"]], ...)
+
 The harness is pure orchestration over httpx — no LLM key or judge code lives in
 the SDK; the server grades.
 """
 
 from __future__ import annotations
 
+import inspect
 import logging
 import time
 from dataclasses import dataclass, field
@@ -35,8 +43,17 @@ from traceroai.client import TraceroClient
 
 logger = logging.getLogger("traceroai")
 
-RetrieveFn = Callable[[str, int], list[dict[str, Any]]]
-GenerateFn = Callable[[str, str], str]
+# Either may also take a `variant` parameter (see the module docstring).
+RetrieveFn = Callable[..., list[dict[str, Any]]]
+GenerateFn = Callable[..., str]
+
+
+def _takes_variant(fn: Callable[..., Any]) -> bool:
+    try:
+        params = inspect.signature(fn).parameters.values()
+    except (TypeError, ValueError):  # builtins and some callables have no signature
+        return False
+    return any(p.name == "variant" or p.kind is inspect.Parameter.VAR_KEYWORD for p in params)
 
 
 @dataclass(frozen=True)
@@ -111,11 +128,13 @@ def _run_variant(
     gradeable = 0
     latencies: list[int] = []
     cases: list[dict[str, Any]] = []
+    retrieve_extra = {"variant": variant} if _takes_variant(retrieve) else {}
+    generate_extra = {"variant": variant} if _takes_variant(generate) else {}
 
     for case in dataset:
         start = time.perf_counter()
-        chunks = retrieve(case.question, variant.top_k)
-        answer = generate(case.question, _format_context(chunks))
+        chunks = retrieve(case.question, variant.top_k, **retrieve_extra)
+        answer = generate(case.question, _format_context(chunks), **generate_extra)
         latencies.append(int((time.perf_counter() - start) * 1000))
 
         verdict = _grade(client, case.question, case.expected_answer, answer, errors)
