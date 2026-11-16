@@ -4,6 +4,10 @@
 #
 # Then: dashboard http://localhost:3000, API http://localhost:8000 (docs at /docs).
 #
+# With demo data, so the dashboard has something to show on the first run:
+#   docker compose -f infra/docker-compose.yml --profile demo up --build
+# (Remove it later: docker compose -f infra/docker-compose.yml run --rm demo python -m app.demo --remove)
+#
 # Only Postgres and Redis (to run the API or tests outside Docker):
 #   docker compose -f infra/docker-compose.yml up -d postgres redis
 #
@@ -97,6 +101,18 @@ services:
       migrate:
         condition: service_completed_successfully
       redis:
+        condition: service_healthy
+
+  # One-shot, only with --profile demo: replays recorded runs into the "demo"
+  # project once the API is up. Running it again changes nothing.
+  demo:
+    profiles: ["demo"]
+    build: ../services/api
+    image: traceroai-api:local
+    command: ["python", "-m", "app.demo", "--api", "http://api:8000"]
+    environment: *api-environment
+    depends_on:
+      api:
         condition: service_healthy
 
   web:

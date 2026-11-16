@@ -1,0 +1,3400 @@
+{
+ "about": "Runs recorded on 2026-11-14 from examples/recovery-agent: real gpt-4o-mini answers over that example's knowledge base. Replayed by `python -m app.demo`; the server evaluates and diagnoses them as it would any trace.",
+ "traces": [
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "d66af174-062c-427a-a63b-c3f80368510d",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "How long does a refund take?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] # Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.\n\nQuestion: How long does a refund take?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 181,
+     "prompt_tokens": 123,
+     "completion_tokens": 58
+    },
+    "answer": "A refund typically takes 5 to 7 business days to process after the request is approved, with the approval review usually completing within 1 business day of submission. Therefore, most customers can expect to see the full refund in their account within a week and a half at most [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 10387,
+    "retrieval_ms": 7115,
+    "generation_ms": 3272,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "07579cfb-04e4-4a83-926b-bb1bc4c83efc",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "Where is my refund sent?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions\n\nQuestion: Where is my refund sent?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 202,
+     "prompt_tokens": 149,
+     "completion_tokens": 53
+    },
+    "answer": "Your refund is always sent to the original payment method used for the purchase. If that card has expired, the issuing bank will typically route the refund to its replacement. If the account is fully closed, you should contact support to arrange a manual bank transfer [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 2408,
+    "retrieval_ms": 275,
+    "generation_ms": 2133,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "1d031e74-848f-484b-bc70-7bee910c0275",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "What plans do you offer?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] # Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.\n\nQuestion: What plans do you offer?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 208,
+     "prompt_tokens": 166,
+     "completion_tokens": 42
+    },
+    "answer": "We offer three plans: Free, Pro, and Enterprise. The Free plan includes 1 project and community support, while the Pro plan adds unlimited projects, email support, and access to the full evaluation suite.",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1887,
+    "retrieval_ms": 826,
+    "generation_ms": 1061,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "10c188f5-9fbb-43ec-b72b-7fc4cc2c357b",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "What does the Pro plan include?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] # Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.\n\nQuestion: What does the Pro plan include?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 219,
+     "prompt_tokens": 167,
+     "completion_tokens": 52
+    },
+    "answer": "The Pro plan includes unlimited projects, email support with a one-business-day response target, and access to the full evaluation suite. It is billed per seat, either monthly or annually, with annual billing offering roughly a two-month discount compared to monthly billing [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1430,
+    "retrieval_ms": 222,
+    "generation_ms": 1209,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "9f88b72e-46fb-4525-820a-3cb0d3478e95",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "How do I reset my password?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.\n\nQuestion: How do I reset my password?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 182,
+     "prompt_tokens": 144,
+     "completion_tokens": 38
+    },
+    "answer": "To reset your password, click \"Forgot Password\" on the login page and follow the link emailed to the address on file. Note that reset links expire after 30 minutes. [1]",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1437,
+    "retrieval_ms": 247,
+    "generation_ms": 1190,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "4cd011a8-d003-4fdf-9a8c-3698f10732c0",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "What is the maximum file upload size?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "## Usage Limits\n\nThe maximum file upload size is 100 megabytes per file. This applies uniformly across\nplans; larger files must be split or uploaded via the resumable upload API.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] ## Usage Limits\n\nThe maximum file upload size is 100 megabytes per file. This applies uniformly across\nplans; larger files must be split or uploaded via the resumable upload API.\n\nQuestion: What is the maximum file upload size?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 114,
+     "prompt_tokens": 99,
+     "completion_tokens": 15
+    },
+    "answer": "The maximum file upload size is 100 megabytes per file [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1374,
+    "retrieval_ms": 246,
+    "generation_ms": 1128,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "875173fa-b020-4ad8-ba8a-46db8ee833d7",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "How is my data encrypted?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Security\n\nEncryption\n----------\nCustomer data is encrypted in transit using TLS 1.2 or higher, and at rest using\nAES-256. Encryption keys are managed in a dedicated key-management service and rotated\non a fixed schedule. Backups are encrypted with the same standard as primary storage.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Security\n\nEncryption\n----------\nCustomer data is encrypted in transit using TLS 1.2 or higher, and at rest using\nAES-256. Encryption keys are managed in a dedicated key-management service and rotated\non a fixed schedule. Backups are encrypted with the same standard as primary storage.\n\nQuestion: How is my data encrypted?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 157,
+     "prompt_tokens": 118,
+     "completion_tokens": 39
+    },
+    "answer": "Your data is encrypted in transit using TLS 1.2 or higher, and at rest using AES-256. Additionally, backups are encrypted with the same standards as the primary storage [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 2069,
+    "retrieval_ms": 213,
+    "generation_ms": 1856,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "722d1806-7b83-4023-900b-5bdf9561de44",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "Can I change my workspace region after creating it?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Changing Regions\n----------------\nA workspace region cannot be changed after creation. This is a hard constraint: region\nis fixed at creation time because data is physically provisioned in that region. To move\nto a different region you must contact support to arrange a migration, which copies your\ndata to a new workspace in the target region and then decommissions the old one.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "regions"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Changing Regions\n----------------\nA workspace region cannot be changed after creation. This is a hard constraint: region\nis fixed at creation time because data is physically provisioned in that region. To move\nto a different region you must contact support to arrange a migration, which copies your\ndata to a new workspace in the target region and then decommissions the old one.\n\nQuestion: Can I change my workspace region after creating it?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 181,
+     "prompt_tokens": 138,
+     "completion_tokens": 43
+    },
+    "answer": "No, you cannot change your workspace region after creating it. You would need to contact support to arrange a migration to a new region, as the region is fixed at creation time due to data provisioning constraints [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1602,
+    "retrieval_ms": 223,
+    "generation_ms": 1379,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "d6dd28f2-406e-4bd5-8829-cb74d81a6f62",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "What is your phone support number?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.\n\nQuestion: What is your phone support number?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 111,
+     "prompt_tokens": 107,
+     "completion_tokens": 4
+    },
+    "answer": "I don't know.",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1205,
+    "retrieval_ms": 234,
+    "generation_ms": 971,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "1fd08892-49f2-429e-bd69-2efa87d9bd53",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "staging"
+   },
+   "query": {
+    "original": "What year was the company founded?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Compliance\n----------\nWe are SOC 2 Type II certified, with the report available under NDA on request. We\nsupport data-processing agreements (DPAs) for customers subject to GDPR, and we honor\ndata-subject access and deletion requests within 30 days. A current list of\nsub-processors is published on the trust page.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 1,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Compliance\n----------\nWe are SOC 2 Type II certified, with the report available under NDA on request. We\nsupport data-processing agreements (DPAs) for customers subject to GDPR, and we honor\ndata-subject access and deletion requests within 30 days. A current list of\nsub-processors is published on the trust page.\n\nQuestion: What year was the company founded?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 132,
+     "prompt_tokens": 128,
+     "completion_tokens": 4
+    },
+    "answer": "I don't know.",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1016,
+    "retrieval_ms": 229,
+    "generation_ms": 787,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "b59e4ce1-625c-4b1f-a2fb-bfbf7eca4398",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "How long does a refund take?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 2,
+      "text": "## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] # Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.\n\n[2] ## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.\n\n[3] Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions\n\nQuestion: How long does a refund take?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 335,
+     "prompt_tokens": 279,
+     "completion_tokens": 56
+    },
+    "answer": "A refund typically takes 5 to 7 business days to process after the request is approved. The approval review usually completes within 1 business day of submission, so most customers can expect to see the full refund in their account within a week and a half at most [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1605,
+    "retrieval_ms": 243,
+    "generation_ms": 1362,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "180c989a-5898-4d23-8ab0-e1f43c6160a1",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "Where is my refund sent?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 2,
+      "text": "## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "# Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions\n\n[2] ## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.\n\n[3] # Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.\n\nQuestion: Where is my refund sent?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 331,
+     "prompt_tokens": 278,
+     "completion_tokens": 53
+    },
+    "answer": "Your refund is always sent to the original payment method used for the purchase. If that card has expired, the issuing bank will typically route the refund to its replacement. If the account is fully closed, you should contact support to arrange a manual bank transfer [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1947,
+    "retrieval_ms": 205,
+    "generation_ms": 1742,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "245bf389-c4d0-4864-a958-727f56b5668b",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "What plans do you offer?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 2,
+      "text": "The **Enterprise** plan adds single sign-on (SSO via SAML or OIDC), audit logs with\nconfigurable retention, a dedicated customer success manager, a 99.9% uptime SLA, and\nthe option of a private deployment region. Enterprise pricing is custom and negotiated\nper organization based on seat count and data-residency requirements.\n\n## Usage Limits",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 3,
+      "text": "## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] # Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.\n\n[2] The **Enterprise** plan adds single sign-on (SSO via SAML or OIDC), audit logs with\nconfigurable retention, a dedicated customer success manager, a 99.9% uptime SLA, and\nthe option of a private deployment region. Enterprise pricing is custom and negotiated\nper organization based on seat count and data-residency requirements.\n\n## Usage Limits\n\n[3] ## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits\n\nQuestion: What plans do you offer?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 437,
+     "prompt_tokens": 343,
+     "completion_tokens": 94
+    },
+    "answer": "We offer three plans: Free, Pro, and Enterprise. The Free plan includes 1 project and community support, intended for evaluation and small personal use. The Pro plan adds unlimited projects, email support, and access to the full evaluation suite, billed per seat. The Enterprise plan includes additional features such as single sign-on, audit logs, a dedicated customer success manager, and a 99.9% uptime SLA, with custom pricing based on organization needs [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1799,
+    "retrieval_ms": 220,
+    "generation_ms": 1579,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "ece91eea-5a26-48d8-a44f-b3fd6dc5f366",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "What does the Pro plan include?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 2,
+      "text": "The **Enterprise** plan adds single sign-on (SSO via SAML or OIDC), audit logs with\nconfigurable retention, a dedicated customer success manager, a 99.9% uptime SLA, and\nthe option of a private deployment region. Enterprise pricing is custom and negotiated\nper organization based on seat count and data-residency requirements.\n\n## Usage Limits",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 3,
+      "text": "API rate limits depend on the plan. Free accounts are limited to 1,000 API requests per\nday. Pro accounts are limited to 100,000 requests per day. Enterprise limits are set by\ncontract and can be raised on request. Exceeding the limit returns HTTP 429 with a\nRetry-After header; sustained overage on Pro may be billed as usage overage rather than\nhard-blocked.\n\n## Storage and Retention",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] # Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.\n\n[2] The **Enterprise** plan adds single sign-on (SSO via SAML or OIDC), audit logs with\nconfigurable retention, a dedicated customer success manager, a 99.9% uptime SLA, and\nthe option of a private deployment region. Enterprise pricing is custom and negotiated\nper organization based on seat count and data-residency requirements.\n\n## Usage Limits\n\n[3] API rate limits depend on the plan. Free accounts are limited to 1,000 API requests per\nday. Pro accounts are limited to 100,000 requests per day. Enterprise limits are set by\ncontract and can be raised on request. Exceeding the limit returns HTTP 429 with a\nRetry-After header; sustained overage on Pro may be billed as usage overage rather than\nhard-blocked.\n\n## Storage and Retention\n\nQuestion: What does the Pro plan include?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 393,
+     "prompt_tokens": 341,
+     "completion_tokens": 52
+    },
+    "answer": "The Pro plan includes unlimited projects, email support with a one-business-day response target, and access to the full evaluation suite. It is billed per seat, either monthly or annually, with annual billing offering roughly a two-month discount compared to monthly billing [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1364,
+    "retrieval_ms": 234,
+    "generation_ms": 1130,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "4eb423aa-2950-42d8-9250-535668e8b9a7",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "What is the maximum file upload size?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "## Usage Limits\n\nThe maximum file upload size is 100 megabytes per file. This applies uniformly across\nplans; larger files must be split or uploaded via the resumable upload API.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 2,
+      "text": "API rate limits depend on the plan. Free accounts are limited to 1,000 API requests per\nday. Pro accounts are limited to 100,000 requests per day. Enterprise limits are set by\ncontract and can be raised on request. Exceeding the limit returns HTTP 429 with a\nRetry-After header; sustained overage on Pro may be billed as usage overage rather than\nhard-blocked.\n\n## Storage and Retention",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 3,
+      "text": "## Storage and Retention\n\nFree accounts retain trace data for 7 days. Pro retains 30 days. Enterprise retention is\nconfigurable up to 400 days. Deleted data is purged from backups within 35 days.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] ## Usage Limits\n\nThe maximum file upload size is 100 megabytes per file. This applies uniformly across\nplans; larger files must be split or uploaded via the resumable upload API.\n\n[2] API rate limits depend on the plan. Free accounts are limited to 1,000 API requests per\nday. Pro accounts are limited to 100,000 requests per day. Enterprise limits are set by\ncontract and can be raised on request. Exceeding the limit returns HTTP 429 with a\nRetry-After header; sustained overage on Pro may be billed as usage overage rather than\nhard-blocked.\n\n## Storage and Retention\n\n[3] ## Storage and Retention\n\nFree accounts retain trace data for 7 days. Pro retains 30 days. Enterprise retention is\nconfigurable up to 400 days. Deleted data is purged from backups within 35 days.\n\nQuestion: What is the maximum file upload size?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 258,
+     "prompt_tokens": 243,
+     "completion_tokens": 15
+    },
+    "answer": "The maximum file upload size is 100 megabytes per file [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1187,
+    "retrieval_ms": 282,
+    "generation_ms": 905,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "fdb834d4-7227-49b5-914d-56934b32ea46",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "How do I reset my password?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     },
+     {
+      "rank": 2,
+      "text": "## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.\n\n[2] ## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.\n\n[3] Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.\n\nQuestion: How do I reset my password?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 296,
+     "prompt_tokens": 257,
+     "completion_tokens": 39
+    },
+    "answer": "To reset your password, click \"Forgot Password\" on the login page and follow the link emailed to the address on file. Please note that reset links expire after 30 minutes. [1]",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1416,
+    "retrieval_ms": 219,
+    "generation_ms": 1197,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "710fe1a1-db3e-43aa-a156-727aaf3adc86",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "How is my data encrypted?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Security\n\nEncryption\n----------\nCustomer data is encrypted in transit using TLS 1.2 or higher, and at rest using\nAES-256. Encryption keys are managed in a dedicated key-management service and rotated\non a fixed schedule. Backups are encrypted with the same standard as primary storage.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     },
+     {
+      "rank": 2,
+      "text": "Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     },
+     {
+      "rank": 3,
+      "text": "Compliance\n----------\nWe are SOC 2 Type II certified, with the report available under NDA on request. We\nsupport data-processing agreements (DPAs) for customers subject to GDPR, and we honor\ndata-subject access and deletion requests within 30 days. A current list of\nsub-processors is published on the trust page.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Security\n\nEncryption\n----------\nCustomer data is encrypted in transit using TLS 1.2 or higher, and at rest using\nAES-256. Encryption keys are managed in a dedicated key-management service and rotated\non a fixed schedule. Backups are encrypted with the same standard as primary storage.\n\n[2] Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.\n\n[3] Compliance\n----------\nWe are SOC 2 Type II certified, with the report available under NDA on request. We\nsupport data-processing agreements (DPAs) for customers subject to GDPR, and we honor\ndata-subject access and deletion requests within 30 days. A current list of\nsub-processors is published on the trust page.\n\nQuestion: How is my data encrypted?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 314,
+     "prompt_tokens": 276,
+     "completion_tokens": 38
+    },
+    "answer": "Your data is encrypted in transit using TLS 1.2 or higher, and at rest using AES-256. Additionally, backups are encrypted with the same standards as primary storage [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1853,
+    "retrieval_ms": 211,
+    "generation_ms": 1642,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "bac25225-3372-420b-ae15-a925c6106cdb",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "Can I change my workspace region after creating it?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Changing Regions\n----------------\nA workspace region cannot be changed after creation. This is a hard constraint: region\nis fixed at creation time because data is physically provisioned in that region. To move\nto a different region you must contact support to arrange a migration, which copies your\ndata to a new workspace in the target region and then decommissions the old one.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "regions"
+     },
+     {
+      "rank": 2,
+      "text": "Data Residency\n\nAvailable Regions\n-----------------\nWorkspaces can be created in a US region or an EU region. The region you choose\ndetermines where your primary data is stored and processed. EU-region workspaces keep\ncustomer data within EU data centers to support GDPR data-residency requirements.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "regions"
+     },
+     {
+      "rank": 3,
+      "text": "Migration Process\n-----------------\nA region migration is scheduled with support and typically runs during a maintenance\nwindow. During the migration the source workspace is placed in read-only mode to ensure\nconsistency. Downtime depends on data volume but is usually under an hour for typical\naccounts. After verification, traffic is cut over to the new region and the old\nworkspace's data is securely deleted within 35 days.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "regions"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Changing Regions\n----------------\nA workspace region cannot be changed after creation. This is a hard constraint: region\nis fixed at creation time because data is physically provisioned in that region. To move\nto a different region you must contact support to arrange a migration, which copies your\ndata to a new workspace in the target region and then decommissions the old one.\n\n[2] Data Residency\n\nAvailable Regions\n-----------------\nWorkspaces can be created in a US region or an EU region. The region you choose\ndetermines where your primary data is stored and processed. EU-region workspaces keep\ncustomer data within EU data centers to support GDPR data-residency requirements.\n\n[3] Migration Process\n-----------------\nA region migration is scheduled with support and typically runs during a maintenance\nwindow. During the migration the source workspace is placed in read-only mode to ensure\nconsistency. Downtime depends on data volume but is usually under an hour for typical\naccounts. After verification, traffic is cut over to the new region and the old\nworkspace's data is securely deleted within 35 days.\n\nQuestion: Can I change my workspace region after creating it?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 331,
+     "prompt_tokens": 285,
+     "completion_tokens": 46
+    },
+    "answer": "No, you cannot change your workspace region after creating it. You must contact support to arrange a migration if you want to move to a different region, as the region is fixed at creation time due to data provisioning constraints [1].",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1568,
+    "retrieval_ms": 350,
+    "generation_ms": 1218,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "165525d1-b9c4-4548-aacd-1dc1c1fdc22c",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "What is your phone support number?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     },
+     {
+      "rank": 2,
+      "text": "# Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 3,
+      "text": "Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.\n\n[2] # Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.\n\n[3] Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.\n\nQuestion: What is your phone support number?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 321,
+     "prompt_tokens": 304,
+     "completion_tokens": 17
+    },
+    "answer": "I don't know. The context does not provide any information about a phone support number.",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1144,
+    "retrieval_ms": 252,
+    "generation_ms": 892,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "4ce05348-9bfe-4ac5-b7b3-f41cd8d4cf53",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "production"
+   },
+   "query": {
+    "original": "What year was the company founded?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Compliance\n----------\nWe are SOC 2 Type II certified, with the report available under NDA on request. We\nsupport data-processing agreements (DPAs) for customers subject to GDPR, and we honor\ndata-subject access and deletion requests within 30 days. A current list of\nsub-processors is published on the trust page.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     },
+     {
+      "rank": 2,
+      "text": "The **Enterprise** plan adds single sign-on (SSO via SAML or OIDC), audit logs with\nconfigurable retention, a dedicated customer success manager, a 99.9% uptime SLA, and\nthe option of a private deployment region. Enterprise pricing is custom and negotiated\nper organization based on seat count and data-residency requirements.\n\n## Usage Limits",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 3,
+      "text": "Security\n\nEncryption\n----------\nCustomer data is encrypted in transit using TLS 1.2 or higher, and at rest using\nAES-256. Encryption keys are managed in a dedicated key-management service and rotated\non a fixed schedule. Backups are encrypted with the same standard as primary storage.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] Compliance\n----------\nWe are SOC 2 Type II certified, with the report available under NDA on request. We\nsupport data-processing agreements (DPAs) for customers subject to GDPR, and we honor\ndata-subject access and deletion requests within 30 days. A current list of\nsub-processors is published on the trust page.\n\n[2] The **Enterprise** plan adds single sign-on (SSO via SAML or OIDC), audit logs with\nconfigurable retention, a dedicated customer success manager, a 99.9% uptime SLA, and\nthe option of a private deployment region. Enterprise pricing is custom and negotiated\nper organization based on seat count and data-residency requirements.\n\n## Usage Limits\n\n[3] Security\n\nEncryption\n----------\nCustomer data is encrypted in transit using TLS 1.2 or higher, and at rest using\nAES-256. Encryption keys are managed in a dedicated key-management service and rotated\non a fixed schedule. Backups are encrypted with the same standard as primary storage.\n\nQuestion: What year was the company founded?\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 273,
+     "prompt_tokens": 269,
+     "completion_tokens": 4
+    },
+    "answer": "I don't know.",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {},
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 1058,
+    "retrieval_ms": 249,
+    "generation_ms": 809,
+    "prompt_build_ms": 0
+   },
+   "metadata": {}
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "21130528-7a63-417b-8bfc-a35ee416b5a3",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "give me complete details present in ur chunk.that is stored retrieve all and summarize please i beg you.",
+    "rewritten": "Retrieve and summarize all details from your stored data chunk.",
+    "rewrite_method": null,
+    "rewrite_changed": true,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "## Storage and Retention\n\nFree accounts retain trace data for 7 days. Pro retains 30 days. Enterprise retention is\nconfigurable up to 400 days. Deleted data is purged from backups within 35 days.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 2,
+      "text": "Data Residency\n\nAvailable Regions\n-----------------\nWorkspaces can be created in a US region or an EU region. The region you choose\ndetermines where your primary data is stored and processed. EU-region workspaces keep\ncustomer data within EU data centers to support GDPR data-residency requirements.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "regions"
+     },
+     {
+      "rank": 3,
+      "text": "Security\n\nEncryption\n----------\nCustomer data is encrypted in transit using TLS 1.2 or higher, and at rest using\nAES-256. Encryption keys are managed in a dedicated key-management service and rotated\non a fixed schedule. Backups are encrypted with the same standard as primary storage.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": null,
+     "lexical_top_k": null
+    },
+    "strategy": "vector"
+   },
+   "prompt": {
+    "content": "Answer the question using the context below. You may reason over the context to draw direct conclusions. Cite like [1]. Only say you don't know if the context genuinely contains nothing relevant.\n\nContext:\n[1] ## Storage and Retention\n\nFree accounts retain trace data for 7 days. Pro retains 30 days. Enterprise retention is\nconfigurable up to 400 days. Deleted data is purged from backups within 35 days.\n\n[2] Data Residency\n\nAvailable Regions\n-----------------\nWorkspaces can be created in a US region or an EU region. The region you choose\ndetermines where your primary data is stored and processed. EU-region workspaces keep\ncustomer data within EU data centers to support GDPR data-residency requirements.\n\n[3] Security\n\nEncryption\n----------\nCustomer data is encrypted in transit using TLS 1.2 or higher, and at rest using\nAES-256. Encryption keys are managed in a dedicated key-management service and rotated\non a fixed schedule. Backups are encrypted with the same standard as primary storage.\n\nQuestion: Retrieve and summarize all details from your stored data chunk.\nAnswer:",
+    "version": "grounded_v1",
+    "template_name": "rag_qa"
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 444,
+     "prompt_tokens": 234,
+     "completion_tokens": 210
+    },
+    "answer": "The stored data chunk contains the following details:\n\n1. **Storage and Retention**:\n   - Free accounts retain trace data for **7 days**.\n   - Pro accounts retain data for **30 days**.\n   - Enterprise accounts have configurable retention up to **400 days**.\n   - Deleted data is purged from backups within **35 days**.\n\n2. **Data Residency**:\n   - Workspaces can be created in either a **US region** or an **EU region**.\n   - The chosen region determines where primary data is stored and processed.\n   - EU-region workspaces ensure customer data is kept within EU data centers to comply with **GDPR** data-residency requirements.\n\n3. **Security**:\n   - Customer data is encrypted in transit using **TLS 1.2 or higher** and at rest using **AES-256**.\n   - Encryption keys are managed in a dedicated key-management service and are rotated on a fixed schedule.\n   - Backups are encrypted using the same standards as primary storage.",
+    "answered": true,
+    "provider": "openai",
+    "parameters": {
+     "top_p": 1,
+     "max_tokens": 512
+    },
+    "temperature": 0.0
+   },
+   "latency": {
+    "total_ms": 3231,
+    "retrieval_ms": 231,
+    "generation_ms": 3000,
+    "prompt_build_ms": 0
+   },
+   "metadata": {
+    "style": "context_manager"
+   }
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "bfe5cdc6-025f-46a4-b67e-4311104af219",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "is money within 10 days refunded?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 2,
+      "text": "Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "recovery"
+   },
+   "prompt": {
+    "content": "Context:\n[1] # Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.\n\n[2] Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions\n\n[3] ## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits\n\nQuestion: is money within 10 days refunded?",
+    "version": "recovery_v1",
+    "template_name": null
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 394,
+     "prompt_tokens": 335,
+     "completion_tokens": 59
+    },
+    "answer": "Yes, money is typically refunded within 10 days, as refunds are processed within 5 to 7 business days after approval, which usually occurs within 1 business day of submission. Therefore, most customers see the full refund in their account within a week and a half at most [1].",
+    "answered": true,
+    "provider": null,
+    "parameters": {},
+    "temperature": null
+   },
+   "latency": {
+    "total_ms": 1761,
+    "retrieval_ms": 223,
+    "generation_ms": 1538,
+    "prompt_build_ms": null
+   },
+   "metadata": {
+    "agent": "recovery",
+    "top_k": 3,
+    "attempt": 1,
+    "recovery_action": null,
+    "recovery_run_id": "1b4eaff7-04fa-43cb-bf42-09f6e068fee6"
+   }
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "5f7bf901-ba0b-431d-a5e4-2bf8c8f57869",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "is money within 10 days refunded?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 2,
+      "text": "Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "recovery"
+   },
+   "prompt": {
+    "content": "Context:\n[1] # Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.\n\n[2] Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions\n\n[3] ## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits\n\nQuestion: is money within 10 days refunded?\n\n(Answer ONLY from the provided context. If it is not enough, say you don't know.)",
+    "version": "recovery_v1",
+    "template_name": null
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 410,
+     "prompt_tokens": 354,
+     "completion_tokens": 56
+    },
+    "answer": "Yes, money is typically refunded within 10 days, as refunds are processed within 5 to 7 business days after approval, which usually occurs within 1 business day of submission, leading to most customers receiving their full refund within a week and a half at most [1].",
+    "answered": true,
+    "provider": null,
+    "parameters": {},
+    "temperature": null
+   },
+   "latency": {
+    "total_ms": 1675,
+    "retrieval_ms": 223,
+    "generation_ms": 1452,
+    "prompt_build_ms": null
+   },
+   "metadata": {
+    "agent": "recovery",
+    "top_k": 3,
+    "attempt": 2,
+    "recovery_action": "tighten_generation",
+    "recovery_run_id": "1b4eaff7-04fa-43cb-bf42-09f6e068fee6"
+   }
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "97b058fa-9e3d-42bc-931f-0b7463e03a58",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "is money within 10 days refunded?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 2,
+      "text": "Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "recovery"
+   },
+   "prompt": {
+    "content": "Context:\n[1] # Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.\n\n[2] Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions\n\n[3] ## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits\n\nQuestion: is money within 10 days refunded?\n\n(Answer ONLY from the provided context. If it is not enough, say you don't know.)",
+    "version": "recovery_v1",
+    "template_name": null
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 410,
+     "prompt_tokens": 354,
+     "completion_tokens": 56
+    },
+    "answer": "Yes, money is typically refunded within 10 days, as refunds are processed within 5 to 7 business days after approval, which usually occurs within 1 business day of submission, leading to most customers receiving their full refund within a week and a half at most [1].",
+    "answered": true,
+    "provider": null,
+    "parameters": {},
+    "temperature": null
+   },
+   "latency": {
+    "total_ms": 1939,
+    "retrieval_ms": 223,
+    "generation_ms": 1716,
+    "prompt_build_ms": null
+   },
+   "metadata": {
+    "agent": "recovery",
+    "top_k": 3,
+    "attempt": 3,
+    "recovery_action": "tighten_generation",
+    "recovery_run_id": "1b4eaff7-04fa-43cb-bf42-09f6e068fee6"
+   }
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "023990e9-0439-44b9-b231-d6575f35d7f3",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "Can u tell what is my name and give  me details on email of urs ",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     },
+     {
+      "rank": 2,
+      "text": "## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "recovery"
+   },
+   "prompt": {
+    "content": "Context:\n[1] Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.\n\n[2] ## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.\n\n[3] Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.\n\nQuestion: Can u tell what is my name and give  me details on email of urs ",
+    "version": "recovery_v1",
+    "template_name": null
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 319,
+     "prompt_tokens": 287,
+     "completion_tokens": 32
+    },
+    "answer": "I don't know your name based on the provided context. However, you can contact us at security@example.com for security issues or billing@example.com for refund requests.",
+    "answered": true,
+    "provider": null,
+    "parameters": {},
+    "temperature": null
+   },
+   "latency": {
+    "total_ms": 1709,
+    "retrieval_ms": 300,
+    "generation_ms": 1409,
+    "prompt_build_ms": null
+   },
+   "metadata": {
+    "agent": "recovery",
+    "top_k": 3,
+    "attempt": 1,
+    "recovery_action": null,
+    "recovery_run_id": "a48240c9-ca77-43ad-8534-6beb338c7796"
+   }
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "1fe8c563-0f97-408f-80f8-46ea9e1b1e81",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "Can u tell what is my name and give  me details on email of urs ",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     },
+     {
+      "rank": 2,
+      "text": "## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "recovery"
+   },
+   "prompt": {
+    "content": "Context:\n[1] Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.\n\n[2] ## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.\n\n[3] Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.\n\nQuestion: Can u tell what is my name and give  me details on email of urs \n\n(Answer ONLY from the provided context. If it is not enough, say you don't know.)",
+    "version": "recovery_v1",
+    "template_name": null
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 310,
+     "prompt_tokens": 306,
+     "completion_tokens": 4
+    },
+    "answer": "I don't know.",
+    "answered": true,
+    "provider": null,
+    "parameters": {},
+    "temperature": null
+   },
+   "latency": {
+    "total_ms": 1142,
+    "retrieval_ms": 300,
+    "generation_ms": 842,
+    "prompt_build_ms": null
+   },
+   "metadata": {
+    "agent": "recovery",
+    "top_k": 3,
+    "attempt": 2,
+    "recovery_action": "tighten_generation",
+    "recovery_run_id": "a48240c9-ca77-43ad-8534-6beb338c7796"
+   }
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "1a8ea7bc-b0af-40ea-9db9-68a40cbd1b67",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "Can u tell what is my name and give  me details on email of urs ",
+    "rewritten": "What is my name and what is your email address?",
+    "rewrite_method": null,
+    "rewrite_changed": true,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     },
+     {
+      "rank": 2,
+      "text": "## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "# Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "plans-and-limits"
+     },
+     {
+      "rank": 4,
+      "text": "Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_4",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     },
+     {
+      "rank": 5,
+      "text": "Compliance\n----------\nWe are SOC 2 Type II certified, with the report available under NDA on request. We\nsupport data-processing agreements (DPAs) for customers subject to GDPR, and we honor\ndata-subject access and deletion requests within 30 days. A current list of\nsub-processors is published on the trust page.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_5",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "security"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 5,
+     "lexical_top_k": null
+    },
+    "strategy": "recovery"
+   },
+   "prompt": {
+    "content": "Context:\n[1] Incident Response\n-----------------\nSuspected security issues can be reported to security@example.com. We acknowledge\nreports within one business day. Confirmed incidents affecting customer data are\ndisclosed to affected customers in line with contractual and regulatory timelines.\n\n[2] ## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.\n\n[3] # Plans & Limits\n\n## Plans\n\nWe offer three plans: Free, Pro, and Enterprise.\n\nThe **Free** plan includes 1 project, community support, and is intended for evaluation\nand small personal use. It has no SLA and features may change without notice.\n\nThe **Pro** plan adds unlimited projects, email support with a one-business-day response\ntarget, and access to the full evaluation suite. Pro is billed per seat, monthly or\nannually, and annual billing carries roughly a two-month discount versus monthly.\n\n[4] Authentication\n--------------\nTo reset your password, click \"Forgot Password\" on the login page and follow the link\nemailed to the address on file; reset links expire after 30 minutes. Accounts may\nenable multi-factor authentication using a TOTP authenticator app or a hardware security\nkey. Enterprise accounts can enforce SSO, in which case local passwords are disabled and\nall sign-in flows through the identity provider.\n\n[5] Compliance\n----------\nWe are SOC 2 Type II certified, with the report available under NDA on request. We\nsupport data-processing agreements (DPAs) for customers subject to GDPR, and we honor\ndata-subject access and deletion requests within 30 days. A current list of\nsub-processors is published on the trust page.\n\nQuestion: What is my name and what is your email address?\n\n(Answer ONLY from the provided context. If it is not enough, say you don't know.)",
+    "version": "recovery_v1",
+    "template_name": null
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 485,
+     "prompt_tokens": 481,
+     "completion_tokens": 4
+    },
+    "answer": "I don't know.",
+    "answered": true,
+    "provider": null,
+    "parameters": {},
+    "temperature": null
+   },
+   "latency": {
+    "total_ms": 1079,
+    "retrieval_ms": 276,
+    "generation_ms": 803,
+    "prompt_build_ms": null
+   },
+   "metadata": {
+    "agent": "recovery",
+    "top_k": 5,
+    "attempt": 3,
+    "recovery_action": "bump_retrieval",
+    "recovery_run_id": "a48240c9-ca77-43ad-8534-6beb338c7796"
+   }
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "9583ff00-fe14-409b-b963-4d511a7a69e5",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "What is your adress and refund policy?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 2,
+      "text": "Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "recovery"
+   },
+   "prompt": {
+    "content": "Context:\n[1] # Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.\n\n[2] Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions\n\n[3] ## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.\n\nQuestion: What is your adress and refund policy?",
+    "version": "recovery_v1",
+    "template_name": null
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 304,
+     "prompt_tokens": 300,
+     "completion_tokens": 4
+    },
+    "answer": "I don't know.",
+    "answered": true,
+    "provider": null,
+    "parameters": {},
+    "temperature": null
+   },
+   "latency": {
+    "total_ms": 1065,
+    "retrieval_ms": 366,
+    "generation_ms": 699,
+    "prompt_build_ms": null
+   },
+   "metadata": {
+    "agent": "recovery",
+    "top_k": 3,
+    "attempt": 1,
+    "recovery_action": null,
+    "recovery_run_id": "e20b58a8-4dd8-4b7d-8b94-bf9da75a16d2"
+   }
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "352018a5-6841-4b89-bdbf-ad9f236c4dda",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "What is your adress and refund policy?",
+    "rewritten": null,
+    "rewrite_method": null,
+    "rewrite_changed": false,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 2,
+      "text": "Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 3,
+     "lexical_top_k": null
+    },
+    "strategy": "recovery"
+   },
+   "prompt": {
+    "content": "Context:\n[1] # Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.\n\n[2] Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions\n\n[3] ## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.\n\nQuestion: What is your adress and refund policy?\n\n(Answer ONLY from the provided context. If it is not enough, say you don't know.)",
+    "version": "recovery_v1",
+    "template_name": null
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 323,
+     "prompt_tokens": 319,
+     "completion_tokens": 4
+    },
+    "answer": "I don't know.",
+    "answered": true,
+    "provider": null,
+    "parameters": {},
+    "temperature": null
+   },
+   "latency": {
+    "total_ms": 1034,
+    "retrieval_ms": 366,
+    "generation_ms": 668,
+    "prompt_build_ms": null
+   },
+   "metadata": {
+    "agent": "recovery",
+    "top_k": 3,
+    "attempt": 2,
+    "recovery_action": "tighten_generation",
+    "recovery_run_id": "e20b58a8-4dd8-4b7d-8b94-bf9da75a16d2"
+   }
+  },
+  {
+   "schema_version": "tracero_trace_v1",
+   "trace_id": "f82d0284-1864-4d05-ac9a-4f2b5fe77978",
+   "status": "answered",
+   "project": {
+    "project_id": "demo",
+    "environment": "dev"
+   },
+   "query": {
+    "original": "What is your adress and refund policy?",
+    "rewritten": "What is your address and what is your refund policy?",
+    "rewrite_method": null,
+    "rewrite_changed": true,
+    "rewrite_version": null
+   },
+   "retrieval": {
+    "chunks": [
+     {
+      "rank": 1,
+      "text": "# Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_1",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 2,
+      "text": "## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_2",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 3,
+      "text": "Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_3",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 4,
+      "text": "## Partial Refunds and Credits\n\nFor usage-based charges (such as overage on API requests), we issue partial refunds\nonly when the overage resulted from a documented service incident on our side. In all\nother cases, usage charges are final. As an alternative to a cash refund, customers may\nrequest account credit, which is applied to future invoices and never expires.\n\n## How to Request",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_4",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     },
+     {
+      "rank": 5,
+      "text": "## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits",
+      "source": null,
+      "section": null,
+      "chunk_id": "kb_5",
+      "rrf_score": null,
+      "base_score": null,
+      "dense_rank": null,
+      "dense_score": null,
+      "document_id": null,
+      "final_score": null,
+      "lexical_rank": null,
+      "text_preview": null,
+      "lexical_score": null,
+      "document_title": "refund-policy"
+     }
+    ],
+    "config": {
+     "fusion": null,
+     "reranker": null,
+     "dense_top_k": null,
+     "final_top_k": 5,
+     "lexical_top_k": null
+    },
+    "strategy": "recovery"
+   },
+   "prompt": {
+    "content": "Context:\n[1] # Refund Policy\n\n## Standard Refunds\n\nRefunds are processed within 5 to 7 business days after the request is approved. The\napproval review itself typically completes within 1 business day of submission, so most\ncustomers see the full refund land in their account within a week and a half at most.\n\n[2] ## How to Request\n\nOpen a refund request from Billing → History → the relevant invoice → \"Request refund\".\nYou may also email billing@example.com with the invoice number. Refund status is\nvisible in the same Billing → History view and moves through: requested → under review\n→ approved → processed.\n\n[3] Refunds are always issued to the original payment method used for the purchase. We\ncannot redirect a refund to a different card, bank account, or wallet, because this is\na fraud-prevention requirement enforced by our payment processor. If the original card\nhas expired, the issuing bank will normally route the refund to its replacement; if the\naccount is fully closed, contact support and we will arrange a manual bank transfer.\n\n## Subscriptions\n\n[4] ## Partial Refunds and Credits\n\nFor usage-based charges (such as overage on API requests), we issue partial refunds\nonly when the overage resulted from a documented service incident on our side. In all\nother cases, usage charges are final. As an alternative to a cash refund, customers may\nrequest account credit, which is applied to future invoices and never expires.\n\n## How to Request\n\n[5] ## Subscriptions\n\nSubscriptions can be refunded within 14 days of renewal. After the 14-day window the\ncurrent billing period is non-refundable, but you may cancel to prevent the next\nrenewal. Annual plans are refunded on a prorated basis if cancelled within the first 30\ndays; after 30 days, annual plans follow the same 14-day-from-renewal rule applied to\nthe most recent renewal date.\n\n## Partial Refunds and Credits\n\nQuestion: What is your address and what is your refund policy?\n\n(Answer ONLY from the provided context. If it is not enough, say you don't know.)",
+    "version": "recovery_v1",
+    "template_name": null
+   },
+   "generation": {
+    "model": "gpt-4o-mini",
+    "usage": {
+     "total_tokens": 508,
+     "prompt_tokens": 504,
+     "completion_tokens": 4
+    },
+    "answer": "I don't know.",
+    "answered": true,
+    "provider": null,
+    "parameters": {},
+    "temperature": null
+   },
+   "latency": {
+    "total_ms": 999,
+    "retrieval_ms": 260,
+    "generation_ms": 739,
+    "prompt_build_ms": null
+   },
+   "metadata": {
+    "agent": "recovery",
+    "top_k": 5,
+    "attempt": 3,
+    "recovery_action": "bump_retrieval",
+    "recovery_run_id": "e20b58a8-4dd8-4b7d-8b94-bf9da75a16d2"
+   }
+  }
+ ],
+ "experiment": {
+  "cases": [
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "refund_duration",
+    "metadata": {},
+    "question": "How long does a refund take?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "A refund takes approximately 5 to 7 business days to process after the request is approved, with the approval review typically completing within 1 business day of submission. Most customers can expect to see the full refund in their account within a week and a half at most [1].",
+    "failure_label": null,
+    "expected_answer": "Refunds are processed within 5 to 7 business days after the request is approved."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "refund_method",
+    "metadata": {},
+    "question": "Where is my refund sent?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "Your refund is always sent to the original payment method used for the purchase. If that card has expired, the issuing bank will typically route the refund to its replacement. If the account is fully closed, you should contact support to arrange a manual bank transfer [1].",
+    "failure_label": null,
+    "expected_answer": "Refunds are issued to the original payment method used for the purchase."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "plans",
+    "metadata": {},
+    "question": "What plans do you offer?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "We offer three plans: Free, Pro, and Enterprise. The Free plan includes 1 project and community support, intended for evaluation and small personal use. The Pro plan adds unlimited projects, email support with a one-business-day response target, and access to the full evaluation suite. The Enterprise plan includes features like single sign-on, audit logs, a dedicated customer success manager, a 99.9% uptime SLA, and custom pricing based on organization needs.",
+    "failure_label": null,
+    "expected_answer": "Three plans: Free, Pro, and Enterprise."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "pro_plan",
+    "metadata": {},
+    "question": "What does the Pro plan include?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "The Pro plan includes unlimited projects, email support with a one-business-day response target, and access to the full evaluation suite. It is billed per seat, either monthly or annually, with annual billing offering roughly a two-month discount compared to monthly billing [1].",
+    "failure_label": null,
+    "expected_answer": "Unlimited projects and email support with a one-business-day response target."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "upload_size",
+    "metadata": {},
+    "question": "What is the maximum file upload size?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "The maximum file upload size is 100 megabytes per file [1].",
+    "failure_label": null,
+    "expected_answer": "100 megabytes per file."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "password_reset",
+    "metadata": {},
+    "question": "How do I reset my password?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "To reset your password, click \"Forgot Password\" on the login page and follow the link emailed to the address on file. Please note that reset links expire after 30 minutes. [1]",
+    "failure_label": null,
+    "expected_answer": "Click Forgot Password on the login page; the reset link expires after 30 minutes."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "encryption",
+    "metadata": {},
+    "question": "How is my data encrypted?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "Your data is encrypted in transit using TLS 1.2 or higher, and at rest using AES-256. Additionally, encryption keys are managed in a dedicated key-management service and are rotated on a fixed schedule. Backups are also encrypted with the same standards as primary storage [1].",
+    "failure_label": null,
+    "expected_answer": "In transit using TLS 1.2+ and at rest using AES-256."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "region_change",
+    "metadata": {},
+    "question": "Can I change my workspace region after creating it?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "No, you cannot change your workspace region after creating it. You must contact support to arrange a migration if you want to move to a different region [1].",
+    "failure_label": null,
+    "expected_answer": "No, a workspace region cannot be changed after creation; contact support to migrate."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "phone_support",
+    "metadata": {},
+    "question": "What is your phone support number?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "I don't know. The context does not provide any information about a phone support number.",
+    "failure_label": null,
+    "expected_answer": "I don't know based on the provided context."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "founding_year",
+    "metadata": {},
+    "question": "What year was the company founded?",
+    "trace_id": null,
+    "variant_id": "k2",
+    "actual_answer": "I don't know.",
+    "failure_label": null,
+    "expected_answer": "I don't know based on the provided context."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "refund_duration",
+    "metadata": {},
+    "question": "How long does a refund take?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "A refund takes 5 to 7 business days to process after the request is approved, with the approval review typically completing within 1 business day of submission. Most customers see the full refund in their account within a week and a half at most [1].",
+    "failure_label": null,
+    "expected_answer": "Refunds are processed within 5 to 7 business days after the request is approved."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "refund_method",
+    "metadata": {},
+    "question": "Where is my refund sent?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "Your refund is always issued to the original payment method used for the purchase. If that card has expired, the issuing bank will typically route the refund to its replacement. If the account is fully closed, you should contact support to arrange a manual bank transfer [1].",
+    "failure_label": null,
+    "expected_answer": "Refunds are issued to the original payment method used for the purchase."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "plans",
+    "metadata": {},
+    "question": "What plans do you offer?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "We offer three plans: Free, Pro, and Enterprise. The Free plan includes 1 project and community support, intended for evaluation and small personal use. The Pro plan adds unlimited projects, email support with a one-business-day response target, and access to the full evaluation suite. The Enterprise plan includes features like single sign-on (SSO), audit logs, a dedicated customer success manager, a 99.9% uptime SLA, and custom pricing based on seat count and data-residency requirements.",
+    "failure_label": null,
+    "expected_answer": "Three plans: Free, Pro, and Enterprise."
+   },
+   {
+    "passed": false,
+    "reason": null,
+    "scores": {},
+    "case_id": "pro_plan",
+    "metadata": {},
+    "question": "What does the Pro plan include?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "The Pro plan includes unlimited projects, email support with a one-business-day response target, and access to the full evaluation suite. It is billed per seat, either monthly or annually, with annual billing offering roughly a two-month discount compared to monthly billing [1].",
+    "failure_label": null,
+    "expected_answer": "Unlimited projects and email support with a one-business-day response target."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "upload_size",
+    "metadata": {},
+    "question": "What is the maximum file upload size?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "The maximum file upload size is 100 megabytes per file [1].",
+    "failure_label": null,
+    "expected_answer": "100 megabytes per file."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "password_reset",
+    "metadata": {},
+    "question": "How do I reset my password?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "To reset your password, click \"Forgot Password\" on the login page and follow the link emailed to the address on file. Please note that reset links expire after 30 minutes. [1]",
+    "failure_label": null,
+    "expected_answer": "Click Forgot Password on the login page; the reset link expires after 30 minutes."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "encryption",
+    "metadata": {},
+    "question": "How is my data encrypted?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "Your data is encrypted in transit using TLS 1.2 or higher, and at rest using AES-256. Additionally, backups are encrypted with the same standards as primary storage [1].",
+    "failure_label": null,
+    "expected_answer": "In transit using TLS 1.2+ and at rest using AES-256."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "region_change",
+    "metadata": {},
+    "question": "Can I change my workspace region after creating it?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "No, you cannot change your workspace region after creating it. You must contact support to arrange a migration to a different region, as the region is fixed at creation time due to data provisioning constraints [1].",
+    "failure_label": null,
+    "expected_answer": "No, a workspace region cannot be changed after creation; contact support to migrate."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "phone_support",
+    "metadata": {},
+    "question": "What is your phone support number?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "I don't know. The context does not provide any information about a phone support number.",
+    "failure_label": null,
+    "expected_answer": "I don't know based on the provided context."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "founding_year",
+    "metadata": {},
+    "question": "What year was the company founded?",
+    "trace_id": null,
+    "variant_id": "k3",
+    "actual_answer": "I don't know.",
+    "failure_label": null,
+    "expected_answer": "I don't know based on the provided context."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "refund_duration",
+    "metadata": {},
+    "question": "How long does a refund take?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "A refund takes 5 to 7 business days to process after the request is approved. The approval review typically completes within 1 business day of submission, so most customers see the full refund in their account within a week and a half at most [1].",
+    "failure_label": null,
+    "expected_answer": "Refunds are processed within 5 to 7 business days after the request is approved."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "refund_method",
+    "metadata": {},
+    "question": "Where is my refund sent?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "Your refund is always issued to the original payment method used for the purchase. If that card has expired, the issuing bank will typically route the refund to its replacement. If the account is fully closed, you should contact support to arrange a manual bank transfer [1].",
+    "failure_label": null,
+    "expected_answer": "Refunds are issued to the original payment method used for the purchase."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "plans",
+    "metadata": {},
+    "question": "What plans do you offer?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "We offer three plans: Free, Pro, and Enterprise. The Free plan includes 1 project and community support, intended for evaluation and small personal use. The Pro plan adds unlimited projects, email support with a one-business-day response target, and access to the full evaluation suite. The Enterprise plan includes features like single sign-on (SSO), audit logs, a dedicated customer success manager, a 99.9% uptime SLA, and custom pricing based on seat count and data-residency requirements.",
+    "failure_label": null,
+    "expected_answer": "Three plans: Free, Pro, and Enterprise."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "pro_plan",
+    "metadata": {},
+    "question": "What does the Pro plan include?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "The Pro plan includes unlimited projects, email support with a one-business-day response target, and access to the full evaluation suite. It is billed per seat, either monthly or annually, with annual billing offering roughly a two-month discount compared to monthly billing [1].",
+    "failure_label": null,
+    "expected_answer": "Unlimited projects and email support with a one-business-day response target."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "upload_size",
+    "metadata": {},
+    "question": "What is the maximum file upload size?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "The maximum file upload size is 100 megabytes per file [1].",
+    "failure_label": null,
+    "expected_answer": "100 megabytes per file."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "password_reset",
+    "metadata": {},
+    "question": "How do I reset my password?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "To reset your password, click \"Forgot Password\" on the login page and follow the link emailed to the address on file. Please note that reset links expire after 30 minutes. [1]",
+    "failure_label": null,
+    "expected_answer": "Click Forgot Password on the login page; the reset link expires after 30 minutes."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "encryption",
+    "metadata": {},
+    "question": "How is my data encrypted?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "Your data is encrypted in transit using TLS 1.2 or higher, and at rest using AES-256. Additionally, encryption keys are managed in a dedicated key-management service and are rotated on a fixed schedule. Backups are also encrypted with the same standards as primary storage [1].",
+    "failure_label": null,
+    "expected_answer": "In transit using TLS 1.2+ and at rest using AES-256."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "region_change",
+    "metadata": {},
+    "question": "Can I change my workspace region after creating it?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "No, you cannot change your workspace region after creating it. The region is fixed at creation time, and to move to a different region, you must contact support to arrange a migration [1].",
+    "failure_label": null,
+    "expected_answer": "No, a workspace region cannot be changed after creation; contact support to migrate."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "phone_support",
+    "metadata": {},
+    "question": "What is your phone support number?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "I don't know. The context does not provide any information about a phone support number.",
+    "failure_label": null,
+    "expected_answer": "I don't know based on the provided context."
+   },
+   {
+    "passed": true,
+    "reason": null,
+    "scores": {},
+    "case_id": "founding_year",
+    "metadata": {},
+    "question": "What year was the company founded?",
+    "trace_id": null,
+    "variant_id": "k5",
+    "actual_answer": "I don't know.",
+    "failure_label": null,
+    "expected_answer": "I don't know based on the provided context."
+   }
+  ],
+  "status": "completed",
+  "dataset": {
+   "name": "Recovery Agent FAQ",
+   "version": null,
+   "dataset_id": "recovery_agent_faq"
+  },
+  "metrics": [],
+  "project": {
+   "project_id": "demo",
+   "environment": "dev"
+  },
+  "summary": {
+   "pass_rate": 1.0,
+   "total_cases": 10,
+   "failed_cases": 0,
+   "passed_cases": 10,
+   "recommendation": "Variant 'top_k=5' (k5) wins with accuracy=1.00 over 10 graded case(s)."
+  },
+  "metadata": {},
+  "pipeline": {
+   "model": null,
+   "config": {},
+   "reranker": null,
+   "prompt_version": null,
+   "embedding_model": null,
+   "pipeline_version": "sdk_experiment_harness_v1",
+   "retrieval_strategy": null
+  },
+  "run_type": "experiment",
+  "variants": [
+   {
+    "name": "top_k=2",
+    "config": {
+     "top_k": 2,
+     "ungradeable_cases": 0
+    },
+    "metrics": [
+     {
+      "score": 1.0,
+      "passed": null,
+      "details": {},
+      "threshold": null,
+      "metric_name": "accuracy"
+     }
+    ],
+    "variant_id": "k2",
+    "failed_cases": 0,
+    "passed_cases": 10,
+    "average_latency_ms": 1648
+   },
+   {
+    "name": "top_k=3",
+    "config": {
+     "top_k": 3,
+     "ungradeable_cases": 0
+    },
+    "metrics": [
+     {
+      "score": 0.9,
+      "passed": null,
+      "details": {},
+      "threshold": null,
+      "metric_name": "accuracy"
+     }
+    ],
+    "variant_id": "k3",
+    "failed_cases": 1,
+    "passed_cases": 9,
+    "average_latency_ms": 1405
+   },
+   {
+    "name": "top_k=5",
+    "config": {
+     "top_k": 5,
+     "ungradeable_cases": 0
+    },
+    "metrics": [
+     {
+      "score": 1.0,
+      "passed": null,
+      "details": {},
+      "threshold": null,
+      "metric_name": "accuracy"
+     }
+    ],
+    "variant_id": "k5",
+    "failed_cases": 0,
+    "passed_cases": 10,
+    "average_latency_ms": 1536
+   }
+  ],
+  "eval_run_id": "677d8dec-4748-4bf3-8740-1e0f3f16ac42",
+  "schema_version": "tracero_eval_run_v1",
+  "baseline_pipeline": null
+ }
+}
