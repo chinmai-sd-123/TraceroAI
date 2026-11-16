@@ -125,8 +125,8 @@ jobs:
       COMPOSE: docker compose -f infra/docker-compose.yml
     steps:
       - uses: actions/checkout@v7
-      - name: Build and start the stack
-        run: $COMPOSE up --build -d
+      - name: Build and start the stack, with the demo data
+        run: $COMPOSE --profile demo up --build -d
       - name: Wait for the API and the dashboard
         run: |
           for url in http://localhost:8000/health http://localhost:3000/; do
@@ -147,6 +147,19 @@ jobs:
           # The dashboard renders on the server through TRACEROAI_API_URL (http://api:8000).
           curl -fsS http://localhost:3000/dashboard/traces | grep -q "Compose smoke test"
           curl -fsS "http://localhost:3000/dashboard/traces/$trace_id" | grep -q "Compose smoke test"
+      - name: Demo data loaded and shown
+        run: |
+          for i in $(seq 90); do
+            state=$($COMPOSE --profile demo ps -a demo --format '{{.State}} {{.ExitCode}}')
+            case "$state" in exited*) break;; esac
+            sleep 2
+          done
+          echo "demo seed: $state"
+          [ "$state" = "exited 0" ]
+          count=$(curl -fsS "http://localhost:8000/v1/traces?project_id=demo&limit=200" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
+          echo "demo traces: $count"
+          [ "$count" -ge 30 ]
+          curl -fsS "http://localhost:3000/dashboard?project=demo&range=7d" | grep -q "Self-healing recovery"
       - name: Worker processed the queued job
         run: |
           for i in $(seq 30); do
@@ -157,10 +170,10 @@ jobs:
           echo "deep-eval queue did not drain"; exit 1
       - name: Logs
         if: failure()
-        run: $COMPOSE logs --no-color
+        run: $COMPOSE --profile demo logs --no-color
       - name: Stop
         if: always()
-        run: $COMPOSE down -v
+        run: $COMPOSE --profile demo down -v
 
   web:
     name: Web typecheck, lint, build and smoke test
