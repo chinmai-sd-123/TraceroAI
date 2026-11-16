@@ -41,7 +41,7 @@ export default async function RecoveryRunsPage({
           <EmptyState title="No recovery runs yet">
             Wrap your pipeline in the SDK&apos;s <code className="font-dash-mono text-[0.8125rem] text-ink">RecoveryAgent</code>{" "}
             and every retry it makes shows up here as one run.{" "}
-            <Link href="/docs#recovery" className="text-accent underline">
+            <Link href="/docs/fix/recovery-agent" className="text-accent underline">
               See how
             </Link>
             .

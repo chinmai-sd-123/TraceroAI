@@ -68,7 +68,7 @@ export default async function IssuesPage({
             ) : (
               <>
                 Every trace in this range was healthy, or nothing has been sent yet.{" "}
-                <Link href="/docs#trace" className="text-accent underline">
+                <Link href="/docs/instrument/python-sdk" className="text-accent underline">
                   Send traces
                 </Link>
                 .

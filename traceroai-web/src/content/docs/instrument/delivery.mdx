@@ -1,0 +1,42 @@
+export const meta = {
+  description: "Tracing must never slow down or break your application. How the SDK makes sure of it.",
+};
+
+Traces go onto an in-memory queue and a background thread sends them, so tracing adds
+well under a millisecond to your request, and a slow or unreachable TraceroAI never
+holds your code up.
+
+## When sending fails
+
+The SDK never raises into your code when a send fails. Timeouts, 429s and 5xx responses
+are retried with backoff (3 times by default); after that the failure is logged on the
+`traceroai` logger and your code carries on. A rejected request (401, 413, 422) isn't
+retried, because retrying won't help.
+
+To see what's happening:
+
+```python
+import logging
+logging.getLogger("traceroai").setLevel(logging.DEBUG)
+```
+
+## Short-lived processes
+
+Scripts, serverless handlers and tests can exit before the queue is sent. Call
+`client.flush()` before exiting. An exit hook also flushes for up to 2 seconds.
+
+## Retries never duplicate
+
+The client picks each trace's id, and a retried send reuses it, so the server never
+stores a trace twice.
+
+## A full queue
+
+The queue holds 1,000 traces by default (`max_queue_size`). When it's full, new traces
+are dropped and counted in `client.dropped_traces` rather than using more memory.
+
+## Turning it off
+
+`TRACEROAI_ENABLED=false` (or `enabled=False`) makes every send a no-op, which is useful
+in tests. For code that must know when a trace fails, use `background=False,
+raise_on_error=True`, and sends raise `TraceroError`.

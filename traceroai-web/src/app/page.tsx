@@ -208,7 +208,7 @@ export default function Home() {
                   </code>
                   <CopyButton text="pip install traceroai" />
                 </div>
-                <Link href="/docs#install" className="rounded bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90">
+                <Link href="/docs/quickstart" className="rounded bg-accent px-4 py-2.5 text-sm font-medium text-white hover:bg-accent/90">
                   Read the quickstart
                 </Link>
                 <a href={GITHUB_URL} className="rounded border border-line-strong bg-surface px-4 py-2.5 text-sm font-medium hover:bg-sunken">

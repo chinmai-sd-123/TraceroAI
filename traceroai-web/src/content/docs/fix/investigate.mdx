@@ -1,0 +1,43 @@
+export const meta = {
+  description: "From a pile of failing traces to a fix you can show works: issues, the trace page, an experiment, and resolving.",
+};
+
+## 1. Start from issues
+
+Open **Issues** in the dashboard. Each issue is a group of failing traces with one
+cause; regressed issues, ones that failed again after you resolved them, come first.
+The overview's Issues panel shows the five that most need attention.
+
+Pick the issue with the most traces, or the one that regressed. Its link opens the
+trace list narrowed to its traces.
+
+## 2. Read a few traces
+
+Open two or three of the issue's traces and read what the checks found
+([Read your first diagnosis](/docs/first-diagnosis)). Prefer traces marked **Final**:
+the judge's reason names what went wrong, while an estimate can flag answers that are
+fine.
+
+What to look for, by diagnosis:
+
+| Diagnosis | Look at | Common fixes |
+|---|---|---|
+| Retrieval miss | The chunks: was the right passage retrieved at all? | Chunking, `top_k`, a better query rewrite, hybrid search, missing documents |
+| Unsupported claim | The quoted claim against the chunks | A prompt that keeps answers to the context; a smaller, more relevant context |
+| Wrong answer | The question against the answer | Prompt instructions, the model |
+| Correct refusal | Whether the documents should cover the question | Add the missing documents, or accept the refusal |
+
+## 3. Change one thing and measure it
+
+Make one change, then compare old and new on labelled questions with an
+[experiment](/docs/fix/experiments). Keep some questions back from the ones you tuned
+on and measure on those; a change that only helps the questions you looked at isn't a
+fix. Experiments report accuracy, latency, tokens and cost per variant.
+
+For a fix you want applied automatically at run time, the
+[recovery agent](/docs/fix/recovery-agent) retries a failed stage.
+
+## 4. Resolve the issue
+
+Once the fix ships, mark the issue resolved. If the same failure comes back, the issue
+returns as regressed and goes to the top of the list.

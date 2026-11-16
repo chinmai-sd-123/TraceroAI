@@ -1,0 +1,77 @@
+export const meta = {
+  description: "Every setting is an environment variable. The API and worker read the TRACEROAI_ ones; the dashboard has four of its own.",
+};
+
+The API and the worker read the same settings. List-valued settings take JSON, for
+example `TRACEROAI_ADMIN_API_KEYS='["<key>"]'`; use `[]` or `{}` for none, never an empty
+string. An empty variable still counts as set: `TRACEROAI_REDIS_URL=` turns Redis off
+even if a `.env` file sets it.
+
+## The judge
+
+| Variable | Default | What it does |
+|---|---|---|
+| `TRACEROAI_OPENAI_API_KEY` | none | Turns on embeddings and the LLM judge. Without it every diagnosis is an estimate |
+| `TRACEROAI_JUDGE_MODEL` | `gpt-4o-mini` | The judge model |
+| `TRACEROAI_JUDGE_BASE_URL` | none | An OpenAI-compatible endpoint for another provider or a model you host; the key and model are then that provider's |
+| `TRACEROAI_EMBEDDING_MODEL` | `gemini-embedding-001` (Compose: `text-embedding-3-small`) | The embedding model for the relevance check |
+| `TRACEROAI_DEEP_EVAL_ENABLED` | `true` | Set `false` to keep only the quick checks |
+
+## Storage and queue
+
+| Variable | Default | What it does |
+|---|---|---|
+| `TRACEROAI_DATABASE_URL` | local Postgres | Postgres connection string |
+| `TRACEROAI_REDIS_URL` | none | The evaluation queue and shared rate limits. Without it, evaluations run inside the API process |
+| `TRACEROAI_TRACE_RETENTION_DAYS` | keep forever | Delete traces older than this. The worker checks hourly; without the worker, run `python -m app.retention` on a schedule |
+| `TRACEROAI_DB_POOL_SIZE` / `_MAX_OVERFLOW` | 5 / 10 | Database connections per process |
+
+## Access
+
+| Variable | Default | What it does |
+|---|---|---|
+| `TRACEROAI_APP_ENV` | `development` | `development` or `testing`: keys optional. `staging` or `production`: keys required |
+| `TRACEROAI_REQUIRE_API_KEY` | from `APP_ENV` | Override whether keys are required |
+| `TRACEROAI_ADMIN_API_KEYS` | `[]` | Keys that read every project, such as the dashboard's |
+| `TRACEROAI_PROJECT_API_KEYS` | `{}` | Bootstrap project keys as `{"key": "project"}`. Prefer `python -m app.keys`, which stores them hashed |
+| `TRACEROAI_PUBLIC_READ_PROJECTS` | `[]` | Projects anyone may read without a key |
+| `TRACEROAI_CORS_ORIGINS` | `[]` | Extra browser origins allowed to call the API |
+| `TRACEROAI_TRUSTED_PROXY_COUNT` | 0 | Proxies in front of the API that add `X-Forwarded-For` (1 behind a single load balancer); used to tell callers apart for rate limits |
+| `TRACEROAI_PLAYGROUND_ENABLED` | `false` | The keyless "try it" endpoint. Leave off on anything public |
+
+## Limits
+
+| Variable | Default | What it does |
+|---|---|---|
+| `TRACEROAI_MAX_REQUEST_BYTES` | 1,000,000 | Largest request body (413 above it) |
+| `TRACEROAI_INGEST_RATE_LIMIT_PER_MINUTE` | 1,200 | Traces per key (or per address without one) |
+| `TRACEROAI_GRADE_RATE_LIMIT_PER_MINUTE` | 120 | Grading calls per key |
+| `TRACEROAI_MAX_FEEDBACK_PER_TRACE` | 100 | Feedback entries kept per trace |
+
+## The worker
+
+| Variable | Default | What it does |
+|---|---|---|
+| `TRACEROAI_WORKER_CONCURRENCY` | 1 | Jobs one worker processes at once |
+| `TRACEROAI_WORKER_VISIBILITY_TIMEOUT_SECONDS` | 600 | How long a job may run before another worker takes it over |
+| `TRACEROAI_STALLED_EVALUATION_SECONDS` | 900 | A trace still pending this long, with nothing queued, is queued again |
+| `TRACEROAI_FALLBACK_EVAL_WORKERS` | 2 | Threads for evaluation inside the API when there's no Redis |
+| `TRACEROAI_WORKER_METRICS_PORT` | none | Serve the worker's Prometheus metrics on this port |
+| `TRACEROAI_LOG_LEVEL` | `INFO` | Log level |
+
+## The dashboard
+
+| Variable | What it does |
+|---|---|
+| `TRACEROAI_API_URL` | Where the dashboard's server reaches the API (`http://api:8000` in Compose). With no API address set, the dashboard shows how to self-host instead |
+| `NEXT_PUBLIC_TRACEROAI_API_URL` | The API address for code running in the browser (the docs playground). Set at build time |
+| `TRACEROAI_API_KEY` | The admin key the dashboard reads with, on the server only |
+| `TRACEROAI_DASHBOARD_PASSWORD` | Require a shared password to open the dashboard |
+
+## The SDK
+
+| Variable | What it does |
+|---|---|
+| `TRACEROAI_API_URL` | The API address, if not passed as `base_url` |
+| `TRACEROAI_API_KEY` | The key, if not passed as `api_key` |
+| `TRACEROAI_ENABLED` | `false` turns every send into a no-op |

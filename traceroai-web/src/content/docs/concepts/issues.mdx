@@ -1,0 +1,40 @@
+export const meta = {
+  description: "Failing traces with the same cause, grouped, so a hundred failures become a few things to fix.",
+};
+
+An issue groups failing traces that share a cause. The Issues page lists them, the
+ones that need attention first, and each links to its traces.
+
+## How traces are grouped
+
+The grouping depends on what failed, because different failures have different causes:
+
+| Diagnosis | Grouped by | Why |
+|---|---|---|
+| Retrieval miss, low context relevance, needs review | The source of the top retrieved chunk | The problem is in what was retrieved |
+| Unsupported claim, wrong answer | The prompt version (or template name) | The problem is in how the answer was produced |
+
+Log a prompt version with `t.log_prompt(..., version="grounded_v2")` and grounding
+failures from one prompt become one issue. Without one, they share an issue named "no
+prompt version".
+
+When the judge changes a trace's diagnosis, the trace moves to the right issue by
+itself. Healthy traces and correct refusals belong to no issue.
+
+## Open, resolved, regressed
+
+- **Open**: failing traces, not marked resolved.
+- **Resolved**: you marked it resolved, and nothing has failed since.
+- **Regressed**: it failed again after you marked it resolved. Regressed issues are
+  listed first.
+
+Resolve an issue once its cause is fixed. If it comes back, you'll see it.
+
+## In the API
+
+```bash
+curl "http://localhost:8000/v1/issues?project_id=my-app"
+curl "http://localhost:8000/v1/traces?project_id=my-app&issue_key=retrieval_miss%7Crefunds.md"
+```
+
+See [HTTP API](/docs/reference/http-api) for resolving and reopening.

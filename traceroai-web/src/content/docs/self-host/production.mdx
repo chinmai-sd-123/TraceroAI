@@ -1,0 +1,39 @@
+export const meta = {
+  description: "What to set before a TraceroAI stack is reachable by anyone but you.",
+};
+
+## Access
+
+- Set `TRACEROAI_APP_ENV=production`, so every request needs a key.
+- Create a project key for each application and an admin key for the dashboard
+  (`python -m app.keys create`, see [Projects and keys](/docs/concepts/projects-and-keys)).
+- Give the dashboard its admin key as `TRACEROAI_API_KEY`, and set
+  `TRACEROAI_DASHBOARD_PASSWORD`, or keep the dashboard on a private network.
+- Leave `TRACEROAI_PLAYGROUND_ENABLED` off.
+- Behind a load balancer or proxy, set `TRACEROAI_TRUSTED_PROXY_COUNT` (usually 1)
+  so rate limits see real client addresses.
+- If a browser on another origin calls the API, list it in `TRACEROAI_CORS_ORIGINS`.
+
+## Data
+
+- Keep Postgres private, and back it up.
+- Set `TRACEROAI_TRACE_RETENTION_DAYS`. Traces hold your users' questions and your
+  documents; see [What a trace contains](/docs/reference/trace-data).
+- Decide whether trace text may go to your LLM provider. If not, point
+  `TRACEROAI_JUDGE_BASE_URL` at a model you host, or run without a judge.
+
+## Running it
+
+- Run migrations before each new version starts: `python -m app.db.init_db`
+  (Compose does this in its `migrate` service; elsewhere, make it the pre-deploy step).
+  See [Upgrading](/docs/self-host/upgrading).
+- For more than light traffic, run Redis and the worker (`python -m app.worker`)
+  rather than evaluating inside the API. Raise `TRACEROAI_WORKER_CONCURRENCY` or run
+  more workers as the queue grows.
+- Watch `GET /health/ready` and scrape `GET /metrics` (and the worker's metrics port,
+  `TRACEROAI_WORKER_METRICS_PORT`).
+- Keep the dashboard on Next.js 16.4.6 or later (the repository pins it): earlier
+  16.x releases have published security advisories.
+
+Report security problems as described in the repository's
+[security policy](https://github.com/chinmai-sd-123/TraceroAI/blob/main/SECURITY.md).

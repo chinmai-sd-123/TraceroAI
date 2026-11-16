@@ -1,0 +1,68 @@
+export const meta = {
+  description: "The public surface of the traceroai Python package (0.5).",
+};
+
+`pip install traceroai`, Python 3.10 or later. Sending never raises into your code; see
+[Delivery and failures](/docs/instrument/delivery).
+
+## TraceroClient
+
+```python
+TraceroClient(
+    base_url=None,          # default: TRACEROAI_API_URL
+    api_key=None,           # default: TRACEROAI_API_KEY
+    timeout_seconds=10.0,
+    enabled=None,           # default: TRACEROAI_ENABLED; false makes every send a no-op
+    background=True,        # False: send in the calling thread (still never raises)
+    max_queue_size=1000,
+    max_retries=3,
+    raise_on_error=False,   # with background=False, raise TraceroError on failure
+)
+```
+
+| Method | What it does |
+|---|---|
+| `client.trace(query, *, rewritten=, project=, metadata=)` | Context manager: times each logged step and sends the trace when the block ends. Works with `with` and `async with` |
+| `t.log_retrieval(chunks, *, strategy="vector", config=)` | The retrieved chunks; see [Retriever output and chunks](/docs/instrument/chunks) |
+| `t.log_prompt(content, *, version=, template_name=)` | Optional. The prompt sent to the model |
+| `t.log_generation(answer, *, model, provider=, temperature=, parameters=, prompt_tokens=, completion_tokens=)` | The answer. With token counts the server works out the cost |
+| `t.trace_id` | The trace's id, set when the block starts |
+| `client.traced(*, model, strategy="vector")` | Decorator for a function returning `(answer, chunks)`, sync or async |
+| `client.log_trace(*, query, retrieval, generation, prompt=, latency=, project=, metadata=, trace_id=, status=)` | Send a whole trace in one call; returns its id |
+| `client.log_trace_sync_eval(...)` | Send a trace and wait for the judge's verdict; returns `(trace_id, diagnosis)`. Raises on failure |
+| `client.get_trace(trace_id)` | Read a stored trace back, after sending queued ones |
+| `client.flush(timeout=None)` | Wait for queued traces to send. Returns `False` on timeout |
+| `client.close()` | Send what's queued (briefly), then close the connection pool |
+| `client.dropped_traces` | Traces dropped because the queue was full |
+| `aget_trace`, `alog_trace_sync_eval`, `aflush` | Async versions of the calls that wait |
+
+## AsyncTraceroClient
+
+The same constructor (with `max_pending=1000` instead of a queue and thread settings).
+`trace()` and `log_trace()` return at once; `get_trace`, `log_trace_sync_eval`, `flush`
+and `aclose` are coroutines. See [Async code](/docs/instrument/async).
+
+## traceroai.eval
+
+| Name | What it is |
+|---|---|
+| `Case(case_id, question, expected_answer)` | One labelled question |
+| `Variant(variant_id, name, top_k=3, extra={})` | One version of your pipeline |
+| `run_experiment(*, client, dataset, retrieve, generate, variants, project_id="experiments", dataset_name="Custom dataset", post=True)` | Run, grade, recommend and upload. Returns an `ExperimentResult` |
+| `ExperimentResult` | `eval_run_id`, `recommendation`, `variants`, `cases`, `errors` |
+
+See [Experiments](/docs/fix/experiments).
+
+## traceroai.recovery
+
+| Name | What it is |
+|---|---|
+| `RecoveryAgent(client, *, retrieve, generate, max_attempts=3, project_id="recovery-agent", model="unknown", rewrite=None, retry_on_quick_diagnosis=False)` | The recovery agent. `model` names the model on each attempt's trace |
+| `agent.run(question)` | Returns `answer`, `diagnosis`, `diagnosis_source`, `attempts`, `succeeded`, `trace_ids`, `deep_eval` |
+
+Needs `pip install "traceroai[recovery]"`. See [Recovery agent](/docs/fix/recovery-agent).
+
+## Errors
+
+`TraceroError` is raised only with `background=False, raise_on_error=True`, when a trace
+can't be delivered. Everything else is logged on the `traceroai` logger.

@@ -1,0 +1,61 @@
+export const meta = {
+  description: "An optional LangGraph agent that retries the stage that failed, and traces every attempt as one run.",
+};
+
+```bash
+pip install "traceroai[recovery]"
+```
+
+The extra installs only `langgraph`; bring your own LLM client.
+
+```python
+from traceroai.recovery import RecoveryAgent
+
+agent = RecoveryAgent(
+    client,
+    retrieve=my_retrieve,    # (question, top_k) -> list of chunks
+    generate=my_generate,    # (question, context) -> answer, or (answer, usage)
+    max_attempts=3,
+)
+
+result = agent.run("How long does a refund take?")
+result["answer"]             # the final answer
+result["diagnosis"]          # its diagnosis
+result["diagnosis_source"]   # "judge", or "embedding" / "lexical" without a judge
+result["attempts"]           # how many tries it took
+result["trace_ids"]          # one trace per attempt
+```
+
+## What it does
+
+Each attempt is sent to the server, which runs the LLM judge before answering. The
+agent then acts on the verdict:
+
+| Verdict | Next attempt |
+|---|---|
+| Healthy | Stop |
+| Retrieval miss | Retrieve more (`top_k` + 2), and rephrase the query if you pass `rewrite=` |
+| Unsupported claim | Generate again with a stricter prompt |
+| Wrong answer | A stricter prompt first; if it's still wrong, retrieve more |
+| Needs review | Retrieve again, the cheapest change |
+
+It stops when the answer is healthy or `max_attempts` is reached.
+
+## Judge verdicts only
+
+By default the agent retries only when the judge said the answer failed. On an estimate
+(no judge configured) it stops after the first attempt and reports it, because estimates
+often flag correct answers and every retry costs a generation. Pass
+`retry_on_quick_diagnosis=True` to retry on estimates anyway.
+
+## In the dashboard
+
+All attempts of one `run()` share a run id, so **Recovery runs** shows each run as one
+chain: the first attempt's failure, what the agent changed, and how it ended. Each trace
+in a run has a strip at the top linking its attempts.
+
+## Errors and cost
+
+If your `retrieve` or `generate` raises, that attempt is traced with status `error` and
+the exception is raised from `run()`. Return `(answer, {"prompt_tokens": ...,
+"completion_tokens": ...})` from `generate` and each attempt's trace gets a cost.

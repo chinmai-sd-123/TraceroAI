@@ -1,0 +1,37 @@
+export const meta = {
+  description: "A trace is one run of your pipeline, recorded from the question to the answer.",
+};
+
+A trace records one run of your pipeline answering one question: the question, what
+was retrieved, the prompt, the answer, how long each step took, and what it cost. The
+server adds its checks, one diagnosis, and any feedback.
+
+## What's in a trace
+
+| Part | What it holds |
+|---|---|
+| Question | The user's question, and the rewritten retrieval query if you log one |
+| Retrieval | The chunks your retriever returned: text, source, rank, scores, metadata |
+| Prompt | The prompt sent to the model, its version and template name (optional) |
+| Generation | The answer, model, provider, parameters, and token counts |
+| Timing | Total time, and time per step when you use the context manager |
+| Project | Project id, environment |
+| Metadata | Anything you pass as `metadata=` |
+
+The server adds the checks it ran (its **findings**), the **diagnosis**, the cost (from
+token counts and its price table) and **feedback** (thumbs up or down, with a comment).
+[What a trace contains](/docs/reference/trace-data) lists every field and where data can
+go.
+
+## Ids and time
+
+The SDK picks a trace's id before sending it, so you can log it alongside your own
+records straight away. Sending the same id twice stores one trace, which makes retries
+safe.
+
+## Steps
+
+Today a trace is one RAG interaction. Agents, which make several model and tool calls
+per question, need a trace to hold a tree of **steps**; that's in development, along
+with accepting traces over OpenTelemetry. The decision behind it is
+[recorded in the repository](https://github.com/chinmai-sd-123/TraceroAI/blob/main/docs/adr/0002-traces-made-of-steps.md).

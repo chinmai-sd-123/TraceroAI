@@ -1,0 +1,49 @@
+export const meta = {
+  description: "AsyncTraceroClient for asyncio applications: the same guarantees, sent as tasks on your event loop.",
+};
+
+For asyncio applications use `AsyncTraceroClient`. It sends traces as tasks on the
+running event loop, not on a thread, with the same retries and the same promise never
+to raise into your code.
+
+```python
+from traceroai import AsyncTraceroClient
+
+client = AsyncTraceroClient(base_url="http://localhost:8000")
+
+async def answer(question: str) -> str:
+    async with client.trace(question) as t:      # plain `with` works too
+        chunks = await retrieve(question)
+        t.log_retrieval(chunks)
+        reply = await generate(question, chunks)
+        t.log_generation(reply, model="gpt-4o-mini")
+    return reply
+```
+
+## What waits and what doesn't
+
+| Call | Behaviour |
+|---|---|
+| `client.trace()`, `client.log_trace()` | Return at once; the trace is sent by a task on the loop |
+| `await client.get_trace(id)` | Sends pending traces first, then reads |
+| `await client.log_trace_sync_eval(...)` | Waits for the judge's verdict (used by the recovery agent) |
+| `await client.flush()` | Waits for traces in flight |
+| `await client.aclose()` | Sends what's pending, then closes; call it on shutdown |
+
+`log_trace` needs a running event loop; called outside one, the trace is dropped with a
+warning. At most 1,000 traces are in flight at once (`max_pending`); beyond that new
+ones are dropped and counted in `client.dropped_traces`.
+
+## The decorator
+
+```python
+@client.traced(model="gpt-4o-mini")
+async def answer(question: str):
+    chunks = await retrieve(question)
+    return await generate(question, chunks), chunks
+```
+
+## Using the sync client in async code
+
+`TraceroClient` also works in async code: sending never blocks. For the calls that wait
+it has `aget_trace`, `alog_trace_sync_eval` and `aflush`, which run in a worker thread.

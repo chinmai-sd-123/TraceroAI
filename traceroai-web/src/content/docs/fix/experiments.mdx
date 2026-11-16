@@ -1,0 +1,71 @@
+export const meta = {
+  description: "Compare versions of your pipeline on labelled questions: accuracy, latency, tokens and cost for each.",
+};
+
+You supply the questions with expected answers, your `retrieve` and `generate`, and the
+variants to compare. The harness runs every question through every variant, has the
+server's judge grade each answer against the expected one, and recommends the best.
+
+```python
+from traceroai.eval import Case, Variant, run_experiment
+
+result = run_experiment(
+    client=client,
+    dataset=[Case("refund", "How long does a refund take?", "5 to 7 business days.")],
+    retrieve=my_retrieve,    # (question, top_k) -> list of chunks
+    generate=my_generate,    # (question, context) -> answer
+    variants=[Variant("k3", "top_k=3", top_k=3), Variant("k5", "top_k=5", top_k=5)],
+    project_id="my-app",
+)
+print(result.recommendation)
+result.cases    # every question's result, per variant
+```
+
+Runs appear under **Eval runs**, with a grid of which variant got which question right
+and the questions they disagree on first. Grading needs the judge configured.
+
+## Comparing more than top_k
+
+Put any settings in a variant's `extra`, and give `retrieve` or `generate` a `variant`
+parameter: the variant being run is passed to it.
+
+```python
+PROMPTS = {"plain": "...", "grounded": "..."}
+
+def my_generate(question, context, variant):
+    return llm(PROMPTS[variant.extra["prompt"]], question, context)
+
+variants = [
+    Variant("plain", "plain prompt", extra={"prompt": "plain"}),
+    Variant("grounded", "grounded prompt", extra={"prompt": "grounded"}),
+]
+```
+
+## Cost per variant
+
+Return `(answer, usage)` from `generate`, where `usage` has `prompt_tokens`,
+`completion_tokens` and `model`. Each variant then reports its token totals, the server
+prices them, and the run's page shows tokens per answer and cost per correct answer.
+
+```python
+def my_generate(question, context, variant):
+    response = client_llm.chat.completions.create(...)
+    return response.choices[0].message.content, {
+        "prompt_tokens": response.usage.prompt_tokens,
+        "completion_tokens": response.usage.completion_tokens,
+        "model": "gpt-4o-mini",
+    }
+```
+
+## Read the answers before you decide
+
+Each answer is graded by one judge call against the expected answer. In hand checks on
+real projects, that grader disagreed with a careful reading on about
+1 in 6 answers, mostly failing long answers that were right. A difference of a question
+or two between variants can be grading noise:
+
+- Keep back questions you didn't tune on, and measure on those.
+- When a result decides something, read the answers for the questions where the
+  variants differ (the grid lists them first).
+
+If posting the run fails, the results stay in `result`, and `result.errors` says why.

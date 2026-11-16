@@ -1,0 +1,59 @@
+export const meta = {
+  description: "One command runs the whole stack on your machine or a server: Postgres, Redis, the API, the worker and the dashboard.",
+};
+
+```bash
+git clone https://github.com/chinmai-sd-123/TraceroAI.git
+cd TraceroAI
+docker compose -f infra/docker-compose.yml up --build
+```
+
+| Service | What it is | Address |
+|---|---|---|
+| `postgres` | Everything TraceroAI stores | port 5432 |
+| `redis` | The evaluation queue and rate limits | port 6379 |
+| `migrate` | Brings the schema up to date, then exits; the API and worker wait for it | |
+| `api` | The FastAPI service | `http://localhost:8000` (API docs at `/docs`) |
+| `worker` | Runs the LLM judge for queued traces | |
+| `web` | The dashboard and these docs | `http://localhost:3000` |
+| `demo` | Only with `--profile demo`: loads the demo data once | |
+
+## The judge
+
+Export the provider settings before `up` and they reach the API and the worker:
+
+```bash
+export TRACEROAI_OPENAI_API_KEY=sk-...
+export TRACEROAI_JUDGE_MODEL=gpt-4o-mini          # optional
+export TRACEROAI_JUDGE_BASE_URL=...               # optional: another OpenAI-compatible provider
+docker compose -f infra/docker-compose.yml up -d
+```
+
+Without a key, traces get the quick checks only, and every diagnosis is marked
+Preliminary.
+
+## Demo data
+
+```bash
+docker compose -f infra/docker-compose.yml --profile demo up --build
+```
+
+Loads 30 recorded runs, three recovery runs and an experiment into a `demo` project.
+Running it again changes nothing. Remove it with:
+
+```bash
+docker compose -f infra/docker-compose.yml run --rm demo python -m app.demo --remove
+```
+
+## Only the databases
+
+To run the API or the tests outside Docker:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres redis
+```
+
+## Before it's reachable from a network
+
+The stack starts in development mode, where API keys are optional. Read the
+[Production checklist](/docs/self-host/production) first.

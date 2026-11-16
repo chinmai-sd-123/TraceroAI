@@ -4,7 +4,7 @@ import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "rea
 
 import { CopyButton } from "@/components/copy-button";
 
-export type CodeTab = { label: string; code: string; language?: "python" | "bash" };
+export type CodeTab = { label: string; code: string; language?: string };
 
 // Light-touch highlighting: comments, strings and keywords only, which is
 // enough to read the shape of a snippet without a highlighting library.
@@ -12,7 +12,10 @@ const PY_KEYWORDS = new Set([
   "from", "import", "with", "as", "def", "return", "for", "in", "if", "else", "None", "True", "False", "lambda", "print",
 ]);
 
-function highlight(code: string, language: CodeTab["language"]): ReactNode[] {
+/** Highlight python or shell code; anything else (json, yaml, env, text) stays plain. */
+export function highlight(code: string, language: string | undefined): ReactNode[] {
+  if (language !== "python" && language !== "bash" && language !== "sh" && language !== "shell") return [code];
+  if (language !== "python") language = "bash";
   const pattern =
     language === "bash"
       ? /(#.*$)|("[^"\n]*"|'[^'\n]*')|(\b(?:pip|docker|git|cd|export|compose|python)\b)/gm
@@ -93,4 +96,23 @@ export function CodeTabs({ tabs, caption }: { tabs: CodeTab[]; caption?: string 
       </pre>
     </figure>
   );
+}
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  python: "Python",
+  bash: "Terminal",
+  sh: "Terminal",
+  shell: "Terminal",
+  json: "JSON",
+  yaml: "YAML",
+  env: ".env",
+  sql: "SQL",
+  ts: "TypeScript",
+  text: "Text",
+};
+
+/** One code block with a copy button (fenced code in the docs). */
+export function CodeBlock({ code, language, caption }: { code: string; language?: string; caption?: string }) {
+  const label = caption ?? LANGUAGE_NAMES[language ?? ""] ?? "Code";
+  return <CodeTabs tabs={[{ label, code, language }]} caption={label} />;
 }

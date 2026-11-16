@@ -1,0 +1,50 @@
+export const meta = {
+  description: "The problems people hit most, and how to fix them.",
+};
+
+## The dashboard says it can't reach the API
+
+Check the API is up: `curl http://localhost:8000/health/ready`. The dashboard's server
+reads `TRACEROAI_API_URL`; in Docker Compose that's `http://api:8000`, not localhost.
+
+## The dashboard says it runs on your own servers
+
+That page appears when the dashboard has no API address at all. Set
+`TRACEROAI_API_URL` (and rebuild if you also need `NEXT_PUBLIC_TRACEROAI_API_URL`).
+
+## The API rejects requests with 401 or 403
+
+Keys are required in staging and production. Pass `api_key=` to the client or set
+`TRACEROAI_API_KEY`. A project key reads only its own project; the dashboard needs an
+admin key. See [Projects and keys](/docs/concepts/projects-and-keys).
+
+## Every diagnosis says Preliminary
+
+No judge is configured. Set `TRACEROAI_OPENAI_API_KEY` (or `TRACEROAI_JUDGE_BASE_URL`
+for another provider) on the API and the worker. New traces are then judged.
+
+## The sidebar says the judge queue is not connected
+
+`TRACEROAI_REDIS_URL` isn't set, so the API judges traces in its own process. That's
+fine for small setups. Add Redis and run `python -m app.worker` when traffic grows.
+
+## Traces are rejected with 413 or 422
+
+413: the request is over `TRACEROAI_MAX_REQUEST_BYTES` (1 MB by default); send fewer or
+shorter chunks, or raise the limit. 422: a field is missing or too long, and the
+response says which.
+
+## Nothing shows up, and the app shows no error
+
+The SDK never raises into your app; it logs instead. Turn its log on with
+`logging.getLogger("traceroai").setLevel(logging.DEBUG)`, and call `client.flush()`
+before a short script exits.
+
+## Errors about missing tables or columns after an upgrade
+
+Run the migrations: `python -m app.db.init_db`. See [Upgrading](/docs/self-host/upgrading).
+
+## Docker Compose can't start Postgres or Redis
+
+Another service holds port 5432 or 6379. Stop it, or change the published port in
+`infra/docker-compose.yml`.

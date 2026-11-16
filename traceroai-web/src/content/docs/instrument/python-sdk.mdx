@@ -1,0 +1,90 @@
+export const meta = {
+  description: "Three ways to send a trace from Python, from most automatic to most explicit. They all produce the same trace.",
+};
+
+```bash
+pip install traceroai
+```
+
+The client reads `TRACEROAI_API_URL` and `TRACEROAI_API_KEY` if you don't pass them.
+
+<CodeTabs
+  caption="Ways to send a trace"
+  tabs={[
+    {
+      label: "Context manager",
+      code: `from traceroai import TraceroClient
+
+client = TraceroClient(base_url="http://localhost:8000")
+
+with client.trace("How long does a refund take?") as t:
+    chunks = retrieve(question, top_k=3)
+    t.log_retrieval(chunks, strategy="hybrid", config={"final_top_k": 3})
+    t.log_prompt(prompt, version="grounded_v1")          # optional
+    answer = generate(prompt)
+    t.log_generation(answer, model="gpt-4o-mini", provider="openai",
+                     prompt_tokens=1200, completion_tokens=80)
+
+print(t.trace_id)`,
+    },
+    {
+      label: "Decorator",
+      code: `@client.traced(model="gpt-4o-mini", strategy="hybrid")
+def answer(question: str):
+    chunks = retrieve(question)
+    return generate(question, chunks), chunks   # must return (answer, chunks)
+
+answer("What is the maximum upload size?")       # traced; async def works too`,
+    },
+    {
+      label: "Low-level",
+      code: `client.log_trace(
+    query={"original": question},
+    retrieval={"strategy": "hybrid", "chunks": chunks},
+    generation={"model": "gpt-4o-mini", "answer": answer},
+    prompt={"content": prompt, "version": "grounded_v1"},   # optional
+    latency={"total_ms": 1171, "retrieval_ms": 230},          # optional
+    project={"project_id": "my-app", "environment": "prod"},  # optional
+    metadata={"user_tier": "free"},                           # optional
+)`,
+    },
+  ]}
+/>
+
+## The context manager
+
+`client.trace()` is the one to use in most code. It times the block, measures each step
+from when you log it (so log each piece right after the work it records), marks the
+answer as unanswered if an exception escapes, and sends the trace when the block ends.
+`t.trace_id` is set as soon as the block starts. Your exception is never swallowed, and
+a failure to send never raises.
+
+## What to log
+
+- **Retrieval**: the chunks your retriever returned, in order. See
+  [Retriever output and chunks](/docs/instrument/chunks).
+- **Prompt** (optional): log a `version` and grounding failures from one prompt are
+  grouped as [one issue](/docs/concepts/issues).
+- **Generation**: the answer and the model. Pass `prompt_tokens` and
+  `completion_tokens` and the server works out the cost.
+- **Metadata** (optional): anything you'll want to filter or group by later.
+
+You don't send evaluations or a diagnosis; the server computes them.
+
+## Read a trace back
+
+```python
+trace = client.get_trace(t.trace_id)
+trace["diagnosis"]["label"]        # e.g. "retrieval_miss"
+trace["generation"]["usage"]       # tokens and cost_usd
+```
+
+`get_trace` waits for queued traces to send first, so a trace you just logged can be
+read straight away.
+
+## Next
+
+- [Async code](/docs/instrument/async)
+- [Delivery and failures](/docs/instrument/delivery): what happens when the API is
+  slow or down
+- [SDK reference](/docs/reference/sdk)

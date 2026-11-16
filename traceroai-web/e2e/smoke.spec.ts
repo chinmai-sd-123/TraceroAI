@@ -6,10 +6,20 @@ test("the landing page renders", async ({ page }) => {
   await expect(page.getByText("pip install traceroai").first()).toBeVisible();
 });
 
-test("the docs render with their contents", async ({ page }) => {
+test("the docs render, navigate and search", async ({ page }) => {
   await page.goto("/docs");
-  await expect(page.getByRole("heading", { name: "Run the stack" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Troubleshooting" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Introduction" })).toBeVisible();
+  await page.getByRole("navigation", { name: "Documentation" }).getByRole("link", { name: "Quickstart" }).click();
+  await expect(page.getByRole("heading", { level: 2, name: "1. Run the stack" })).toBeVisible();
+
+  // Search is a static index: it works with no API behind the site.
+  await page.getByRole("button", { name: "Search the docs" }).click();
+  await page.getByRole("textbox", { name: "Search the docs" }).fill("retention");
+  await expect(page.getByRole("option").first()).toBeVisible();
+
+  // Links to the old single-page docs land on the new pages.
+  await page.goto("/docs#troubleshooting");
+  await expect(page).toHaveURL(/\/docs\/self-host\/troubleshooting$/);
 });
 
 test("the dashboard says the API is down instead of showing empty data", async ({ page }) => {

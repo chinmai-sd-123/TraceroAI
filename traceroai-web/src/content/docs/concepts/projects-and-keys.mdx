@@ -1,0 +1,41 @@
+export const meta = {
+  description: "Projects keep applications apart; API keys decide who can send to and read each one.",
+};
+
+## Projects
+
+A project groups the traces, eval runs and issues of one application, and an
+environment (dev, staging, production) says where a trace came from. The dashboard's
+project selector filters every page.
+
+## Keys
+
+| Key | Sends to | Reads |
+|---|---|---|
+| Project key | Its own project (the key decides, whatever the payload says) | Its own project |
+| Admin key | Any project | Every project; give one to the dashboard |
+| No key | Allowed only in development | In development, everything; otherwise only `TRACEROAI_PUBLIC_READ_PROJECTS` |
+
+Keys are required when `TRACEROAI_APP_ENV` is `staging` or `production`. Another
+project's trace is reported as not found, so a key can't tell whether it exists.
+
+## Managing keys
+
+Keys are stored hashed; the full key is shown once, when it's created.
+
+```bash
+# from services/api, or: docker compose -f infra/docker-compose.yml exec api python -m app.keys ...
+python -m app.keys create --project my-app --name "my-app production"
+python -m app.keys create --admin --name "dashboard"
+python -m app.keys list
+python -m app.keys revoke trk_AbCdEfGh
+```
+
+Send a key as `Authorization: Bearer <key>`, or pass `api_key=` to the SDK (it also
+reads `TRACEROAI_API_KEY`). Each key has its own rate limits on sending and grading.
+
+## The dashboard
+
+The dashboard reads with one admin key, set as `TRACEROAI_API_KEY` on its server; the
+browser never sees it. Protect the dashboard itself with `TRACEROAI_DASHBOARD_PASSWORD`.
+Accounts and roles are planned.
