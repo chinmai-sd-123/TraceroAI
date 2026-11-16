@@ -5,8 +5,8 @@ pydantic-settings>=2.4.0
 sqlalchemy>=2.0.0
 psycopg[binary]>=3.2.0
 httpx>=0.27.0
-# openai 3.x swaps httpx for httpx2 and is untested here.
-openai>=1.40.0,<3
+# openai 3.x uses httpx2 internally; verified against the real provider on 2026-11-16.
+openai>=1.40.0,<4
 redis>=5.0.0
 alembic>=1.13
 prometheus-client>=0.20
