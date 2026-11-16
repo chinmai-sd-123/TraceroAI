@@ -180,3 +180,13 @@ export const ChevronLeftIcon = (p: IconProps) => (
     <path d="M10 3.5 5.5 8l4.5 4.5" />
   </Icon>
 );
+
+/** Stacked sheets with a mark: failures grouped into issues. */
+export const IssuesIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="2.5" y="5" width="9" height="8.5" rx="1" />
+    <path d="M5 2.5h7.5a1 1 0 0 1 1 1V11" />
+    <path d="M7 7.5v2.25" />
+    <path d="M7 11.75h.01" />
+  </Icon>
+);
