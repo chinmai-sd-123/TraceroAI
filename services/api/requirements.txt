@@ -10,3 +10,5 @@ openai>=1.40.0,<4
 redis>=5.0.0
 alembic>=1.13
 prometheus-client>=0.20
+# Decodes OTLP protobuf for /otlp/v1/traces (OpenTelemetry ingest).
+opentelemetry-proto>=1.30

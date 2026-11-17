@@ -121,8 +121,9 @@ const ROUTES: Array<{ route: string; how: string; status: "available" | "planned
   { route: "Python SDK, sync and async", how: "pip install traceroai", status: "available" },
   { route: "HTTP API, any language", how: "POST /v1/traces", status: "available" },
   { route: "Recovery agent", how: 'pip install "traceroai[recovery]"', status: "available" },
-  { route: "OpenTelemetry (OTLP)", how: "Any instrumented app", status: "planned" },
-  { route: "LangChain, LangGraph, LlamaIndex", how: "Through OpenTelemetry", status: "planned" },
+  { route: "OpenTelemetry (OTLP/HTTP)", how: "POST /otlp/v1/traces", status: "available" },
+  { route: "LangChain, via OpenInference", how: "LangChainInstrumentor", status: "available" },
+  { route: "LangGraph, LlamaIndex", how: "Through OpenInference; not yet tested", status: "planned" },
   { route: "TypeScript SDK", how: "npm", status: "planned" },
 ];
 
@@ -159,10 +160,10 @@ export function IntegrationMatrix() {
 // (a navy packet travelling the line); planned ones are dashed and still.
 const IN = [
   { label: "Python SDK", sub: "sync and async", live: true },
-  { label: "HTTP API", sub: "POST /v1/traces", live: true },
-  { label: "Recovery agent", sub: "traceroai[recovery]", live: true },
-  { label: "OpenTelemetry", sub: "Planned", live: false },
-  { label: "LangChain, LlamaIndex", sub: "Planned", live: false },
+  { label: "HTTP API", sub: "POST /v1/traces", live: true, mono: true },
+  { label: "Recovery agent", sub: "traceroai[recovery]", live: true, mono: true },
+  { label: "OpenTelemetry", sub: "OTLP over HTTP", live: true },
+  { label: "LangChain", sub: "via OpenInference", live: true },
   { label: "TypeScript SDK", sub: "Planned", live: false },
 ];
 const OUT = [
@@ -182,8 +183,8 @@ export function RoutesDiagram() {
       <svg viewBox="0 0 900 340" className="h-auto w-full" role="img" aria-labelledby="routes-title routes-desc">
         <title id="routes-title">How traces reach TraceroAI</title>
         <desc id="routes-desc">
-          Traces arrive today from the Python SDK, the HTTP API and the recovery agent. OpenTelemetry, LangChain and LlamaIndex,
-          and a TypeScript SDK are planned. TraceroAI turns each trace into a diagnosis, groups failures into issues, and
+          Traces arrive today from the Python SDK, the HTTP API, the recovery agent, and any app instrumented with
+          OpenTelemetry, including LangChain through OpenInference. A TypeScript SDK is planned. TraceroAI turns each trace into a diagnosis, groups failures into issues, and
           records recovery runs and experiments.
         </desc>
         {IN.map((r, i) => {
@@ -195,7 +196,7 @@ export function RoutesDiagram() {
               <text x="18" y={inY(i) + 17} fontSize="13" fontWeight="600" fill={r.live ? "var(--color-ink)" : "var(--color-ink-muted)"}>
                 {r.label}
               </text>
-              <text x="18" y={inY(i) + 32} fontSize="11.5" fill="var(--color-ink-muted)" fontFamily={r.live ? "var(--font-dash-mono)" : undefined}>
+              <text x="18" y={inY(i) + 32} fontSize="11.5" fill="var(--color-ink-muted)" fontFamily={r.mono ? "var(--font-dash-mono)" : undefined}>
                 {r.sub}
               </text>
               <path id={`route-${i}`} d={d} fill="none" stroke={r.live ? "var(--color-ink-muted)" : "var(--color-line-strong)"} strokeWidth="1.25" strokeDasharray={r.live ? undefined : "4 4"} />

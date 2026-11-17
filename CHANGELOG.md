@@ -47,6 +47,19 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   (counted per server instance) and has a sign-out button.
 
 ### Added
+- OpenTelemetry ingest: `POST /otlp/v1/traces` takes OTLP over HTTP (protobuf or JSON,
+  gzipped or not), so an app already instrumented with OpenTelemetry can send traces with
+  no TraceroAI code. Spans in the OpenInference conventions (LangChain, LlamaIndex,
+  OpenAI instrumentors) and the OpenTelemetry GenAI conventions become steps. A run that
+  retrieved documents with their text and then got a model answer becomes a RAG trace and
+  is diagnosed; any other run (an agent, say) keeps its steps and is marked "not
+  diagnosed". Spans of one run arriving in several batches are kept until the root span
+  arrives, or 30 seconds of quiet (migration 0009). Tested end to end with a LangChain
+  app and the OpenInference instrumentor; `examples/opentelemetry-langchain` runs it
+  without an API key.
+- Runs that aren't RAG runs count as neither healthy nor failing: the summary and time
+  series report them as `not_diagnosed`, and the dashboard leaves them out of health
+  rates.
 - Traces have steps: the work inside a run as a tree (agent, chain, llm, tool, retriever,
   embedding, reranker, guardrail), each with a parent, timing, status, input, output and
   attributes, stored in a new `spans` table (migration 0008). `POST /v1/traces` accepts

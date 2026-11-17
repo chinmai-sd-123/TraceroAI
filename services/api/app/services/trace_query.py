@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Session
 
 from app.db.models import TraceRecord
+from app.schemas.traces import NOT_DIAGNOSED
 
 HEALTHY_LABELS = ("healthy_answer", "correct_refusal")
 
@@ -246,6 +247,9 @@ def summary(db: Session, filters: TraceFilters) -> dict:
     return {
         "total": total,
         "healthy": healthy,
+        # Runs that aren't RAG runs (agents) aren't diagnosed yet, so they count
+        # toward neither healthy nor failing: health is healthy / (total - this).
+        "not_diagnosed": by_diagnosis.get(NOT_DIAGNOSED, 0),
         "by_diagnosis": {(k or "pending"): v for k, v in by_diagnosis.items()},
         "by_source": by_source,
         "by_model": by_model,
@@ -297,17 +301,24 @@ def timeseries(db: Session, filters: TraceFilters, *, bucket: str, starts: list[
             index,
             func.count(),
             func.count().filter(TraceRecord.diagnosis_label.in_(HEALTHY_LABELS)),
+            func.count().filter(TraceRecord.diagnosis_label == NOT_DIAGNOSED),
             func.percentile_cont(0.95).within_group(TraceRecord.total_latency_ms).filter(measured),
         )
         .where(*_where(filters), TraceRecord.created_at >= starts[0])
         .group_by(index)
     ).all()
-    by_index = {int(i): (total, healthy, p95) for i, total, healthy, p95 in rows}
+    by_index = {int(i): (total, healthy, undiagnosed, p95) for i, total, healthy, undiagnosed, p95 in rows}
     series = []
     for i, start in enumerate(starts):
-        total, healthy, p95 = by_index.get(i, (0, 0, None))
+        total, healthy, undiagnosed, p95 = by_index.get(i, (0, 0, 0, None))
         series.append(
-            {"start": start.isoformat(), "total": total, "healthy": healthy, "p95_ms": _round(p95)}
+            {
+                "start": start.isoformat(),
+                "total": total,
+                "healthy": healthy,
+                "not_diagnosed": undiagnosed,
+                "p95_ms": _round(p95),
+            }
         )
     return series
 

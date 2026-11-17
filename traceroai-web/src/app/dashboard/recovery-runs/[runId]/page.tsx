@@ -216,7 +216,7 @@ function Answer({ label, trace }: { label: string; trace: Trace }) {
         <DiagnosisBadge label={trace.diagnosis.label} size="sm" />
       </figcaption>
       <blockquote className="px-4 py-3 text-sm leading-6 whitespace-pre-line">
-        {trace.generation.answer || <span className="text-ink-muted">No answer recorded.</span>}
+        {trace.generation?.answer || <span className="text-ink-muted">No answer recorded.</span>}
       </blockquote>
     </figure>
   );

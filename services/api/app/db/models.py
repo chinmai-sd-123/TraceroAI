@@ -160,3 +160,23 @@ class SpanRecord(Base):
     input: Mapped[object | None] = mapped_column(JSONB, nullable=True)
     output: Mapped[object | None] = mapped_column(JSONB, nullable=True)
     attributes: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+
+class PendingSpanRecord(Base):
+    """A span received over OTLP whose run isn't complete yet (migration 0009).
+
+    Exporters send spans in batches as they end, children first, so a run
+    arrives over several requests. Its spans wait here until the root span
+    arrives or the run goes quiet, then become a trace (app/otlp/assembly.py)."""
+
+    __tablename__ = "pending_spans"
+
+    trace_id: Mapped[PythonUUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    span_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    project_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    environment: Mapped[str] = mapped_column(String(50), nullable=False)
+    step: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    resource: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    received_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

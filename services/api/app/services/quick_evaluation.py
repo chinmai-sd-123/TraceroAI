@@ -2,8 +2,14 @@ from app.evaluators.answer_relevance import evaluate_answer_relevance
 from app.evaluators.context_relevance import evaluate_context_relevance
 from app.evaluators.diagnosis import diagnose_trace, is_refusal
 from app.evaluators.groundedness import evaluate_groundedness
-from app.schemas.traces import Trace
+from app.schemas.traces import NOT_DIAGNOSED, DiagnosisTrace, Trace, rag_generation
 from app.services.embeddings import EmbeddingClient
+
+
+NOT_DIAGNOSED_REASON = (
+    "Not a RAG run: TraceroAI checks retrieval, grounding and a model answer, and this run "
+    "has no single answer to check. Agent diagnosis is planned."
+)
 
 
 def run_quick_evaluation(
@@ -25,6 +31,12 @@ def run_quick_evaluation(
     # relevance evaluators — the query is embedded once instead of twice, and we
     # make one API round-trip per trace instead of two. If embeddings are
     # unavailable the evaluators fall back to lexical scoring on their own.
+    if trace.generation is None:
+        # Nothing to check: no model answer against retrieved context.
+        trace.evaluations.quick = []
+        trace.diagnosis = DiagnosisTrace(label=NOT_DIAGNOSED, reason=NOT_DIAGNOSED_REASON)
+        return trace
+
     vectors = _embed_relevance_inputs(trace, embedder) if semantic else None
 
     quick_results = [
@@ -62,7 +74,7 @@ def _embed_relevance_inputs(
     """
     query = trace.query.rewritten or trace.query.original
     context = " ".join(chunk.text for chunk in trace.retrieval.chunks)
-    answer = trace.generation.answer
+    answer = rag_generation(trace).answer
 
     if not (query.strip() and context.strip() and answer.strip()):
         return None

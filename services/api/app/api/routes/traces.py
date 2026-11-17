@@ -25,6 +25,7 @@ from app.schemas.traces import (
     TraceDetail,
     TraceIngestRequest,
     TraceIngestResponse,
+    rag_generation,
 )
 from app.services.cost import compute_cost_usd
 from app.services.quick_evaluation import run_quick_evaluation
@@ -75,13 +76,14 @@ def ingest_trace(
 
     # Cost is server-owned: fill total_tokens + cost_usd from the price table when
     # the client sent token counts but no cost (or none at all).
-    usage = trace.generation.usage
+    generation = rag_generation(trace)  # a request always has one
+    usage = generation.usage
     if usage.total_tokens is None and (
         usage.prompt_tokens is not None or usage.completion_tokens is not None
     ):
         usage.total_tokens = (usage.prompt_tokens or 0) + (usage.completion_tokens or 0)
     if usage.cost_usd is None:
-        usage.cost_usd = compute_cost_usd(trace.generation.model, usage)
+        usage.cost_usd = compute_cost_usd(generation.model, usage)
 
     # Lexical-only on the request path: no network call, so a slow or down
     # embeddings provider can't slow ingest. The background pass re-runs the quick

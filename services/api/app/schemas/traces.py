@@ -144,7 +144,34 @@ class EvaluationsTrace(BaseModel):
     # None on traces stored before the status was recorded.
     deep_status: DeepEvaluationStatus | None = None
 
-class TraceIngestRequest(BaseModel):
+# A trace that isn't a RAG run (an agent, say, arriving over OpenTelemetry) has
+# no retrieval-and-answer shape for the checks to work on, so it isn't diagnosed:
+# its diagnosis says so instead of guessing. Agent diagnosis is planned.
+NOT_DIAGNOSED = "not_diagnosed"
+
+
+class _RunFields(BaseModel):
+    """What every trace has, however it arrived."""
+
+    schema_version: str = Field(default="tracero_trace_v1", max_length=VERSION_MAX_LENGTH)
+    trace_id: UUID = Field(default_factory=uuid4)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    status: str = Field(default="answered", min_length=1, max_length=STATUS_MAX_LENGTH)
+
+    project: ProjectInfo = Field(default_factory=ProjectInfo)
+    query: QueryTrace
+    prompt: PromptTrace = Field(default_factory=PromptTrace)
+    latency: LatencyTrace = Field(default_factory=LatencyTrace)
+
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _strip_nul(cls, data: Any) -> Any:
+        return strip_nul(data)
+
+
+class TraceIngestRequest(_RunFields):
     """What a client sends to POST /v1/traces.
 
     Evaluations, diagnosis and feedback are not part of it: the server computes
@@ -155,30 +182,14 @@ class TraceIngestRequest(BaseModel):
     stored trace instead of creating a second one, which makes retries safe.
     """
 
-    schema_version: str = Field(default="tracero_trace_v1", max_length=VERSION_MAX_LENGTH)
-    trace_id: UUID = Field(default_factory=uuid4)
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    status: str = Field(default="answered", min_length=1, max_length=STATUS_MAX_LENGTH)
-
-    project: ProjectInfo = Field(default_factory=ProjectInfo)
-    query: QueryTrace
     retrieval: RetrievalTrace
-    prompt: PromptTrace = Field(default_factory=PromptTrace)
     generation: GenerationTrace
-    latency: LatencyTrace = Field(default_factory=LatencyTrace)
-
-    metadata: dict[str, Any] = Field(default_factory=dict)
 
     # The steps inside the run, as a tree (agents, tool calls, nested model
     # calls). Optional: without them the server derives steps from the fields
     # above. Stored in their own table, not in the trace document, so they're
     # excluded from dumps; GET /v1/traces/{id} returns them (TraceDetail).
     steps: list[StepIn] | None = Field(default=None, max_length=MAX_STEPS_PER_TRACE, exclude=True)
-
-    @model_validator(mode="before")
-    @classmethod
-    def _strip_nul(cls, data: Any) -> Any:
-        return strip_nul(data)
 
     @model_validator(mode="after")
     def _steps_form_a_tree(self) -> "TraceIngestRequest":
@@ -187,12 +198,30 @@ class TraceIngestRequest(BaseModel):
         return self
 
 
-class Trace(TraceIngestRequest):
-    """A stored trace: the client's input plus what the server adds to it."""
+class Trace(_RunFields):
+    """A stored trace: what the client sent plus what the server adds to it.
 
+    generation is None for a run with no single model answer to check (an
+    agent run from OpenTelemetry, say); such a trace is NOT_DIAGNOSED."""
+
+    retrieval: RetrievalTrace = Field(default_factory=RetrievalTrace)
+    generation: GenerationTrace | None = None
     evaluations: EvaluationsTrace = Field(default_factory=EvaluationsTrace)
     diagnosis: DiagnosisTrace = Field(default_factory=DiagnosisTrace)
     feedback: list[FeedbackEntry] = Field(default_factory=list)
+
+    @property
+    def is_rag(self) -> bool:
+        """Whether the RAG checks apply: a model answer to check against context."""
+        return self.generation is not None
+
+
+def rag_generation(trace: Trace) -> GenerationTrace:
+    """The answer of a RAG trace, for code that only runs on RAG traces (the
+    evaluators). Raises ValueError for any other trace."""
+    if trace.generation is None:
+        raise ValueError(f"trace {trace.trace_id} is not a RAG run: it has no model answer to check")
+    return trace.generation
 
 
 class TraceDetail(Trace):

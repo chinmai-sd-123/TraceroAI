@@ -31,9 +31,9 @@ be shown to work before it ships.
 - **How sure, and how often right.** Each diagnosis says whether the judge or an
   estimate made it, and the accuracy of each is measured on a labelled set and
   published, including where it is wrong.
-- **Works beside what teams already use.** Traces can come from the Python SDK or
-  (planned) any OpenTelemetry source, so TraceroAI can sit next to Langfuse, LangSmith
-  or an APM instead of replacing them.
+- **Works beside what teams already use.** Traces can come from the Python SDK or any
+  OpenTelemetry source (OpenInference or OpenTelemetry GenAI conventions), so TraceroAI
+  can sit next to Langfuse, LangSmith or an APM instead of replacing them.
 - **Failure to fix.** Repeated failures group into issues; recovery runs retry the step
   that failed; experiments compare variants on labelled questions; (planned) issues
   become regression tests.
@@ -56,14 +56,16 @@ playgrounds, hosted cloud). Those are well served elsewhere.
 
 ## Capabilities and Constraints
 
-- Today: RAG traces from the Python SDK (sync and async). Diagnoses: healthy answer,
+- Today: RAG traces from the Python SDK (sync and async), the HTTP API, or OpenTelemetry
+  (OTLP/HTTP; tested with LangChain through OpenInference). Traces have steps. Runs that
+  aren't RAG runs (agents) are stored with their steps and marked "not diagnosed". Diagnoses: healthy answer,
   correct refusal, retrieval miss, unsupported claim, wrong answer, needs review.
   Sources: lexical, embedding, judge. Judge status: pending, complete, partial, failed,
   skipped. Issues (failures grouped by cause, with open, resolved and regressed states),
   recovery runs, experiments with per-question results, tokens and cost, feedback,
   retention, and bundled demo data.
-- Planned (P3), not yet built: steps inside a trace (agents, tool calls), OpenTelemetry
-  ingest, agent failure diagnosis, alerts, datasets and a regression gate.
+- Planned (P3), not yet built: agent failure diagnosis, an agent run view, alerts,
+  datasets and a regression gate.
   Nothing planned may be presented as available.
 - Without a configured LLM judge, every diagnosis is an estimate; the interface must say
   so rather than present it as fact.

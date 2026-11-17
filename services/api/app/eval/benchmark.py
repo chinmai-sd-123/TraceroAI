@@ -28,7 +28,7 @@ from pathlib import Path
 from app.core.config import get_settings
 from app.eval.regression_gate import load_golden_cases
 from app.evaluators.diagnosis import diagnose_from_deep, is_refusal
-from app.schemas.traces import Trace
+from app.schemas.traces import Trace, rag_generation
 from app.services.deep_evaluation import DEEP_EVALUATORS, _build_default_judge
 from app.services.quick_evaluation import run_quick_evaluation
 
@@ -85,7 +85,7 @@ def judge_tier(cases: list[dict], workers: int) -> list[Verdict]:
     def one(case: dict) -> Verdict:
         trace = Trace(**case["trace"])
         results = [evaluator(trace, judge) for evaluator in DEEP_EVALUATORS]
-        refused = not trace.generation.answered or is_refusal(trace.generation.answer)
+        refused = not rag_generation(trace).answered or is_refusal(rag_generation(trace).answer)
         diagnosis = diagnose_from_deep(results, refused=refused)
         return _verdict(case, diagnosis.label if diagnosis is not None else "needs_review")
 

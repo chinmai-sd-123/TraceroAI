@@ -311,7 +311,7 @@ export function TraceTable({ traces, filters }: { traces: Trace[]; filters: Trac
                   <ProvenanceMark source={trace.diagnosis.source} status={trace.deepStatus} size="sm" />
                 </div>
               </td>
-              <td className="px-3 py-2.5 whitespace-nowrap text-ink-muted max-xl:hidden">{trace.generation.model}</td>
+              <td className="px-3 py-2.5 whitespace-nowrap text-ink-muted max-xl:hidden">{trace.generation?.model ?? "—"}</td>
               <td className="px-3 py-2.5 text-right whitespace-nowrap text-ink-muted">{formatMs(trace.latency.totalMs)}</td>
               <td className="py-2.5 pr-4 pl-3 text-right whitespace-nowrap text-ink-muted">{formatWhen(trace.timestamp)}</td>
             </tr>

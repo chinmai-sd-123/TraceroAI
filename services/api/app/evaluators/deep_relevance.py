@@ -1,4 +1,4 @@
-from app.schemas.traces import EvaluationResult, Trace
+from app.schemas.traces import EvaluationResult, Trace, rag_generation
 from app.services.llm_judge import LLMJudge, RelevanceVerdict
 
 
@@ -22,7 +22,7 @@ def evaluate_deep_answer_relevance(
 ) -> EvaluationResult:
     query = trace.query.rewritten or trace.query.original
 
-    verdict = judge.judge_answer_relevance(query=query, answer=trace.generation.answer)
+    verdict = judge.judge_answer_relevance(query=query, answer=rag_generation(trace).answer)
     return _to_result(ANSWER_EVALUATOR_NAME, verdict)
 
 

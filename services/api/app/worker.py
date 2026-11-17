@@ -53,6 +53,7 @@ from app.services.deep_evaluation import (
     run_deep_evaluation,
 )
 from app.services.trace_repository import TraceRepository
+from app.otlp.assembly import finish_quiet
 
 logger = logging.getLogger("traceroai.worker")
 
@@ -63,6 +64,8 @@ VISIBILITY_TIMEOUT_MS = 600_000
 BLOCK_MS = 2_000
 RECLAIM_INTERVAL_SECONDS = 15.0
 SWEEP_INTERVAL_SECONDS = 300.0
+# OpenTelemetry runs whose root span never arrived are finished after 30 s of quiet.
+QUIET_RUN_INTERVAL_SECONDS = 10.0
 PURGE_INTERVAL_SECONDS = 3600.0
 
 # (trace_id, retry_transient=...) -> None
@@ -257,6 +260,15 @@ class DeepEvalWorker:
             logger.warning("Re-queued %d trace(s) whose evaluation was lost", len(stalled))
         return len(stalled)
 
+    # --- OpenTelemetry runs whose root span never arrived ---
+
+    def finish_quiet_runs(self) -> int:
+        with SessionLocal() as db:
+            finished = finish_quiet(db)
+        if finished:
+            logger.info("Finished %d quiet OpenTelemetry run(s)", finished)
+        return finished
+
     # --- loop ---
 
     def run(self, stop: threading.Event) -> None:
@@ -267,6 +279,7 @@ class DeepEvalWorker:
         last_reclaim = 0.0
         last_sweep = time.monotonic()  # first sweep after one interval
         last_purge = 0.0  # purge once at startup, then hourly
+        last_quiet = 0.0
         while not stop.is_set():
             try:
                 jobs: list[Job] = []
@@ -276,6 +289,12 @@ class DeepEvalWorker:
                         self.requeue_stalled()
                     except Exception:
                         logger.exception("Sweep for lost evaluations failed")
+                if self.sweep and time.monotonic() - last_quiet >= QUIET_RUN_INTERVAL_SECONDS:
+                    last_quiet = time.monotonic()
+                    try:
+                        self.finish_quiet_runs()
+                    except Exception:
+                        logger.exception("Finishing quiet OpenTelemetry runs failed")
                 if self.sweep and time.monotonic() - last_purge >= PURGE_INTERVAL_SECONDS:
                     last_purge = time.monotonic()
                     try:

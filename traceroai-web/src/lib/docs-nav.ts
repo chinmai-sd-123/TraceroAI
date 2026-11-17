@@ -29,6 +29,7 @@ export const DOCS_NAV: DocGroup[] = [
     pages: [
       { slug: "instrument/python-sdk", title: "Python SDK" },
       { slug: "instrument/async", title: "Async code" },
+      { slug: "instrument/opentelemetry", title: "OpenTelemetry" },
       { slug: "instrument/chunks", title: "Retriever output and chunks" },
       { slug: "instrument/delivery", title: "Delivery and failures" },
     ],

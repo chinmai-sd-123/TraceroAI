@@ -48,6 +48,12 @@ and no step can be its own ancestor; otherwise the trace is rejected with a 422.
 1,000 steps per trace. Without `steps`, the server derives them from the trace (the run,
 then retrieval, prompt building and generation, timed from `latency`).
 
+## OpenTelemetry
+
+| Endpoint | What it does |
+|---|---|
+| `POST /otlp/v1/traces` | OTLP/HTTP trace export, as protobuf or JSON, gzipped or not. Each run becomes a trace with its steps; see [OpenTelemetry](/docs/instrument/opentelemetry). Returns an OTLP response, with `partialSuccess` when spans were rejected |
+
 ## Issues
 
 | Endpoint | What it does |

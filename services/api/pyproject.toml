@@ -14,7 +14,8 @@ dependencies = [
   "openai>=1.40.0,<4",
   "redis>=5.0.0",
   "alembic>=1.13",
-  "prometheus-client>=0.20"
+  "prometheus-client>=0.20",
+  "opentelemetry-proto>=1.30"
 ]
 
 [project.optional-dependencies]

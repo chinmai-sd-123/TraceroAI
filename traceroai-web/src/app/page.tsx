@@ -288,7 +288,8 @@ export default function Home() {
             {/* 7. Works with what you run */}
             <Section id="works-with" title="Works with what you run">
               <Prose>
-                Send traces from Python today. The other routes are planned, and they&apos;re marked that way until they ship.
+                Send traces from Python, over HTTP, or from any app already instrumented with OpenTelemetry. Routes still
+                planned are marked that way until they ship.
               </Prose>
               <div className="focus-in mt-10 hidden rounded-md border border-line bg-sunken/50 px-6 py-6 md:block">
                 <RoutesDiagram />
