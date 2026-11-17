@@ -22,12 +22,14 @@ from app.schemas.traces import (
     FeedbackEntry,
     FeedbackRequest,
     Trace,
+    TraceDetail,
     TraceIngestRequest,
     TraceIngestResponse,
 )
 from app.services.cost import compute_cost_usd
 from app.services.quick_evaluation import run_quick_evaluation
 from app.services.rate_limiter import check_rate_limit, client_ip
+from app.services.steps import as_step, derive_steps, to_step
 from app.services.trace_query import InvalidCursor, TraceFilters, TraceSort, list_page
 from app.services.trace_repository import DuplicateTraceError, TraceRepository
 from app.services.deep_evaluation import (
@@ -88,7 +90,7 @@ def ingest_trace(
     trace.evaluations.deep_status = initial_deep_status()
 
     try:
-        repository.save(trace)
+        repository.save(trace, steps=payload.steps)
     except DuplicateTraceError:
         # A concurrent request with the same trace_id inserted first.
         stored = repository.get(trace.trace_id)
@@ -201,7 +203,7 @@ def list_projects(
     return repository.list_projects(project_ids=scope.projects)
 
 
-@router.get("/{trace_id}", response_model=Trace)
+@router.get("/{trace_id}", response_model=TraceDetail)
 def get_trace(
     trace_id: UUID,
     db: Session = Depends(get_db),
@@ -218,7 +220,10 @@ def get_trace(
             detail="Trace not found.",
         )
 
-    return record.payload
+    # Traces stored before steps existed have none in the table; derive them.
+    stored = repository.steps(trace_id)
+    steps = [to_step(step) for step in stored] if stored else [as_step(step) for step in derive_steps(Trace(**record.payload))]
+    return {**record.payload, "steps": [step.model_dump(mode="json") for step in steps]}
 
 @router.delete("/{trace_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_trace(

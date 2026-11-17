@@ -43,3 +43,11 @@ its bound.
   agent failure types possible.
 - The scale test grows to cover steps (500,000 first, 5 million for the ClickHouse
   decision).
+
+## Update, 2026-11-17: partitioning deferred
+
+Steps shipped without monthly partitions. Retention deletes traces by age in days, and a
+trace's steps are deleted with it (a foreign key with ON DELETE CASCADE), so partitions
+would only help by dropping a whole month at once. At 500,000 steps, reading a trace with
+its steps takes about 12 ms. Partitioning will be added if the 5 million step
+measurement shows deletes or step queries missing their bound.

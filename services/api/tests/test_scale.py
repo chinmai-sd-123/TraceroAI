@@ -1,7 +1,8 @@
 """Trace queries stay fast with a realistic amount of data.
 
 Seeds 50,000 traces in one project (cloned in SQL from a trace posted through the
-API, so the stored shape is real), then times every query the dashboard makes.
+API, so the stored shape is real), each with 10 steps (half a million rows in
+spans), then times every query the dashboard makes.
 The bound is generous for a shared CI runner; a query that loads every trace or
 scans without an index takes seconds at this size and fails it.
 """
@@ -21,6 +22,7 @@ from app.main import app
 client = TestClient(app)
 
 ROWS = 50_000
+STEPS_PER_TRACE = 10
 BOUND_SECONDS = 1.5
 
 
@@ -75,7 +77,25 @@ def big_project():
             ),
             {"rows": ROWS - 1, "seed": seed_id},
         )
+        # Ten steps per cloned trace: an agent with nine children of mixed kinds.
+        db.execute(
+            text(
+                """
+                INSERT INTO spans (trace_id, span_id, parent_span_id, position, kind, name,
+                                   status, started_at, ended_at, attributes)
+                SELECT t.trace_id, 's' || g, CASE WHEN g = 1 THEN NULL ELSE 's1' END, g - 1,
+                       (ARRAY['agent','llm','tool','retriever','chain'])[1 + g % 5], 'step ' || g,
+                       'ok', t.created_at + make_interval(secs => g),
+                       t.created_at + make_interval(secs => g + 1), '{}'::jsonb
+                FROM traces t
+                CROSS JOIN generate_series(1, :steps) AS g
+                WHERE t.project_id = :project AND t.trace_id <> :seed
+                """
+            ),
+            {"steps": STEPS_PER_TRACE, "project": project, "seed": seed_id},
+        )
         db.execute(text("ANALYZE traces"))
+        db.execute(text("ANALYZE spans"))
         db.commit()
 
     yield project
@@ -140,6 +160,23 @@ def test_summary_and_time_series_are_fast(big_project) -> None:
     )
     assert sum(b["total"] for b in response.json()["buckets"]) > 40_000
     assert elapsed < BOUND_SECONDS, f"timeseries: {elapsed:.2f}s"
+
+
+def test_the_project_really_holds_half_a_million_steps(big_project) -> None:
+    with SessionLocal() as db:
+        count = db.execute(
+            text("SELECT count(*) FROM spans s JOIN traces t USING (trace_id) WHERE t.project_id = :p"),
+            {"p": big_project},
+        ).scalar()
+    assert count >= (ROWS - 1) * STEPS_PER_TRACE
+
+
+def test_a_trace_with_its_steps_is_fast(big_project) -> None:
+    # The oldest: a clone with ten steps (the newest is the seed, with derived ones).
+    oldest = client.get("/v1/traces", params={"project_id": big_project, "limit": 1, "sort": "oldest"}).json()[0]
+    elapsed, response = _timed_get(f"/v1/traces/{oldest['trace_id']}", {})
+    assert len(response.json()["steps"]) == STEPS_PER_TRACE
+    assert elapsed < BOUND_SECONDS, f"trace with steps: {elapsed:.2f}s"
 
 
 def test_recovery_runs_are_fast(big_project) -> None:

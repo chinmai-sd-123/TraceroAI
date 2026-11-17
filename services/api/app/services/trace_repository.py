@@ -5,12 +5,14 @@ from typing import Literal
 from uuid import UUID
 
 
-from sqlalchemy import Text, delete, func, literal, select, update
+from sqlalchemy import Text, delete, func, insert, literal, select, update
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.models import TraceRecord
+from app.db.models import SpanRecord, TraceRecord
+from app.schemas.steps import StepIn
+from app.services.steps import derive_steps, step_rows
 from app.schemas.traces import (
     DeepEvaluationStatus,
     DiagnosisTrace,
@@ -28,7 +30,9 @@ class TraceRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def save(self, trace: Trace) -> TraceRecord:
+    def save(self, trace: Trace, steps: list[StepIn] | None = None) -> TraceRecord:
+        """Store a trace and its steps in one transaction. Without steps, they're
+        derived from the trace's RAG fields."""
         payload = trace.model_dump(mode="json")
 
         record = TraceRecord(
@@ -46,6 +50,8 @@ class TraceRepository:
 
         self.db.add(record)
         try:
+            self.db.flush()  # the trace row first: its steps refer to it
+            self.db.execute(insert(SpanRecord), step_rows(trace.trace_id, steps or derive_steps(trace)))
             self.db.commit()
         except IntegrityError as error:
             self.db.rollback()
@@ -65,6 +71,11 @@ class TraceRepository:
 
     def get(self, trace_id: UUID) -> TraceRecord | None:
         return self.db.get(TraceRecord, trace_id)
+
+    def steps(self, trace_id: UUID) -> list[SpanRecord]:
+        """A trace's steps, in the order they were sent."""
+        statement = select(SpanRecord).where(SpanRecord.trace_id == trace_id).order_by(SpanRecord.position)
+        return list(self.db.scalars(statement).all())
 
     def delete(self, trace_id: UUID, *, project_id: str | None = None) -> bool:
         """Delete one trace. With project_id, only a trace in that project."""

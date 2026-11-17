@@ -5,6 +5,11 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
 
 ## Unreleased
 
+### Fixed
+- An issue resolved just before a new failure could stay "resolved" instead of
+  "regressed" when the API host's clock ran ahead of the database's. The resolve time
+  now comes from the database clock, like trace times.
+
 ### Changed
 - Vercel Analytics loads only on the hosted site. A self-hosted copy sends nothing
   anywhere.
@@ -42,6 +47,13 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   (counted per server instance) and has a sign-out button.
 
 ### Added
+- Traces have steps: the work inside a run as a tree (agent, chain, llm, tool, retriever,
+  embedding, reranker, guardrail), each with a parent, timing, status, input, output and
+  attributes, stored in a new `spans` table (migration 0008). `POST /v1/traces` accepts
+  an optional `steps` list, checked to form a tree; without it the server derives the
+  steps from the RAG fields. `GET /v1/traces/{id}` returns them. Traces stored before
+  this change get derived steps when read. Reading a trace with its steps takes about
+  12 ms with half a million steps stored.
 - A new home page. It follows one real failed run from the example app from top to
   bottom: its case file assembles in the hero, its 18-line trace folds into a
   three-line diagnosis, its layers come apart on a "light table", and a red line ties

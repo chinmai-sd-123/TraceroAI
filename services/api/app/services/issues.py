@@ -11,7 +11,7 @@ resolved; an issue that failed again after that has regressed.
 from __future__ import annotations
 
 from collections.abc import Collection
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Literal
 
 from sqlalchemy import ColumnElement, func, select
@@ -142,8 +142,12 @@ def issue_exists(db: Session, project_id: str, issue_key: str) -> bool:
 
 
 def set_resolved(db: Session, project_id: str, issue_key: str, *, resolved: bool) -> None:
-    """Mark an issue resolved (now) or open again."""
-    at = datetime.now(UTC) if resolved else None
+    """Mark an issue resolved (now) or open again.
+
+    "Now" is the database's clock, the one that stamps traces' created_at: an
+    issue regresses when a trace arrives after it was resolved, and comparing
+    times from two machines' clocks would miss regressions when they drift."""
+    at = func.now() if resolved else None
     db.execute(
         insert(IssueStateRecord)
         .values(project_id=project_id, issue_key=issue_key, resolved_at=at, updated_at=func.now())

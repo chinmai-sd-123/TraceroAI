@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID as PythonUUID
 
-from sqlalchemy import Computed, DateTime, Float, Index, Integer, String, Text, func
+from sqlalchemy import Computed, DateTime, Float, ForeignKey, Index, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
@@ -136,3 +136,27 @@ class IssueStateRecord(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class SpanRecord(Base):
+    """One step inside a trace (migration 0008; see docs/adr/0002). A trace's
+    steps are deleted with it, so retention and DELETE need no extra work."""
+
+    __tablename__ = "spans"
+
+    trace_id: Mapped[PythonUUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("traces.trace_id", ondelete="CASCADE"), primary_key=True
+    )
+    span_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    parent_span_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Order within the trace, as sent (or derived), so a trace reads back as it came in.
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    status: Mapped[str] = mapped_column(String(10), nullable=False)
+    status_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    input: Mapped[object | None] = mapped_column(JSONB, nullable=True)
+    output: Mapped[object | None] = mapped_column(JSONB, nullable=True)
+    attributes: Mapped[dict] = mapped_column(JSONB, nullable=False)
