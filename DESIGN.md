@@ -224,6 +224,9 @@ Plain and restrained.
 ### Stage Sequence (signature component)
 Three segments in pipeline order: Retrieval, Grounding, Answer. In lists each segment is a 20px by 8px bar; on the trace page it becomes the stage docket, three ruled columns, each with its number, name, verdict word, the question its check asks, the reason given, and who decided it ("Final: decided by the LLM judge" or "Preliminary: estimated from term overlap"). The blamed stage's column takes the soft red ground and a "Probable cause" tag. Segment colour: red for the cause, ink muted for another failure, green for passed, amber for unclear, strong rule for not checked. Fill: solid when judged, hatched when estimated. Every sequence carries a text label for screen readers.
 
+### Steps view (trace page)
+A run's steps as a tree on a time axis: one ruled row per step with its kind (in muted text, never colour), name, a bar placed at its start and sized by its duration, and the duration in Plex Mono. Children indent under their parent. The bar appears only when the list itself is wide enough (a container query), so names always come first. An errored step is amber; the selected row takes the navy tint. Beside it, the selected step: kind, name, start offset, duration, status (an error message in an amber note), then its input and output shown as what they are (messages, documents, text, else JSON), its details, and the raw OpenTelemetry attributes behind a disclosure.
+
 ### Code block
 The one dark element: ink (`#14202e`) ground, light text, Plex Mono at 13px, comments, strings and keywords lightly tinted. Tabs above when there's more than one snippet (arrow keys move between them), and a copy button in its dark variant.
 

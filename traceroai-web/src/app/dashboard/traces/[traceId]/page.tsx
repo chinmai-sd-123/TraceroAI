@@ -32,6 +32,7 @@ import {
 import { TraceRailList, listHref, parseDiagnosis, parseSort, type TraceListFilters } from "../trace-list";
 import { FeedbackWidget } from "./feedback-widget";
 import { RecoveryStrip } from "./recovery-strip";
+import { StepsView, defaultStepId } from "./steps";
 import { Splitter } from "../../splitter";
 
 // The trace page: what happened (the question and verdict), the findings for
@@ -72,6 +73,7 @@ export default async function TraceDetailPage({
     environment?: string;
     sort?: string;
     step?: string;
+    span?: string;
   }>;
 }) {
   const { traceId } = await params;
@@ -130,6 +132,20 @@ export default async function TraceDetailPage({
   const cost = process.env.NEXT_PUBLIC_SHOW_COST !== "false" ? formatCost(trace.generation?.costUsd) : null;
   const stages = stagesOf(trace);
 
+  // A run with no single answer to check (an agent) is shown by its steps, not
+  // by the RAG stages. A RAG run that came over OpenTelemetry shows both: its
+  // steps hold more than the four the SDK's pipeline has.
+  const agentRun = trace.generation === null;
+  const showSteps = trace.steps.length > 0 && (agentRun || trace.source === "otlp");
+  const firstSpan = defaultStepId(trace.steps);
+  const span = trace.steps.some((s) => s.stepId === sp.span) ? sp.span : firstSpan;
+  const spanHref = (id: string) =>
+    hrefWith(`/dashboard/traces/${encodeURIComponent(trace.traceId)}`, {
+      ...filters,
+      step: sp.step,
+      span: id === firstSpan ? undefined : id,
+    }) + "#steps";
+
   return (
     <div
       data-resize-root
@@ -180,19 +196,22 @@ export default async function TraceDetailPage({
               <strong id="verdict" className={`text-xl font-semibold ${TONE_TEXT[tone]}`}>
                 {diagnosisName(trace.diagnosis.label)}
               </strong>
-              <ProvenanceMark source={trace.diagnosis.source} status={trace.deepStatus} />
+              {!agentRun && <ProvenanceMark source={trace.diagnosis.source} status={trace.deepStatus} />}
             </div>
             <p className="mt-1.5 max-w-[70ch] text-[15px] leading-7 text-pretty">{trace.diagnosis.reason}</p>
-            {note && <p className="mt-1 max-w-[70ch] text-sm text-ink-muted">{note}</p>}
+            {note && !agentRun && <p className="mt-1 max-w-[70ch] text-sm text-ink-muted">{note}</p>}
           </section>
 
-          <section aria-labelledby="findings-heading" className="mt-5">
-            <h2 id="findings-heading" className="sr-only">
-              Findings by stage
-            </h2>
-            <StageDocket trace={trace} inspectHref={(stage) => stepHref(STAGE_STEP[stage])} />
-          </section>
+          {!agentRun && (
+            <section aria-labelledby="findings-heading" className="mt-5">
+              <h2 id="findings-heading" className="sr-only">
+                Findings by stage
+              </h2>
+              <StageDocket trace={trace} inspectHref={(stage) => stepHref(STAGE_STEP[stage])} />
+            </section>
+          )}
 
+          {!agentRun && (
           <section id="execution" aria-labelledby="execution-heading" className="mt-10 scroll-mt-6">
             <h2 id="execution-heading" className="font-semibold">Execution</h2>
             <p className="mt-0.5 text-sm text-ink-muted">
@@ -220,6 +239,23 @@ export default async function TraceDetailPage({
               </section>
             </div>
           </section>
+          )}
+
+          {showSteps && (
+            <section id="steps" aria-labelledby="steps-heading" className="mt-10 scroll-mt-6">
+              <h2 id="steps-heading" className="font-semibold">
+                {agentRun ? "Steps" : "All steps"}
+              </h2>
+              <p className="mt-0.5 text-sm text-ink-muted">
+                {agentRun
+                  ? "What the run did, in order, as its instrumentation recorded it. Select a step to see what went in and what came out."
+                  : "Every step the run recorded over OpenTelemetry, including the ones the RAG view above summarises."}
+              </p>
+              <div className="mt-4">
+                <StepsView steps={trace.steps} selected={span} hrefFor={spanHref} />
+              </div>
+            </section>
+          )}
         </div>
       </article>
     </div>
@@ -680,7 +716,8 @@ function EvaluationTab({ trace }: { trace: Trace }) {
   return (
     <div>
       {sentence && <p className="mb-4 max-w-[70ch] text-sm text-ink-muted">{sentence}</p>}
-      <div className="overflow-x-auto">
+      {/* Scrolls sideways when the panel is narrow; focusable so the keyboard can scroll it too. */}
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Evaluation checks">
         <table className="w-full min-w-[40rem] border-collapse text-sm">
           <thead>
             <tr className="border-b border-line-strong text-left text-xs text-ink-muted">

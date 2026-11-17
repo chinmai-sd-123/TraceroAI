@@ -1,3 +1,21 @@
+export type StepKind = "agent" | "chain" | "llm" | "tool" | "retriever" | "embedding" | "reranker" | "guardrail";
+
+/** One step inside a run (GET /v1/traces/{id}); steps form a tree through parentId. */
+export type TraceStep = {
+  stepId: string;
+  parentId: string | null;
+  kind: StepKind;
+  name: string;
+  startedAt: string;
+  endedAt: string | null;
+  durationMs: number | null;
+  status: "ok" | "error" | "unset";
+  statusMessage: string | null;
+  input: unknown;
+  output: unknown;
+  attributes: Record<string, unknown>;
+};
+
 export type TraceDiagnosis =
   | "healthy_answer"
   | "correct_refusal"
@@ -121,4 +139,8 @@ export type Trace = {
     comment?: string;
     createdAt?: string;
   }>;
+  /** Where the trace came from: the SDK or HTTP API, or OpenTelemetry. */
+  source: "sdk" | "otlp";
+  /** The run's steps, in the order they were sent; only on a single trace. */
+  steps: TraceStep[];
 };
