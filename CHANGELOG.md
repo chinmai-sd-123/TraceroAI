@@ -47,6 +47,13 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   (counted per server instance) and has a sign-out button.
 
 ### Added
+- LangGraph over OpenTelemetry, tested end to end: `examples/opentelemetry-langgraph` is
+  an agent with a tool, traced by the OpenInference LangChain instrumentor. Runs read
+  better from any LangChain-based app: the trace's question comes from the graph's
+  messages rather than its serialized state, a model call that asks for a tool shows
+  the tool and its arguments (from OpenInference or GenAI attributes), a tool's result
+  is shown without LangChain's message wrapper, and an error message no longer carries
+  the Python traceback.
 - Cost per model call and per run. Runs sent over OpenTelemetry price each model call
   from its tokens, and the trace's cost is the sum of all of them (`run_usage` on the
   trace), not only the final answer's. A run with a call that can't be priced keeps its

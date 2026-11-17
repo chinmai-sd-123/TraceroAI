@@ -38,6 +38,17 @@ LangChainInstrumentor().instrument(tracer_provider=provider)
 `examples/opentelemetry-langchain` in the repository is a complete app you can run
 without any API key: it uses LangChain's fake chat model.
 
+## LangGraph
+
+The same instrumentor covers LangGraph, so the setup above is all a graph needs. Each run
+becomes an agent run with a step for the graph, each node, each model call and each tool
+call. A model call that asks for a tool shows the tool's name and arguments; a tool that
+raised shows as an error with its message.
+
+`examples/opentelemetry-langgraph` is a support agent with one tool, also runnable without
+an API key. Its second run is one to look for in the steps view: the tool fails, and the
+agent answers as if it hadn't.
+
 ## What's read from your spans
 
 Two conventions are understood, whichever your instrumentation uses:

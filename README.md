@@ -245,7 +245,8 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:8000/otlp
 ```
 
 [`examples/opentelemetry-langchain/`](examples/opentelemetry-langchain/) is a LangChain
-app traced this way; it uses LangChain's fake chat model, so it runs without any API key.
+app traced this way, and [`examples/opentelemetry-langgraph/`](examples/opentelemetry-langgraph/)
+a LangGraph agent with a tool; both use a fake chat model, so they run without any API key.
 
 A complete SDK example is in [`examples/recovery-agent/`](examples/recovery-agent/): it
 showcases tracing, self-healing recovery, and an eval run (`python app.py --eval`).
@@ -277,6 +278,7 @@ TraceroAI/
 ├── traceroai-web/         Next.js dashboard + interactive docs
 ├── examples/recovery-agent/   full showcase — tracing, query rewrite, cost, self-healing recovery, eval run
 ├── examples/opentelemetry-langchain/   a LangChain app sending traces over OpenTelemetry
+├── examples/opentelemetry-langgraph/   a LangGraph agent with a tool, sent the same way
 ├── infra/                 Docker Compose for the whole stack
 ├── docs/                  decision records (adr/), accuracy benchmark, trace data, screenshots
 └── USAGE.md               complete SDK usage guide
