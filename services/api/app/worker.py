@@ -54,6 +54,7 @@ from app.services.deep_evaluation import (
 )
 from app.services.trace_repository import TraceRepository
 from app.otlp.assembly import finish_quiet
+from app.services import alerts
 
 logger = logging.getLogger("traceroai.worker")
 
@@ -67,6 +68,7 @@ SWEEP_INTERVAL_SECONDS = 300.0
 # OpenTelemetry runs whose root span never arrived are finished after 30 s of quiet.
 QUIET_RUN_INTERVAL_SECONDS = 10.0
 PURGE_INTERVAL_SECONDS = 3600.0
+ALERT_INTERVAL_SECONDS = 60.0
 
 # (trace_id, retry_transient=...) -> None
 Handler = Callable[..., None]
@@ -269,6 +271,15 @@ class DeepEvalWorker:
             logger.info("Finished %d quiet OpenTelemetry run(s)", finished)
         return finished
 
+    # --- alerts (new issues, regressions, failure rate) ---
+
+    def check_alerts(self) -> int:
+        with SessionLocal() as db:
+            sent = alerts.check(db, get_settings())
+        if sent:
+            logger.info("Sent %d alert(s)", sent)
+        return sent
+
     # --- loop ---
 
     def run(self, stop: threading.Event) -> None:
@@ -280,6 +291,7 @@ class DeepEvalWorker:
         last_sweep = time.monotonic()  # first sweep after one interval
         last_purge = 0.0  # purge once at startup, then hourly
         last_quiet = 0.0
+        last_alerts = 0.0
         while not stop.is_set():
             try:
                 jobs: list[Job] = []
@@ -295,6 +307,12 @@ class DeepEvalWorker:
                         self.finish_quiet_runs()
                     except Exception:
                         logger.exception("Finishing quiet OpenTelemetry runs failed")
+                if self.sweep and time.monotonic() - last_alerts >= ALERT_INTERVAL_SECONDS:
+                    last_alerts = time.monotonic()
+                    try:
+                        self.check_alerts()
+                    except Exception:
+                        logger.exception("Checking alerts failed")
                 if self.sweep and time.monotonic() - last_purge >= PURGE_INTERVAL_SECONDS:
                     last_purge = time.monotonic()
                     try:

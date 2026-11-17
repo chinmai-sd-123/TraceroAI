@@ -48,6 +48,18 @@ even if a `.env` file sets it.
 | `TRACEROAI_GRADE_RATE_LIMIT_PER_MINUTE` | 120 | Grading calls per key |
 | `TRACEROAI_MAX_FEEDBACK_PER_TRACE` | 100 | Feedback entries kept per trace |
 
+## Alerts
+
+See [Alerts](/docs/fix/alerts). The worker sends them.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `TRACEROAI_ALERT_WEBHOOK_URL` | none | A Slack-compatible webhook. Without it, no alerts |
+| `TRACEROAI_ALERT_FAILURE_RATE` | `0.3` | The failure rate that alerts |
+| `TRACEROAI_ALERT_WINDOW_MINUTES` | `60` | The window it's measured over |
+| `TRACEROAI_ALERT_MIN_RUNS` | `20` | Diagnosed runs the window needs before it can alert |
+| `TRACEROAI_DASHBOARD_URL` | none | The dashboard's address, for links in alerts |
+
 ## The worker
 
 | Variable | Default | What it does |

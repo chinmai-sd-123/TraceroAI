@@ -33,6 +33,13 @@ x-api-environment: &api-environment
   TRACEROAI_ADMIN_API_KEYS: ${TRACEROAI_ADMIN_API_KEYS:-[]}
   # The docs page's live playground; on here because this stack is local.
   TRACEROAI_PLAYGROUND_ENABLED: ${TRACEROAI_PLAYGROUND_ENABLED:-true}
+  # Alerts (new issues, regressions, failure rate) to a Slack-compatible webhook.
+  # Off unless TRACEROAI_ALERT_WEBHOOK_URL is set; the worker sends them.
+  TRACEROAI_ALERT_WEBHOOK_URL: ${TRACEROAI_ALERT_WEBHOOK_URL:-}
+  TRACEROAI_ALERT_FAILURE_RATE: ${TRACEROAI_ALERT_FAILURE_RATE:-0.3}
+  TRACEROAI_ALERT_WINDOW_MINUTES: ${TRACEROAI_ALERT_WINDOW_MINUTES:-60}
+  TRACEROAI_ALERT_MIN_RUNS: ${TRACEROAI_ALERT_MIN_RUNS:-20}
+  TRACEROAI_DASHBOARD_URL: ${TRACEROAI_DASHBOARD_URL:-http://localhost:3000}
 
 services:
   postgres:

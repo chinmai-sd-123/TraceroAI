@@ -47,6 +47,12 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   (counted per server instance) and has a sign-out button.
 
 ### Added
+- Alerts to a Slack-compatible webhook (`TRACEROAI_ALERT_WEBHOOK_URL`): a new issue, a
+  resolved issue that fails again, and a project's failure rate crossing a threshold over
+  the last hour (and recovering). Each is sent once; issues that existed before alerts
+  were turned on aren't announced; an alert the webhook refuses is retried at the next
+  check. The worker checks every minute. Migration `0011` adds the table that records
+  what was sent.
 - LangGraph over OpenTelemetry, tested end to end: `examples/opentelemetry-langgraph` is
   an agent with a tool, traced by the OpenInference LangChain instrumentor. Runs read
   better from any LangChain-based app: the trace's question comes from the graph's

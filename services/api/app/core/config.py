@@ -86,6 +86,16 @@ class Settings(BaseSettings):
     # Delete traces older than this many days (the worker checks hourly; or run
     # python -m app.retention). Unset = keep traces forever.
     trace_retention_days: int | None = Field(default=None, ge=1)
+    # Alerts (the worker checks every minute): a Slack-compatible incoming
+    # webhook gets new issues, regressed issues, and a project's failure rate
+    # crossing alert_failure_rate over the last alert_window_minutes (once it
+    # has at least alert_min_runs diagnosed runs). Unset = no alerts.
+    alert_webhook_url: str | None = None
+    alert_failure_rate: float = Field(default=0.3, gt=0, le=1)
+    alert_window_minutes: int = Field(default=60, ge=5)
+    alert_min_runs: int = Field(default=20, ge=1)
+    # The dashboard's address, for links in alerts (e.g. http://localhost:3000).
+    dashboard_url: str | None = None
     # Feedback entries kept per trace; further feedback gets a 409.
     max_feedback_per_trace: int = Field(default=100, ge=1)
     # An empty environment variable is a real value and overrides .env: running
@@ -95,7 +105,7 @@ class Settings(BaseSettings):
     # infra/docker-compose.yml defaults them that way.
     model_config = SettingsConfigDict(env_file=ENV_FILE, env_prefix="TRACEROAI_", extra="ignore")
 
-    @field_validator("judge_base_url", mode="before")
+    @field_validator("judge_base_url", "alert_webhook_url", "dashboard_url", mode="before")
     @classmethod
     def _blank_base_url_is_none(cls, value: object) -> object:
         # An empty/whitespace base URL (e.g. TRACEROAI_JUDGE_BASE_URL= in .env to
