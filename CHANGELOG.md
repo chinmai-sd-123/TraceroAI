@@ -47,6 +47,11 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   (counted per server instance) and has a sign-out button.
 
 ### Added
+- The trace page shows a run's steps: a tree on a time axis (which step called which,
+  in order, and how long each took), with errors in amber, and a panel with the selected
+  step's input, output and attributes (messages as messages, retrieved documents as
+  documents). An agent run (not diagnosed) is shown by its steps instead of the RAG
+  stages; a RAG run from OpenTelemetry shows both. Each step has its own URL.
 - OpenTelemetry ingest: `POST /otlp/v1/traces` takes OTLP over HTTP (protobuf or JSON,
   gzipped or not), so an app already instrumented with OpenTelemetry can send traces with
   no TraceroAI code. Spans in the OpenInference conventions (LangChain, LlamaIndex,

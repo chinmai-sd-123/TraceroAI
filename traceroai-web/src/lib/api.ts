@@ -5,11 +5,15 @@ import {
 import {
   type DeepStatus,
   type DiagnosisSource,
+  type StepKind,
   type Trace,
   type TraceDiagnosis,
+  type TraceStep,
 } from "./trace-types";
 
 const DIAGNOSIS_SOURCES: readonly DiagnosisSource[] = ["lexical", "embedding", "judge"];
+const STEP_KINDS: readonly StepKind[] = ["agent", "chain", "llm", "tool", "retriever", "embedding", "reranker", "guardrail"];
+const STEP_STATUSES: readonly TraceStep["status"][] = ["ok", "error", "unset"];
 const DEEP_STATUSES: readonly DeepStatus[] = ["pending", "complete", "partial", "failed", "skipped"];
 
 // A known value from the API, or undefined (older traces, or a value this build
@@ -105,6 +109,20 @@ type ApiTrace = {
     created_at?: string | null;
   }>;
   metadata?: Record<string, unknown> | null;
+  steps?: Array<{
+    step_id: string;
+    parent_id?: string | null;
+    kind: string;
+    name: string;
+    started_at: string;
+    ended_at?: string | null;
+    duration_ms?: number | null;
+    status?: string;
+    status_message?: string | null;
+    input?: unknown;
+    output?: unknown;
+    attributes?: Record<string, unknown>;
+  }>;
 };
 export type ApiEvalRun = {
   eval_run_id: string;
@@ -874,6 +892,21 @@ function mapApiTraceToUiTrace(trace: ApiTrace): Trace {
             topK: typeof trace.metadata?.top_k === "number" ? trace.metadata.top_k : undefined,
           }
         : undefined,
+    source: trace.metadata?.source === "otlp" ? "otlp" : "sdk",
+    steps: (trace.steps ?? []).map((s) => ({
+      stepId: s.step_id,
+      parentId: s.parent_id ?? null,
+      kind: oneOf(s.kind, STEP_KINDS) ?? "chain",
+      name: s.name,
+      startedAt: s.started_at,
+      endedAt: s.ended_at ?? null,
+      durationMs: s.duration_ms ?? null,
+      status: oneOf(s.status, STEP_STATUSES) ?? "unset",
+      statusMessage: s.status_message ?? null,
+      input: s.input ?? null,
+      output: s.output ?? null,
+      attributes: s.attributes ?? {},
+    })),
     diagnosis: {
       label: normalizeDiagnosis(trace.diagnosis.label),
       reason: trace.diagnosis.reason || "No diagnosis available.",
