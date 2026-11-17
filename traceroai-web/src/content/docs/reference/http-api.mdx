@@ -11,7 +11,7 @@ every field, at `/docs` (OpenAPI), for example `http://localhost:8000/docs`.
 |---|---|
 | `POST /v1/traces` | Send a trace. Returns 202 with its id; the judge runs in the background. The same `trace_id` twice stores one trace |
 | `GET /v1/traces` | List traces. Filters: `project_id`, `diagnosis`, `model`, `environment`, `q`, `since`, `until`, `recovery_run_id`, `issue_key`; `sort=newest`, `oldest` or `slowest`; `limit` up to 200, with the next page's cursor in the `X-Next-Cursor` header |
-| `GET /v1/traces/{id}` | One trace with its evaluations, diagnosis and feedback |
+| `GET /v1/traces/{id}` | One trace with its steps, evaluations, diagnosis and feedback |
 | `DELETE /v1/traces/{id}` | Delete a trace. A project key can delete only its own project's |
 | `POST /v1/traces/{id}/feedback` | Record `thumbs_up` or `thumbs_down`, with an optional comment |
 | `GET /v1/traces/projects` | The projects the key can read |
@@ -26,6 +26,27 @@ A minimal trace:
   "generation": { "model": "gpt-4o-mini", "answer": "5 to 7 business days." }
 }
 ```
+
+### Steps
+
+A trace can also carry `steps`: the work inside the run as a tree, for example an agent
+that calls a model, then a tool, then the model again. Each step has a `step_id`, an
+optional `parent_id`, a `kind` (`agent`, `chain`, `llm`, `tool`, `retriever`, `embedding`,
+`reranker` or `guardrail`), a `name`, `started_at`, and optionally `ended_at`, `status`
+(`ok`, `error` or `unset`), `status_message`, `input`, `output` and `attributes`.
+
+```json
+"steps": [
+  { "step_id": "a", "kind": "agent", "name": "support agent", "started_at": "2026-11-17T09:00:00Z", "ended_at": "2026-11-17T09:00:02.4Z" },
+  { "step_id": "a.1", "parent_id": "a", "kind": "llm", "name": "gpt-4o-mini", "started_at": "2026-11-17T09:00:00.01Z", "ended_at": "2026-11-17T09:00:00.81Z" },
+  { "step_id": "a.2", "parent_id": "a", "kind": "tool", "name": "lookup_refund", "started_at": "2026-11-17T09:00:00.82Z", "ended_at": "2026-11-17T09:00:01.3Z", "input": { "order": "A-17" } }
+]
+```
+
+Step ids must be unique within the trace, every `parent_id` must be another step in it,
+and no step can be its own ancestor; otherwise the trace is rejected with a 422. Up to
+1,000 steps per trace. Without `steps`, the server derives them from the trace (the run,
+then retrieval, prompt building and generation, timed from `latency`).
 
 ## Issues
 

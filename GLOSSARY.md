@@ -10,14 +10,15 @@ One run of the user's pipeline or agent, recorded from input to output: the ques
 what was retrieved or called, the answer, timings and cost. One trace answers one input.
 _Avoid:_ request, log, event.
 
-**Step** *(planned)*
+**Step**
 One unit of work inside a trace: a model call, a retrieval, a tool call, or an agent turn.
-Steps nest. In the interface and docs it is always "step".
+Steps nest, and each has a kind (agent, chain, llm, tool, retriever, embedding, reranker,
+guardrail). In the interface and docs it is always "step".
 _Avoid:_ node, event, action.
 
-**Span** *(planned)*
-The OpenTelemetry record of a step. Used only when talking about the data model or
-OpenTelemetry ingest; everywhere else, say "step".
+**Span**
+The OpenTelemetry record of a step, and the name of the table steps are stored in. Used
+only when talking about the data model or OpenTelemetry ingest; everywhere else, say "step".
 
 **Stage**
 For RAG traces, one of the three parts a diagnosis can blame: retrieval, grounding, or

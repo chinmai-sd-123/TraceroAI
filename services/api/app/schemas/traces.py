@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.schemas.steps import MAX_STEPS_PER_TRACE, Step, StepIn, check_step_tree
 from app.schemas.validation import (
     ENVIRONMENT_MAX_LENGTH,
     MAX_CHUNKS_PER_TRACE,
@@ -168,10 +169,22 @@ class TraceIngestRequest(BaseModel):
 
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+    # The steps inside the run, as a tree (agents, tool calls, nested model
+    # calls). Optional: without them the server derives steps from the fields
+    # above. Stored in their own table, not in the trace document, so they're
+    # excluded from dumps; GET /v1/traces/{id} returns them (TraceDetail).
+    steps: list[StepIn] | None = Field(default=None, max_length=MAX_STEPS_PER_TRACE, exclude=True)
+
     @model_validator(mode="before")
     @classmethod
     def _strip_nul(cls, data: Any) -> Any:
         return strip_nul(data)
+
+    @model_validator(mode="after")
+    def _steps_form_a_tree(self) -> "TraceIngestRequest":
+        if self.steps:
+            check_step_tree(self.steps)
+        return self
 
 
 class Trace(TraceIngestRequest):
@@ -180,6 +193,12 @@ class Trace(TraceIngestRequest):
     evaluations: EvaluationsTrace = Field(default_factory=EvaluationsTrace)
     diagnosis: DiagnosisTrace = Field(default_factory=DiagnosisTrace)
     feedback: list[FeedbackEntry] = Field(default_factory=list)
+
+
+class TraceDetail(Trace):
+    """One trace with its steps, as GET /v1/traces/{id} returns it."""
+
+    steps: list[Step] = Field(default_factory=list)  # type: ignore[assignment]
 
 
 class TraceIngestResponse(BaseModel):

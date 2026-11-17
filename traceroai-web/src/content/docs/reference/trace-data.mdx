@@ -14,6 +14,7 @@ TraceroAI stores what your application sends it, in your own Postgres. This page
 | Prompt | the prompt text, version and template name | Only if you call `log_prompt`. |
 | Answer | the generated answer, model, provider, temperature and other parameters, token counts | |
 | Timing | total latency and per-step timings | |
+| Steps | each step's name, kind, timing, status, and any input, output and attributes you send | Steps you send are stored as sent, so a step whose input is a full prompt or tool result stores that too. Steps the server derives hold ids and settings, not text. |
 | Project | project id, environment, pipeline version | |
 | Metadata | whatever you pass as `metadata=` | Free-form. Recovery runs add a run id and attempt number here. |
 
