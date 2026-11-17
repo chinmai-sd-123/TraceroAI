@@ -206,6 +206,10 @@ class Trace(_RunFields):
 
     retrieval: RetrievalTrace = Field(default_factory=RetrievalTrace)
     generation: GenerationTrace | None = None
+    # Tokens and cost of every model call in the run, summed by the server from
+    # its steps (set for runs that arrive over OpenTelemetry). A trace's cost is
+    # this when present, else generation.usage's (migration 0010).
+    run_usage: UsageTrace | None = None
     evaluations: EvaluationsTrace = Field(default_factory=EvaluationsTrace)
     diagnosis: DiagnosisTrace = Field(default_factory=DiagnosisTrace)
     feedback: list[FeedbackEntry] = Field(default_factory=list)

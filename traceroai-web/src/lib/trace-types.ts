@@ -141,6 +141,9 @@ export type Trace = {
   }>;
   /** Where the trace came from: the SDK or HTTP API, or OpenTelemetry. */
   source: "sdk" | "otlp";
+  /** Tokens and cost of every model call in the run (runs from OpenTelemetry).
+   * costUsd is null when any call couldn't be priced. */
+  runUsage: { totalTokens: number | null; costUsd: number | null } | null;
   /** The run's steps, in the order they were sent; only on a single trace. */
   steps: TraceStep[];
 };

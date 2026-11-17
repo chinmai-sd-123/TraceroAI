@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import type { StepKind, TraceStep } from "@/lib/trace-types";
 
-import { formatMs } from "../../ui";
+import { formatCost, formatMs } from "../../ui";
 
 // The run's steps as a tree laid on a time axis: which step called which, in
 // order, and how long each took. Selecting a step (a link, so each has a URL)
@@ -153,7 +153,9 @@ const SUMMARY_LABELS: Array<[string, string]> = [
 ];
 
 function StepDetail({ step, offsetMs }: { step: TraceStep; offsetMs: number }) {
-  const summary = SUMMARY_LABELS.filter(([key]) => step.attributes[key] != null);
+  const cost = typeof step.attributes.cost_usd === "number" ? formatCost(step.attributes.cost_usd) : null;
+  // Cost is shown with the timing above, so it isn't repeated in the details.
+  const summary = SUMMARY_LABELS.filter(([key]) => step.attributes[key] != null && !(key === "cost_usd" && cost));
   const known = new Set(SUMMARY_LABELS.map(([key]) => key));
   const otel = step.attributes.otel;
   const rest = Object.entries(step.attributes).filter(([key]) => !known.has(key) && key !== "otel");
@@ -167,6 +169,7 @@ function StepDetail({ step, offsetMs }: { step: TraceStep; offsetMs: number }) {
         <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
           <Fact label="Started">{offsetMs < 1 ? "+0 ms" : `+${formatMs(offsetMs)}`}</Fact>
           <Fact label="Took">{step.durationMs != null ? took(step.durationMs) : "not recorded"}</Fact>
+          {cost && <Fact label="Cost">{cost}</Fact>}
           <Fact label="Status">
             <span className={step.status === "error" ? "font-medium text-warn" : ""}>
               {step.status === "error" ? "Error" : step.status === "ok" ? "OK" : "Not set"}

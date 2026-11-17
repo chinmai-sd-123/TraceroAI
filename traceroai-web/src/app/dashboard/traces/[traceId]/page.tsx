@@ -129,7 +129,7 @@ export default async function TraceDetailPage({
     trace.diagnosis.source === "judge" && trace.deepStatus !== "partial"
       ? null
       : provenanceSentence(trace.diagnosis.source, trace.deepStatus);
-  const cost = process.env.NEXT_PUBLIC_SHOW_COST !== "false" ? formatCost(trace.generation?.costUsd) : null;
+  const cost = process.env.NEXT_PUBLIC_SHOW_COST !== "false" ? formatCost(trace.runUsage ? trace.runUsage.costUsd : trace.generation?.costUsd) : null;
   const stages = stagesOf(trace);
 
   // A run with no single answer to check (an agent) is shown by its steps, not

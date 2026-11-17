@@ -55,6 +55,17 @@ Every other attribute is kept on the step, under `otel`. The project is the one 
 belongs to; without a key it's the resource's `traceroai.project_id`, then its
 `service.name`. The environment comes from `deployment.environment.name`.
 
+## Cost
+
+Each model call that reports tokens is priced from its model, the same way as an SDK
+trace; an `llm.cost.total` your instrumentation sets is used as is. The run's cost is the
+sum of its model calls, shown on the trace and on each model-call step. When a call uses
+a model with no known price, the run's tokens still add up but it gets no cost, so it
+never looks cheaper than it was.
+
+The overview shows **cost per healthy answer**: what every priced run cost, failed runs
+included, divided by the healthy answers among them.
+
 ## Which runs are diagnosed
 
 A run is diagnosed when it retrieved documents **with their text** and a model then

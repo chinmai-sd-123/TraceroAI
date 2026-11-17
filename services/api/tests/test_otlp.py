@@ -7,6 +7,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 from google.protobuf.json_format import ParseDict
 from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
     ExportTraceServiceRequest,
@@ -16,6 +17,8 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
 from app.db.session import SessionLocal
 from app.main import app
 from app.otlp.assembly import finish_quiet
+from app.schemas.traces import UsageTrace
+from app.services.cost import compute_cost_usd
 
 client = TestClient(app)
 
@@ -330,3 +333,73 @@ def test_spans_with_invalid_ids_are_counted_as_rejected() -> None:
     response = _post_json(_export([bad], _service()))
     assert response.status_code == 200
     assert response.json()["partialSuccess"]["rejectedSpans"] == 1
+
+
+def test_model_calls_are_priced_and_summed_into_the_run_cost() -> None:
+    trace, s = _ids()
+    service = _service()
+    spans = _gen_ai_agent(trace, s)
+    spans[2]["attributes"] += _attrs({"gen_ai.usage.input_tokens": 340, "gen_ai.usage.output_tokens": 9})
+    assert _post_json(_export(spans, service)).status_code == 200
+
+    first = compute_cost_usd("gpt-4o", UsageTrace(prompt_tokens=300, completion_tokens=20))
+    second = compute_cost_usd("gpt-4o", UsageTrace(prompt_tokens=340, completion_tokens=9))
+    assert first and second
+    got = _trace(trace).json()
+    calls = [st for st in got["steps"] if st["kind"] == "llm"]
+    assert [st["attributes"]["cost_usd"] for st in calls] == [first, second]
+    assert got["run_usage"] == {
+        "prompt_tokens": 640,
+        "completion_tokens": 29,
+        "total_tokens": 669,
+        "cost_usd": pytest.approx(first + second),
+    }
+
+    summary = client.get("/v1/metrics/summary", params={"project_id": service}).json()
+    assert summary["cost_usd"]["priced"] == 1
+    assert summary["cost_usd"]["total"] == pytest.approx(first + second)
+    assert summary["cost_usd"]["per_healthy"] is None  # an agent run is never a healthy answer
+
+
+def test_a_run_with_an_unpriced_model_call_has_no_cost() -> None:
+    trace, s = _ids()
+    service = _service()
+    spans = _gen_ai_agent(trace, s)
+    spans[2]["attributes"] = [a for a in spans[2]["attributes"] if a["key"] != "gen_ai.request.model"]
+    spans[2]["attributes"] += _attrs(
+        {"gen_ai.request.model": "acme-house-model", "gen_ai.usage.input_tokens": 50, "gen_ai.usage.output_tokens": 5}
+    )
+    assert _post_json(_export(spans, service)).status_code == 200
+
+    got = _trace(trace).json()
+    calls = [st for st in got["steps"] if st["kind"] == "llm"]
+    assert "cost_usd" in calls[0]["attributes"] and "cost_usd" not in calls[1]["attributes"]
+    # Tokens still add up; the cost doesn't, rather than understate the run.
+    assert got["run_usage"]["total_tokens"] == 375 and got["run_usage"]["cost_usd"] is None
+    summary = client.get("/v1/metrics/summary", params={"project_id": service}).json()
+    assert summary["cost_usd"]["priced"] == 0
+
+
+def test_cost_per_healthy_answer_includes_what_failed_runs_spent() -> None:
+    service = _service()
+    rag_runs = []
+    for _ in range(2):
+        trace, s = _ids()
+        rag_runs.append(UUID(trace))
+        assert _post_json(_export(_openinference_rag(trace, s), service)).status_code == 200
+    # The judge's verdict (the lexical estimate can't call an answer healthy).
+    with SessionLocal() as db:
+        db.execute(
+            text("UPDATE traces SET diagnosis_label = 'healthy_answer' WHERE trace_id = ANY(:ids)"), {"ids": rag_runs}
+        )
+        db.commit()
+    trace, s = _ids()
+    assert _post_json(_export(_gen_ai_agent(trace, s), service)).status_code == 200
+
+    rag = compute_cost_usd("gpt-4o-mini", UsageTrace(prompt_tokens=120, completion_tokens=12))
+    agent = compute_cost_usd("gpt-4o", UsageTrace(prompt_tokens=300, completion_tokens=20))
+    assert rag and agent
+    summary = client.get("/v1/metrics/summary", params={"project_id": service}).json()
+    assert summary["healthy"] == 2
+    assert summary["cost_usd"]["priced"] == 3
+    assert summary["cost_usd"]["per_healthy"] == pytest.approx((2 * rag + agent) / 2)

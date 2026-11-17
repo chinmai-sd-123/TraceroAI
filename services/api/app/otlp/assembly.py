@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from app.db.models import PendingSpanRecord, SpanRecord, TraceRecord
 from app.otlp.decode import OtlpSpan
 from app.otlp.mapping import span_to_step
-from app.otlp.run import build_trace, order_and_root
+from app.otlp.run import build_trace, order_and_root, price_steps
 from app.schemas.steps import StepIn
 from app.schemas.traces import Trace
 from app.schemas.validation import ENVIRONMENT_MAX_LENGTH, PROJECT_ID_MAX_LENGTH
@@ -120,6 +120,7 @@ def finish(db: Session, trace_id: UUID) -> bool:
 
     project, environment, _, resource = rows[0]
     steps = order_and_root([StepIn.model_validate(row.step) for row in rows])
+    price_steps(steps)
     trace = _prepare(build_trace(trace_id.hex, steps, project_id=project, environment=environment, resource=resource))
 
     try:

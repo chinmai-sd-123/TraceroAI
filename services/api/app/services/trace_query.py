@@ -237,10 +237,11 @@ def summary(db: Session, filters: TraceFilters) -> dict:
         select(
             func.count().filter(priced),
             func.sum(cost_value).filter(priced),
+            func.count().filter(priced, TraceRecord.diagnosis_label.in_(HEALTHY_LABELS)),
         ).where(*where)
     ).one()
 
-    priced_count, cost_total = cost[0], cost[1]  # the sum is NULL when nothing is priced
+    priced_count, cost_total, priced_healthy = cost  # the sum is NULL when nothing is priced
 
     total = sum(by_diagnosis.values())
     healthy = sum(by_diagnosis.get(label, 0) for label in HEALTHY_LABELS)
@@ -264,6 +265,9 @@ def summary(db: Session, filters: TraceFilters) -> dict:
             "priced": priced_count,
             "total": cost_total,
             "avg": (cost_total / priced_count) if priced_count and cost_total is not None else None,
+            # What one healthy answer costs, failed runs' spend included: the cost
+            # of every priced run over the healthy ones among them.
+            "per_healthy": (cost_total / priced_healthy) if priced_healthy and cost_total is not None else None,
         },
     }
 
