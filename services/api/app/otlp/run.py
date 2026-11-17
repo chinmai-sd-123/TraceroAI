@@ -204,10 +204,26 @@ def _assistant_text(output: Any) -> str | None:
 
 def _user_text(value: Any) -> str | None:
     if isinstance(value, dict) and isinstance(value.get("messages"), list):
-        users = [m.get("content") for m in value["messages"] if isinstance(m, dict) and m.get("role") == "user"]
+        users = [content for role, content in map(_role_and_content, value["messages"]) if role == "user"]
         texts = [t for t in users if isinstance(t, str) and t.strip()]
         return texts[-1] if texts else None
     return _text(value)
+
+
+def _role_and_content(message: Any) -> tuple[str | None, Any]:
+    """A message's role and content, as {role, content} or as LangChain
+    serializes one in a graph's state ({type: "human", data: {content}}, or
+    {kwargs: {type, content}})."""
+    if not isinstance(message, dict):
+        return None, None
+    if "role" in message:
+        return message.get("role"), message.get("content")
+    body = message.get("data") or message.get("kwargs") or message
+    if not isinstance(body, dict):
+        return None, None
+    kind = body.get("type") or message.get("type")
+    role = {"human": "user", "ai": "assistant"}.get(kind, kind) if isinstance(kind, str) else None
+    return role, body.get("content")
 
 
 def _text(value: Any) -> str | None:

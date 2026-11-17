@@ -155,7 +155,18 @@ def _output(kind: StepKind, attrs: dict[str, Any]) -> Any:
         result = _first(attrs, ("gen_ai.tool.call.result",))
         if result is not None:
             return _maybe_json(result)
+        return _tool_result(_value(attrs, "output"))
     return _value(attrs, "output")
+
+
+def _tool_result(value: Any) -> Any:
+    """A tool's result. LangChain records the ToolMessage that wraps it
+    ({type: "tool", data: {content}}); the content is what the tool returned."""
+    if isinstance(value, dict):
+        data = value.get("data") if isinstance(value.get("data"), dict) else value.get("kwargs")
+        if isinstance(data, dict) and data.get("type", value.get("type")) == "tool" and "content" in data:
+            return _maybe_json(data["content"])
+    return value
 
 
 def _value(attrs: dict[str, Any], prefix: str) -> Any:
@@ -169,7 +180,8 @@ def _value(attrs: dict[str, Any], prefix: str) -> Any:
 
 
 def messages_from(attrs: dict[str, Any], flattened: str, gen_ai: str) -> list[dict[str, Any]]:
-    """Chat messages as [{role, content}], from either convention."""
+    """Chat messages as [{role, content}], from either convention. A message
+    that calls tools also has tool_calls: [{name, arguments}]."""
     found = []
     for item in indexed(attrs, flattened):
         role = item.get("message.role")
@@ -178,8 +190,13 @@ def messages_from(attrs: dict[str, Any], flattened: str, gen_ai: str) -> list[di
             parts = indexed(item, "message.contents")
             texts = [str(p["message_content.text"]) for p in parts if p.get("message_content.text")]
             content = "\n".join(texts) if texts else None
-        if role is not None or content is not None:
-            found.append({"role": role, "content": content})
+        calls = [
+            _tool_call(call.get("tool_call.function.name"), call.get("tool_call.function.arguments"))
+            for call in indexed(item, "message.tool_calls")
+            if call.get("tool_call.function.name")
+        ]
+        if role is not None or content is not None or calls:
+            found.append({"role": role, "content": content, **({"tool_calls": calls} if calls else {})})
     if found:
         return found
     raw = _maybe_json(attrs.get(gen_ai))
@@ -187,10 +204,26 @@ def messages_from(attrs: dict[str, Any], flattened: str, gen_ai: str) -> list[di
         for message in raw:
             if not isinstance(message, dict):
                 continue
-            parts = message.get("parts") or []
-            texts = [p.get("content") for p in parts if isinstance(p, dict) and p.get("type") == "text"]
-            found.append({"role": message.get("role"), "content": "\n".join(t for t in texts if isinstance(t, str)) or None})
+            parts = [p for p in message.get("parts") or [] if isinstance(p, dict)]
+            texts = [p.get("content") for p in parts if p.get("type") == "text"]
+            calls = [
+                _tool_call(p.get("name"), p.get("arguments"))
+                for p in parts
+                if p.get("type") == "tool_call" and p.get("name")
+            ]
+            found.append(
+                {
+                    "role": message.get("role"),
+                    "content": "\n".join(t for t in texts if isinstance(t, str)) or None,
+                    **({"tool_calls": calls} if calls else {}),
+                }
+            )
     return found
+
+
+def _tool_call(name: Any, arguments: Any) -> dict[str, Any]:
+    """A tool the model asked to call, with its arguments parsed when they're JSON."""
+    return {"name": str(name), "arguments": _maybe_json(arguments)}
 
 
 def documents_from(attrs: dict[str, Any]) -> list[dict[str, Any]]:
@@ -231,7 +264,10 @@ def indexed(attrs: dict[str, Any], prefix: str) -> list[dict[str, Any]]:
 
 def _error_message(span: OtlpSpan) -> str | None:
     if span.status_message:
-        return span.status_message[:2000]
+        # Some instrumentations append the whole Python traceback (with the
+        # host's file paths); the stack trace stays in the exception event.
+        message = span.status_message.split("Traceback (most recent call last)")[0].strip()
+        return (message or span.status_message)[:2000]
     if span.status_code == STATUS_ERROR:
         for event in span.events:
             if event.get("name") == "exception":

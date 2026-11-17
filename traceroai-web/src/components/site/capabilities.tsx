@@ -122,8 +122,8 @@ const ROUTES: Array<{ route: string; how: string; status: "available" | "planned
   { route: "HTTP API, any language", how: "POST /v1/traces", status: "available" },
   { route: "Recovery agent", how: 'pip install "traceroai[recovery]"', status: "available" },
   { route: "OpenTelemetry (OTLP/HTTP)", how: "POST /otlp/v1/traces", status: "available" },
-  { route: "LangChain, via OpenInference", how: "LangChainInstrumentor", status: "available" },
-  { route: "LangGraph, LlamaIndex", how: "Through OpenInference; not yet tested", status: "planned" },
+  { route: "LangChain and LangGraph, via OpenInference", how: "LangChainInstrumentor", status: "available" },
+  { route: "LlamaIndex", how: "Through OpenInference; not yet tested", status: "planned" },
   { route: "TypeScript SDK", how: "npm", status: "planned" },
 ];
 

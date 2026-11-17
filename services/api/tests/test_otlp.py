@@ -403,3 +403,71 @@ def test_cost_per_healthy_answer_includes_what_failed_runs_spent() -> None:
     assert summary["healthy"] == 2
     assert summary["cost_usd"]["priced"] == 3
     assert summary["cost_usd"]["per_healthy"] == pytest.approx((2 * rag + agent) / 2)
+
+
+def _langgraph_agent(trace, s):
+    """A LangGraph agent as the OpenInference LangChain instrumentor records it:
+    the graph's state as input, a tool call, a tool that fails, and an answer."""
+    state = {"messages": [{"type": "human", "data": {"type": "human", "content": "Where is my refund for order B-90?"}}]}
+    traceback = (
+        "ValueError('no order B-90')Traceback (most recent call last):\n"
+        '  File "C:\\Users\\someone\\app.py", line 40, in lookup_order\nValueError: no order B-90'
+    )
+    return [
+        _span(trace, s[0], None, "LangGraph", 0, 900, {
+            "openinference.span.kind": "CHAIN",
+            "input.value": json.dumps(state),
+            "input.mime_type": "application/json",
+        }),
+        _span(trace, s[1], s[0], "ScriptedChatModel", 10, 200, {
+            "openinference.span.kind": "LLM",
+            "llm.input_messages.0.message.role": "user",
+            "llm.input_messages.0.message.content": "Where is my refund for order B-90?",
+            "llm.output_messages.0.message.role": "assistant",
+            "llm.output_messages.0.message.tool_calls.0.tool_call.function.name": "lookup_order",
+            "llm.output_messages.0.message.tool_calls.0.tool_call.function.arguments": json.dumps({"order_id": "B-90"}),
+        }),
+        _span(trace, s[2], s[0], "lookup_order", 210, 300, {
+            "openinference.span.kind": "TOOL",
+            "tool.name": "lookup_order",
+            "input.value": "B-90",
+        }, status={"code": 2, "message": traceback}),
+        _span(trace, s[3], s[0], "lookup_order", 310, 400, {
+            "openinference.span.kind": "TOOL",
+            "tool.name": "lookup_order",
+            "input.value": "A-17",
+            "output.value": json.dumps({"type": "tool", "data": {"type": "tool", "content": "Refund issued.", "status": "success"}}),
+            "output.mime_type": "application/json",
+        }),
+    ]
+
+
+def test_a_langgraph_run_reads_its_question_tool_calls_and_tool_results() -> None:
+    trace, s = _ids()
+    assert _post_json(_export(_langgraph_agent(trace, s), _service())).status_code == 200
+
+    got = _trace(trace).json()
+    # The question, not the graph's serialized state.
+    assert got["query"]["original"] == "Where is my refund for order B-90?"
+    steps = {st["step_id"]: st for st in got["steps"]}
+    assert steps[s[1]]["output"]["messages"] == [
+        {"role": "assistant", "content": None, "tool_calls": [{"name": "lookup_order", "arguments": {"order_id": "B-90"}}]}
+    ]
+    # The error without the traceback (and the host's file paths in it).
+    assert steps[s[2]]["status"] == "error"
+    assert steps[s[2]]["status_message"] == "ValueError('no order B-90')"
+    # What the tool returned, not LangChain's message wrapping it.
+    assert steps[s[3]]["output"] == "Refund issued."
+
+
+def test_gen_ai_tool_calls_are_read_from_message_parts() -> None:
+    trace, s = _ids()
+    spans = _gen_ai_agent(trace, s)
+    call = [{"role": "assistant", "parts": [{"type": "tool_call", "name": "lookup_refund", "arguments": {"order": "A-17"}}]}]
+    spans[0]["attributes"] += _attrs({"gen_ai.output.messages": json.dumps(call)})
+    assert _post_json(_export(spans, _service())).status_code == 200
+
+    first_call = _trace(trace).json()["steps"][1]
+    assert first_call["output"]["messages"] == [
+        {"role": "assistant", "content": None, "tool_calls": [{"name": "lookup_refund", "arguments": {"order": "A-17"}}]}
+    ]

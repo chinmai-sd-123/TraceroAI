@@ -248,12 +248,27 @@ function Content({ value }: { value: unknown }) {
       <ol className="space-y-2">
         {value.messages.map((message, i) => {
           const m = isRecord(message) ? message : {};
+          const calls = Array.isArray(m.tool_calls) ? m.tool_calls.filter(isRecord) : [];
           return (
             <li key={i} className="rounded border border-line px-3 py-2">
               <p className="text-xs font-medium text-ink-muted">{typeof m.role === "string" ? m.role : "message"}</p>
-              <p className="mt-0.5 text-sm leading-6 whitespace-pre-line">
-                {typeof m.content === "string" ? m.content : <span className="text-ink-muted">No text.</span>}
-              </p>
+              {(typeof m.content === "string" || calls.length === 0) && (
+                <p className="mt-0.5 text-sm leading-6 whitespace-pre-line">
+                  {typeof m.content === "string" ? m.content : <span className="text-ink-muted">No text.</span>}
+                </p>
+              )}
+              {calls.map((call, j) => (
+                <div key={j} className="mt-1 text-sm">
+                  <p>
+                    Calls <span className="font-dash-mono font-medium">{String(call.name)}</span>
+                  </p>
+                  {call.arguments != null && (
+                    <pre className="mt-1 overflow-x-auto rounded bg-sunken px-2 py-1 font-dash-mono text-xs leading-5">
+                      {typeof call.arguments === "string" ? call.arguments : JSON.stringify(call.arguments, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              ))}
             </li>
           );
         })}
