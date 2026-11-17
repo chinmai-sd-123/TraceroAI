@@ -118,7 +118,10 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   and re-queues traces whose job was lost.
 - `GET /v1/traces` returns 50 traces per page by default instead of every trace.
 
-### SDK 0.5.0 (unreleased)
+## SDK 0.5.0 (2026-11-17)
+
+The `traceroai` package on PyPI.
+
 - Traces are sent from a background thread and never raise into your code; ids are
   generated client-side and retries reuse them.
 - `@client.traced` supports async functions; `aget_trace`, `alog_trace_sync_eval` and
@@ -127,8 +130,19 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   missing ranks and ids filled in).
 - `RecoveryAgent` retries only on LLM-judge verdicts by default, groups attempts with a
   run id, takes an optional `rewrite` function, and traces failures in your pipeline.
-- `run_experiment` keeps its results when posting them fails.
+- `AsyncTraceroClient`, a native asyncio client with the same retries and never-raise
+  behaviour as the sync client.
+- Python 3.10 is supported (was 3.11).
+- The `trace()` context manager times retrieval, prompt building and generation.
+- `run_experiment` keeps its results when posting them fails, and returns every
+  question's result per variant in `ExperimentResult.cases`.
+- `run_experiment` can compare more than `top_k`: when `retrieve` or `generate` takes a
+  `variant` parameter, it receives the variant being run (two-argument functions work
+  as before).
+- When `generate` returns `(answer, usage)`, each variant reports its token totals and
+  the server prices them.
 - The `[recovery]` extra installs only `langgraph`.
+- Licensed under Apache-2.0 (previously MIT).
 
 ## Earlier releases
 
