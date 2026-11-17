@@ -6,7 +6,7 @@ ingest never breaks (fail-open).
 """
 
 from app.evaluators.groundedness import extract_terms
-from app.schemas.traces import EvaluationResult, Trace
+from app.schemas.traces import EvaluationResult, Trace, rag_generation
 from app.services.embeddings import EmbeddingClient, cosine_similarity
 
 EVALUATOR_NAME = "answer_relevance"
@@ -27,7 +27,7 @@ def evaluate_answer_relevance(
 ) -> EvaluationResult:
     """semantic=False skips embeddings entirely (no network), e.g. on the ingest path."""
     query = trace.query.rewritten or trace.query.original
-    answer = trace.generation.answer
+    answer = rag_generation(trace).answer
 
     if semantic:
         result = _embedding_relevance(query, answer, embedder, vectors)

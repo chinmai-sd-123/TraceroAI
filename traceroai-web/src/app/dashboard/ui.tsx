@@ -22,6 +22,7 @@ export const DIAGNOSIS_NAMES: Record<TraceDiagnosis, string> = {
   unsupported_claim: "Unsupported claim",
   wrong_answer: "Wrong answer",
   needs_review: "Needs review",
+  not_diagnosed: "Not diagnosed",
 };
 
 export function diagnosisName(label: string): string {

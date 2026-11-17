@@ -1,0 +1,4 @@
+langchain-core>=1.0
+openinference-instrumentation-langchain>=0.1.80
+opentelemetry-sdk>=1.30
+opentelemetry-exporter-otlp-proto-http>=1.30

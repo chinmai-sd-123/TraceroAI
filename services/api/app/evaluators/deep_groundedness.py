@@ -1,4 +1,4 @@
-from app.schemas.traces import EvaluationResult, Trace
+from app.schemas.traces import EvaluationResult, Trace, rag_generation
 from app.services.llm_judge import LLMJudge
 
 
@@ -16,7 +16,7 @@ def evaluate_deep_groundedness(
     trace: Trace, judge: LLMJudge
 ) -> EvaluationResult:
     context = "\n\n".join(chunk.text for chunk in trace.retrieval.chunks)
-    answer = trace.generation.answer
+    answer = rag_generation(trace).answer
 
     verdict = judge.judge_claim_groundedness(answer=answer, context=context)
     claims = verdict.claims

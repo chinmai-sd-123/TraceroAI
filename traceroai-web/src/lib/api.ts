@@ -68,7 +68,7 @@ type ApiTrace = {
       total_tokens?: number | null;
       cost_usd?: number | null;
     };
-  };
+  } | null;
   latency: {
     total_ms?: number | null;
     retrieval_ms?: number | null;
@@ -287,6 +287,8 @@ export async function getTraces(query: TraceQuery = {}): Promise<TracePage> {
 export type TraceSummary = {
   total: number;
   healthy: number;
+  /** Runs that aren't RAG runs (agents); counted as neither healthy nor failing. */
+  notDiagnosed: number;
   byDiagnosis: Record<string, number>;
   bySource: Record<string, number>;
   byModel: Record<string, number>;
@@ -314,7 +316,7 @@ export function rangeSince(range: TimeRange): string | undefined {
   return hours === null ? undefined : new Date(Date.now() - hours * 3_600_000).toISOString();
 }
 
-export type TimeBucket = { start: string; total: number; healthy: number; p95Ms: number | null };
+export type TimeBucket = { start: string; total: number; healthy: number; notDiagnosed: number; p95Ms: number | null };
 
 /** Traces, healthy traces and p95 latency per hour (24h) or day (longer). */
 export async function getTimeseries(
@@ -334,7 +336,7 @@ export async function getTimeseries(
     if (!response.ok) return null;
     const data = (await response.json()) as {
       bucket: "hour" | "day";
-      buckets: Array<{ start: string; total: number; healthy: number; p95_ms: number | null }>;
+      buckets: Array<{ start: string; total: number; healthy: number; not_diagnosed?: number; p95_ms: number | null }>;
     };
     return {
       bucket: data.bucket,
@@ -342,6 +344,7 @@ export async function getTimeseries(
         start: b.start,
         total: b.total,
         healthy: b.healthy,
+        notDiagnosed: b.not_diagnosed ?? 0,
         p95Ms: b.p95_ms,
       })),
     };
@@ -522,6 +525,7 @@ export async function getSummary(
     const data = (await response.json()) as {
       total: number;
       healthy: number;
+      not_diagnosed?: number;
       by_diagnosis: Record<string, number>;
       by_source: Record<string, number>;
       by_model?: Record<string, number>;
@@ -532,6 +536,7 @@ export async function getSummary(
     return {
       total: data.total,
       healthy: data.healthy,
+      notDiagnosed: data.not_diagnosed ?? 0,
       byDiagnosis: data.by_diagnosis,
       bySource: data.by_source,
       byModel: data.by_model ?? {},
@@ -783,15 +788,17 @@ function mapApiTraceToUiTrace(trace: ApiTrace): Trace {
           content: trace.prompt.content ?? undefined,
         }
       : undefined,
-    generation: {
-      model: trace.generation.model,
-      answer: trace.generation.answer,
-      provider: trace.generation.provider ?? null,
-      temperature: trace.generation.temperature ?? null,
-      parameters: trace.generation.parameters ?? null,
-      costUsd: trace.generation.usage?.cost_usd ?? null,
-      totalTokens: trace.generation.usage?.total_tokens ?? null,
-    },
+    generation: trace.generation
+      ? {
+          model: trace.generation.model,
+          answer: trace.generation.answer,
+          provider: trace.generation.provider ?? null,
+          temperature: trace.generation.temperature ?? null,
+          parameters: trace.generation.parameters ?? null,
+          costUsd: trace.generation.usage?.cost_usd ?? null,
+          totalTokens: trace.generation.usage?.total_tokens ?? null,
+        }
+      : null,
     latency: {
       totalMs: trace.latency.total_ms ?? 0,
       retrievalMs: trace.latency.retrieval_ms ?? 0,
@@ -908,6 +915,7 @@ function normalizeDiagnosis(label: string): TraceDiagnosis {
     "wrong_answer",
     "low_context_relevance",
     "needs_review",
+    "not_diagnosed",
   ];
 
   if (knownLabels.includes(label as TraceDiagnosis)) {

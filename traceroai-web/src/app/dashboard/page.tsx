@@ -87,6 +87,8 @@ export default async function DashboardPage({
   const traces = recent.traces;
   const total = summary?.total ?? 0;
   const healthy = summary?.healthy ?? 0;
+  // Health is over diagnosed runs only: agent runs aren't diagnosed yet.
+  const diagnosed = total - (summary?.notDiagnosed ?? 0);
   const avgCost = summary?.costUsd.avg;
   const showCost = process.env.NEXT_PUBLIC_SHOW_COST !== "false" && avgCost != null;
   const latestExperiment = [...evalRuns.experimentRuns].sort(
@@ -150,19 +152,24 @@ export default async function DashboardPage({
               />
               <Metric
                 label="Healthy"
-                value={percent(healthy, total)}
-                detail={`${healthy.toLocaleString()} of ${total.toLocaleString()}`}
-                chart={<MiniBars tone="pass" values={buckets.map((b) => (b.total ? b.healthy / b.total : null))} />}
+                value={percent(healthy, diagnosed)}
+                detail={`${healthy.toLocaleString()} of ${diagnosed.toLocaleString()}${diagnosed < total ? " diagnosed" : ""}`}
+                chart={
+                  <MiniBars
+                    tone="pass"
+                    values={buckets.map((b) => (b.total - b.notDiagnosed ? b.healthy / (b.total - b.notDiagnosed) : null))}
+                  />
+                }
               />
               <Metric
                 label="Not healthy"
-                value={(total - healthy).toLocaleString()}
+                value={(diagnosed - healthy).toLocaleString()}
                 detail={
                   <Link href={hrefWith("/dashboard/traces", { project })} className="text-accent hover:underline">
                     Investigate
                   </Link>
                 }
-                chart={<MiniBars values={buckets.map((b) => b.total - b.healthy)} />}
+                chart={<MiniBars values={buckets.map((b) => b.total - b.healthy - b.notDiagnosed)} />}
               />
               <Metric
                 label="p95 latency"

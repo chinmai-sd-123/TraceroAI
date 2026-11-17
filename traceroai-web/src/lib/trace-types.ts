@@ -5,7 +5,8 @@ export type TraceDiagnosis =
   | "unsupported_claim"
   | "wrong_answer"
   | "low_context_relevance"
-  | "needs_review";
+  | "needs_review"
+  | "not_diagnosed";
 
 export type DiagnosisSource = "lexical" | "embedding" | "judge";
 export type DeepStatus = "pending" | "complete" | "partial" | "failed" | "skipped";
@@ -48,6 +49,7 @@ export type Trace = {
     templateName?: string;
     content?: string;
   };
+  /** null for a run with no single model answer (an agent run from OpenTelemetry). */
   generation: {
     model: string;
     answer: string;
@@ -56,7 +58,7 @@ export type Trace = {
     parameters?: Record<string, unknown> | null;
     costUsd?: number | null;
     totalTokens?: number | null;
-  };
+  } | null;
   latency: {
     totalMs: number;
     retrievalMs: number;

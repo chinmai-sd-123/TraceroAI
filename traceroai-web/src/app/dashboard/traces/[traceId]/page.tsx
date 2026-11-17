@@ -127,7 +127,7 @@ export default async function TraceDetailPage({
     trace.diagnosis.source === "judge" && trace.deepStatus !== "partial"
       ? null
       : provenanceSentence(trace.diagnosis.source, trace.deepStatus);
-  const cost = process.env.NEXT_PUBLIC_SHOW_COST !== "false" ? formatCost(trace.generation.costUsd) : null;
+  const cost = process.env.NEXT_PUBLIC_SHOW_COST !== "false" ? formatCost(trace.generation?.costUsd) : null;
   const stages = stagesOf(trace);
 
   return (
@@ -157,9 +157,9 @@ export default async function TraceDetailPage({
 
           <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-line pb-4 text-sm text-ink-muted">
           <dl className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <Meta label="Model">{trace.generation.model}</Meta>
+            {trace.generation && <Meta label="Model">{trace.generation.model}</Meta>}
             <Meta label="Latency">{formatMs(trace.latency.totalMs)}</Meta>
-            {trace.generation.totalTokens ? <Meta label="Tokens">{trace.generation.totalTokens.toLocaleString()}</Meta> : null}
+            {trace.generation?.totalTokens ? <Meta label="Tokens">{trace.generation.totalTokens.toLocaleString()}</Meta> : null}
             {cost && <Meta label="Cost">{cost}</Meta>}
             <Meta label="Received">
               <time dateTime={trace.timestamp}>
@@ -287,7 +287,7 @@ function ExecutionTimeline({
       detail: trace.prompt?.content ? trace.prompt.templateName || "captured" : "not captured",
       ms: timed.prompt,
     },
-    { step: "generation", detail: trace.generation.model, ms: timed.generation, marks: [byKey.grounding, byKey.answer] },
+    { step: "generation", detail: trace.generation?.model ?? "none", ms: timed.generation, marks: [byKey.grounding, byKey.answer] },
     { step: "evaluation", detail: judge },
   ];
 
@@ -485,7 +485,7 @@ async function EvaluationPanel({ trace }: { trace: Trace }) {
                 <Link href={`/dashboard/traces/${t.traceId}`} className="flex items-center gap-3 px-1 py-2 hover:bg-sunken">
                   <span className="font-dash-mono text-xs text-ink-muted">{t.traceId.slice(0, 8)}</span>
                   <span className="font-medium">{diagnosisName(t.diagnosis.label)}</span>
-                  <span className="text-ink-muted">{t.generation.model}</span>
+                  <span className="text-ink-muted">{t.generation?.model}</span>
                   <span className="ml-auto text-xs text-ink-muted">{formatWhen(t.timestamp)}</span>
                 </Link>
               </li>
@@ -586,6 +586,14 @@ function AnswerTab({ trace }: { trace: Trace }) {
   const deep = trace.evaluations.deepGroundedness;
   const blamed = causeStage(trace.diagnosis.label) === "grounding";
   const g = trace.generation;
+  if (!g) {
+    return (
+      <p className="max-w-[75ch] text-sm text-ink-muted">
+        This run has no single model answer to check (it isn&apos;t a RAG run), so it isn&apos;t diagnosed. Its steps
+        are stored with the trace; agent diagnosis is planned.
+      </p>
+    );
+  }
   const params = [
     g.provider && ["Provider", g.provider],
     typeof g.temperature === "number" && ["Temperature", String(g.temperature)],

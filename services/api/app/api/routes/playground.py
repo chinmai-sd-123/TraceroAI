@@ -23,7 +23,7 @@ from app.evaluators.deep_relevance import (
     evaluate_deep_context_relevance,
 )
 from app.evaluators.diagnosis import diagnose_from_deep, is_refusal
-from app.schemas.traces import Trace
+from app.schemas.traces import Trace, rag_generation
 from app.services.deep_evaluation import INLINE_JUDGE_TIMEOUT_SECONDS
 from app.services.llm_judge import OpenAIJudge
 from app.services.quick_evaluation import run_quick_evaluation
@@ -201,7 +201,7 @@ def try_query(payload: PlaygroundRequest, request: Request, db: Session = Depend
                 evaluate_deep_answer_relevance(trace, judge),
             ]
             trace.evaluations.deep = deep_results
-            refused = not trace.generation.answered or is_refusal(answer)
+            refused = not rag_generation(trace).answered or is_refusal(answer)
             deep_diagnosis = diagnose_from_deep(deep_results, refused=refused)
             if deep_diagnosis is not None:
                 trace.diagnosis = deep_diagnosis

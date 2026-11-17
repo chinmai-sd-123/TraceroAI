@@ -42,7 +42,7 @@ def derive_steps(trace: Trace) -> list[StepIn]:
             started_at=start,
             ended_at=_after(start, latency.total_ms),
             input={"query": trace.query.original},
-            output={"answer": generation.answer},
+            output={"answer": generation.answer} if generation else None,
         )
     ]
 
@@ -84,6 +84,8 @@ def derive_steps(trace: Trace) -> list[StepIn]:
         )
         at = ended or at
 
+    if generation is None:  # not a RAG run: no model step to derive
+        return steps
     usage = generation.usage
     steps.append(
         StepIn(

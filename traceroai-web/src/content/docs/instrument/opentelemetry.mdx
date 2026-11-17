@@ -1,0 +1,76 @@
+export const meta = {
+  description: "Send traces from any app instrumented with OpenTelemetry, with no TraceroAI code: OpenInference and OpenTelemetry GenAI spans become traces and steps.",
+};
+
+If your app is already instrumented with OpenTelemetry, point its exporter at TraceroAI.
+No SDK and no code change: each run arrives as spans, becomes a trace with its steps, and
+RAG runs are diagnosed like traces from the Python SDK.
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:8000/otlp
+# when your server requires keys:
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Bearer <project key>"
+```
+
+Exporters add `/v1/traces` themselves, so the full address is
+`http://localhost:8000/otlp/v1/traces`. OTLP over HTTP is accepted as protobuf or JSON,
+gzipped or not. OTLP over gRPC isn't supported; use the HTTP exporter.
+
+## A LangChain app, with no TraceroAI code
+
+The OpenInference instrumentor records LangChain runs as spans, and the standard
+OpenTelemetry exporter sends them:
+
+```python
+from openinference.instrumentation.langchain import LangChainInstrumentor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+provider = TracerProvider(resource=Resource.create({"service.name": "my-rag-app"}))
+provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+LangChainInstrumentor().instrument(tracer_provider=provider)
+
+# ... your chain, unchanged
+```
+
+`examples/opentelemetry-langchain` in the repository is a complete app you can run
+without any API key: it uses LangChain's fake chat model.
+
+## What's read from your spans
+
+Two conventions are understood, whichever your instrumentation uses:
+
+| | OpenInference | OpenTelemetry GenAI |
+|---|---|---|
+| Kind of step | `openinference.span.kind` | `gen_ai.operation.name` |
+| Model and provider | `llm.model_name`, `llm.provider` | `gen_ai.response.model` or `gen_ai.request.model`, `gen_ai.provider.name` |
+| Tokens | `llm.token_count.prompt`, `.completion` | `gen_ai.usage.input_tokens`, `.output_tokens` |
+| Messages | `llm.input_messages`, `llm.output_messages` | `gen_ai.input.messages`, `gen_ai.output.messages` |
+| Retrieved documents | `retrieval.documents`, with their text | `gen_ai.retrieval.documents` (ids and scores only) |
+| Tool calls | `tool.name`, `input.value`, `output.value` | `gen_ai.tool.name`, `gen_ai.tool.call.arguments`, `.result` |
+
+Every other attribute is kept on the step, under `otel`. The project is the one your key
+belongs to; without a key it's the resource's `traceroai.project_id`, then its
+`service.name`. The environment comes from `deployment.environment.name`.
+
+## Which runs are diagnosed
+
+A run is diagnosed when it retrieved documents **with their text** and a model then
+answered: the retrieval and the answer become the trace's RAG fields and the same checks
+run as for the Python SDK. OpenInference records document text; OpenTelemetry GenAI
+records only ids and scores, so a run instrumented that way keeps its steps but can't be
+checked for grounding.
+
+Any other run (an agent calling tools, say) is stored with all its steps and marked
+**Not diagnosed**. It counts toward neither healthy nor failing traces. Agent diagnosis is
+planned.
+
+## When a run becomes a trace
+
+Exporters send spans in batches as they end, so a run usually arrives over several
+requests, its root span last. TraceroAI keeps a run's spans until the root arrives, then
+builds the trace. A run whose root never arrives (its parent lives in another service,
+say) is built after 30 seconds without new spans. A span arriving after that is added
+to the finished trace.

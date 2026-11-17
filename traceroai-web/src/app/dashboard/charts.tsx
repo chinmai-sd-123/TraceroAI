@@ -38,6 +38,8 @@ export function VolumeChart({
   const max = Math.max(1, ...buckets.map((b) => b.total));
   const total = buckets.reduce((s, b) => s + b.total, 0);
   const healthy = buckets.reduce((s, b) => s + b.healthy, 0);
+  // Runs that aren't RAG runs (agents) aren't diagnosed: neither healthy nor failing.
+  const notDiagnosed = buckets.reduce((s, b) => s + b.notDiagnosed, 0);
   return (
     <figure>
       <div className="flex gap-3">
@@ -47,7 +49,7 @@ export function VolumeChart({
         </div>
         <div
           role="img"
-          aria-label={`${total} traces in this range, ${healthy} healthy, ${total - healthy} not healthy.`}
+          aria-label={`${total} traces in this range, ${healthy} healthy, ${total - healthy - notDiagnosed} not healthy${notDiagnosed ? `, ${notDiagnosed} not diagnosed` : ""}.`}
           className="relative flex flex-1 items-end gap-px border-b border-l border-line-strong"
           style={{ height }}
         >
@@ -55,10 +57,11 @@ export function VolumeChart({
           {buckets.map((b) => (
             <span
               key={b.start}
-              title={`${bucketLabel(b.start, bucket)}: ${b.total} traces, ${b.healthy} healthy`}
+              title={`${bucketLabel(b.start, bucket)}: ${b.total} traces, ${b.healthy} healthy${b.notDiagnosed ? `, ${b.notDiagnosed} not diagnosed` : ""}`}
               className="flex h-full min-w-0 flex-1 flex-col justify-end hover:bg-sunken"
             >
-              <span className="block bg-ink-muted/55" style={{ height: `${((b.total - b.healthy) / max) * 100}%` }} />
+              <span className="block bg-line-strong/60" style={{ height: `${(b.notDiagnosed / max) * 100}%` }} />
+              <span className="block bg-ink-muted/55" style={{ height: `${((b.total - b.healthy - b.notDiagnosed) / max) * 100}%` }} />
               <span className="block bg-pass" style={{ height: `${(b.healthy / max) * 100}%` }} />
             </span>
           ))}
@@ -74,6 +77,11 @@ export function VolumeChart({
         <span className="flex items-center gap-1.5">
           <span className="size-2.5 rounded-[1px] bg-ink-muted/55" aria-hidden="true" /> Not healthy
         </span>
+        {notDiagnosed > 0 && (
+          <span className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-[1px] bg-line-strong/60" aria-hidden="true" /> Not diagnosed
+          </span>
+        )}
       </figcaption>
     </figure>
   );

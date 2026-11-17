@@ -93,6 +93,10 @@ def run_deep_evaluation(
         if record is None:
             return
         trace = Trace(**record.payload)
+    if trace.generation is None:
+        with SessionLocal() as db:
+            TraceRepository(db).set_evaluations(trace_id, deep_status="skipped")
+        return
 
     quick: list[EvaluationResult] | None = None
     diagnosis: DiagnosisTrace | None = None

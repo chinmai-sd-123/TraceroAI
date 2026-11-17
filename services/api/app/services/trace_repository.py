@@ -43,7 +43,7 @@ class TraceRepository:
             status=trace.status,
             query_text=trace.query.original,
             diagnosis_label=trace.diagnosis.label,
-            model_name=trace.generation.model,
+            model_name=trace.generation.model if trace.generation else _first_model(steps),
             total_latency_ms=trace.latency.total_ms,
             payload=payload,
         )
@@ -194,6 +194,15 @@ class TraceRepository:
         found = result.first() is not None
         self.db.commit()
         return found
+
+
+def _first_model(steps: list[StepIn] | None) -> str | None:
+    """For a run without a single answer: the model of its first model call."""
+    for step in steps or []:
+        model = step.attributes.get("model") if step.kind == "llm" else None
+        if isinstance(model, str) and model:
+            return model[:100]
+    return None
 
 
 def _jsonb_set(target, path: list[str], value):
