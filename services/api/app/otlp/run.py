@@ -26,6 +26,7 @@ from app.schemas.traces import (
     UsageTrace,
 )
 from app.schemas.validation import MAX_CHUNKS_PER_TRACE, MODEL_MAX_LENGTH
+from app.services.cost import compute_cost_usd
 
 QUERY_MAX_LENGTH = 10_000
 
@@ -52,6 +53,43 @@ def order_and_root(steps: list[StepIn]) -> list[StepIn]:
     return ordered
 
 
+def price_steps(steps: list[StepIn]) -> None:
+    """Give each model call that reported tokens but no cost a cost_usd from the
+    price table. Unknown models stay unpriced: a cost is never guessed."""
+    for step in steps:
+        if step.kind != "llm" or _number(step.attributes.get("cost_usd")) is not None:
+            continue
+        usage = _usage(step.attributes)
+        if usage.prompt_tokens is None and usage.completion_tokens is None:
+            continue
+        cost = compute_cost_usd(_str(step.attributes.get("model")), usage)
+        if cost is not None:
+            step.attributes["cost_usd"] = cost
+
+
+def run_usage(steps: list[StepIn]) -> UsageTrace | None:
+    """Tokens and cost summed over every model call in the run. None when no
+    model call reported any. The cost is None unless every model call that used
+    tokens has one, so an unpriced call can't make a run look cheaper."""
+    calls = [step for step in steps if step.kind == "llm"]
+    usages = [_usage(step.attributes) for step in calls]
+    used = [u for u in usages if u.prompt_tokens is not None or u.completion_tokens is not None or u.cost_usd is not None]
+    if not used:
+        return None
+
+    def total(values: list[int | None]) -> int | None:
+        present = [v for v in values if v is not None]
+        return sum(present) if present else None
+
+    costs = [u.cost_usd for u in used]
+    return UsageTrace(
+        prompt_tokens=total([u.prompt_tokens for u in used]),
+        completion_tokens=total([u.completion_tokens for u in used]),
+        total_tokens=total([u.total_tokens for u in used]),
+        cost_usd=round(sum(c for c in costs if c is not None), 8) if all(c is not None for c in costs) else None,
+    )
+
+
 def build_trace(
     trace_id: str, steps: list[StepIn], *, project_id: str, environment: str, resource: dict[str, Any]
 ) -> Trace:
@@ -75,6 +113,7 @@ def build_trace(
         query=QueryTrace(original=query[:QUERY_MAX_LENGTH]),
         latency=LatencyTrace(total_ms=total_ms),
         metadata=metadata,
+        run_usage=run_usage(steps),
     )
     if retriever is None or llm is None:
         return trace
@@ -105,15 +144,33 @@ def build_trace(
         model=(_str(attributes.get("model")) or "unknown")[:MODEL_MAX_LENGTH],
         temperature=attributes["temperature"] if isinstance(attributes.get("temperature"), int | float) else None,
         answer=answer,
-        usage=UsageTrace(
-            prompt_tokens=_count(attributes.get("prompt_tokens")),
-            completion_tokens=_count(attributes.get("completion_tokens")),
-            total_tokens=_count(attributes.get("total_tokens")),
-        ),
+        usage=_usage(attributes),
     )
     trace.prompt = PromptTrace(version=_str(attributes.get("prompt_version")))
     trace.latency = LatencyTrace(total_ms=total_ms, retrieval_ms=_ms(retriever), generation_ms=_ms(llm))
     return trace
+
+
+def _usage(attributes: dict[str, Any]) -> UsageTrace:
+    """A model call's tokens and cost, from its step's summary attributes."""
+    prompt = _count(attributes.get("prompt_tokens"))
+    completion = _count(attributes.get("completion_tokens"))
+    total = _count(attributes.get("total_tokens"))
+    if total is None and (prompt is not None or completion is not None):
+        total = (prompt or 0) + (completion or 0)
+    cost = _number(attributes.get("cost_usd"))
+    return UsageTrace(
+        prompt_tokens=prompt,
+        completion_tokens=completion,
+        total_tokens=total,
+        cost_usd=cost if cost is not None and cost >= 0 else None,
+    )
+
+
+def _number(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return float(value)
 
 
 def _rag_pair(steps: list[StepIn]) -> tuple[StepIn | None, StepIn | None]:

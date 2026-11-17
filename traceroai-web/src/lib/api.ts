@@ -73,6 +73,10 @@ type ApiTrace = {
       cost_usd?: number | null;
     };
   } | null;
+  run_usage?: {
+    total_tokens?: number | null;
+    cost_usd?: number | null;
+  } | null;
   latency: {
     total_ms?: number | null;
     retrieval_ms?: number | null;
@@ -312,7 +316,8 @@ export type TraceSummary = {
   byModel: Record<string, number>;
   byEnvironment: Record<string, number>;
   latencyMs: { measured: number; avg: number | null; p50: number | null; p95: number | null };
-  costUsd: { priced: number; total: number | null; avg: number | null };
+  /** perHealthy: the spend of every priced run over the healthy answers among them. */
+  costUsd: { priced: number; total: number | null; avg: number | null; perHealthy: number | null };
 };
 
 /** The time ranges the dashboard offers. "all" has no lower bound. */
@@ -549,7 +554,7 @@ export async function getSummary(
       by_model?: Record<string, number>;
       by_environment?: Record<string, number>;
       latency_ms: TraceSummary["latencyMs"];
-      cost_usd: TraceSummary["costUsd"];
+      cost_usd: Omit<TraceSummary["costUsd"], "perHealthy"> & { per_healthy?: number | null };
     };
     return {
       total: data.total,
@@ -560,7 +565,12 @@ export async function getSummary(
       byModel: data.by_model ?? {},
       byEnvironment: data.by_environment ?? {},
       latencyMs: data.latency_ms,
-      costUsd: data.cost_usd,
+      costUsd: {
+        priced: data.cost_usd.priced,
+        total: data.cost_usd.total,
+        avg: data.cost_usd.avg,
+        perHealthy: data.cost_usd.per_healthy ?? null,
+      },
     };
   } catch {
     return null;
@@ -893,6 +903,9 @@ function mapApiTraceToUiTrace(trace: ApiTrace): Trace {
           }
         : undefined,
     source: trace.metadata?.source === "otlp" ? "otlp" : "sdk",
+    runUsage: trace.run_usage
+      ? { totalTokens: trace.run_usage.total_tokens ?? null, costUsd: trace.run_usage.cost_usd ?? null }
+      : null,
     steps: (trace.steps ?? []).map((s) => ({
       stepId: s.step_id,
       parentId: s.parent_id ?? null,

@@ -57,7 +57,10 @@ class TraceRecord(Base):
     cost_usd: Mapped[float | None] = mapped_column(
         Float,
         Computed(
-            "(CASE WHEN jsonb_typeof(payload -> 'generation' -> 'usage' -> 'cost_usd') = 'number' "
+            # Migration 0010: a run's total (every model call) when known, else its answer's.
+            "(CASE WHEN jsonb_typeof(payload -> 'run_usage' -> 'cost_usd') = 'number' "
+            "THEN (payload -> 'run_usage' ->> 'cost_usd')::double precision "
+            "WHEN jsonb_typeof(payload -> 'generation' -> 'usage' -> 'cost_usd') = 'number' "
             "THEN (payload -> 'generation' -> 'usage' ->> 'cost_usd')::double precision END)",
             persisted=True,
         ),

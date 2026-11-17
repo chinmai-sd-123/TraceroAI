@@ -35,6 +35,7 @@ import {
   StageSequence,
   diagnosisName,
   diagnosisTone,
+  formatCost,
   formatMs,
   formatWhen,
   hrefWith,
@@ -90,6 +91,7 @@ export default async function DashboardPage({
   // Health is over diagnosed runs only: agent runs aren't diagnosed yet.
   const diagnosed = total - (summary?.notDiagnosed ?? 0);
   const avgCost = summary?.costUsd.avg;
+  const perHealthy = summary?.costUsd.perHealthy;
   const showCost = process.env.NEXT_PUBLIC_SHOW_COST !== "false" && avgCost != null;
   const latestExperiment = [...evalRuns.experimentRuns].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
@@ -178,7 +180,15 @@ export default async function DashboardPage({
                 chart={<MiniBars values={buckets.map((b) => b.p95Ms)} />}
               />
               {showCost && avgCost != null && (
-                <Metric label="Cost per trace" value={`$${avgCost.toFixed(5)}`} detail="where tokens were logged" />
+                perHealthy != null ? (
+                  <Metric
+                    label="Cost per healthy answer"
+                    value={formatCost(perHealthy) ?? "—"}
+                    detail={`failed runs' spend included · ${formatCost(avgCost)} per run`}
+                  />
+                ) : (
+                  <Metric label="Cost per run" value={formatCost(avgCost) ?? "—"} detail="where tokens were logged" />
+                )
               )}
             </MetricRow>
 

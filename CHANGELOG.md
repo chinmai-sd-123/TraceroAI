@@ -47,6 +47,12 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   (counted per server instance) and has a sign-out button.
 
 ### Added
+- Cost per model call and per run. Runs sent over OpenTelemetry price each model call
+  from its tokens, and the trace's cost is the sum of all of them (`run_usage` on the
+  trace), not only the final answer's. A run with a call that can't be priced keeps its
+  token count but gets no cost. The step view shows each model call's cost.
+- Cost per healthy answer: the summary's `cost_usd.per_healthy` and an overview tile,
+  counting what failed runs spent too. Migration `0010` redefines the stored cost column.
 - SDK: `redact=` on `TraceroClient` and `AsyncTraceroClient` removes sensitive data before
   a trace leaves the application. The function gets a copy of each trace and returns the
   trace to send, or `None` to drop it; if it fails, the trace is dropped, never sent
