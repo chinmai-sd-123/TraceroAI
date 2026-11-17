@@ -43,8 +43,12 @@ when Redis isn't configured) that expire within minutes.
 
 - Don't log what you don't need: `log_prompt` is optional, and chunk text can be
   trimmed before you pass it to `log_retrieval`.
-- Remove personal data from questions and answers in your application before
-  sending them. TraceroAI doesn't redact anything yet.
+- Remove personal data before it leaves your application with the SDK's `redact=`
+  hook: a function that gets a copy of each trace and returns the trace to send, or
+  None to drop it. `redact_strings(mask_emails)` masks email addresses in every field
+  that can hold user text. If the function fails, the trace is dropped, never sent
+  unredacted. Traces sent over OpenTelemetry are redacted in your exporter pipeline
+  instead.
 - Use project keys so each application reads only its own traces.
 
 ## Removing it

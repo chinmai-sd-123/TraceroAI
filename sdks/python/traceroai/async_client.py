@@ -38,6 +38,7 @@ from traceroai.client import (
     _trace_payload,
     _user_agent_headers,
 )
+from traceroai.redaction import Redaction, RedactionError, Redactor
 from traceroai.trace import TraceContext
 
 logger = logging.getLogger("traceroai")
@@ -55,6 +56,7 @@ class AsyncTraceroClient:
         max_retries: int = 3,
         retry_backoff_seconds: float = 0.5,
         transport: httpx.AsyncBaseTransport | None = None,
+        redact: Redactor | None = None,
     ) -> None:
         """
         base_url / api_key: default to TRACEROAI_API_URL / TRACEROAI_API_KEY.
@@ -64,6 +66,9 @@ class AsyncTraceroClient:
             dropped (and counted in dropped_traces) rather than piling up.
         max_retries: extra attempts for timeouts, 429 and 5xx responses.
         transport: an httpx async transport, for tests.
+        redact: a function given a copy of each trace that returns the trace to
+            send, or None to drop it (see traceroai.redaction). If it raises, the
+            trace is dropped, never sent unredacted.
         """
         self.enabled = _env_flag("TRACEROAI_ENABLED", True) if enabled is None else enabled
         url = base_url or os.environ.get("TRACEROAI_API_URL")
@@ -78,6 +83,7 @@ class AsyncTraceroClient:
         self.timeout_seconds = timeout_seconds
         self.max_pending = max_pending
         self.max_retries = max_retries
+        self._redaction = Redaction(redact) if redact is not None else None
         self.retry_backoff_seconds = retry_backoff_seconds
         self.dropped_traces = 0
 
@@ -89,6 +95,11 @@ class AsyncTraceroClient:
         self._failures = _FailureLog()
         # Strong references, so a delivery task isn't garbage-collected mid-flight.
         self._pending: set[asyncio.Task[None]] = set()
+
+    @property
+    def redaction_failures(self) -> int:
+        """Traces dropped because the redact function failed."""
+        return self._redaction.failures if self._redaction is not None else 0
 
     async def __aenter__(self) -> AsyncTraceroClient:
         return self
@@ -173,6 +184,11 @@ class AsyncTraceroClient:
             metadata=metadata,
             status=status,
         )
+        if self._redaction is not None:
+            redacted = self._redaction.apply_quietly(payload)
+            if redacted is None:
+                return trace_id
+            payload = redacted
         task = loop.create_task(self._deliver_quietly(payload), name=f"traceroai-send-{trace_id}")
         self._pending.add(task)
         task.add_done_callback(self._pending.discard)
@@ -203,6 +219,14 @@ class AsyncTraceroClient:
             project=project,
             metadata=metadata,
         )
+        if self._redaction is not None:
+            try:
+                redacted = self._redaction.apply(payload)
+            except RedactionError as exc:
+                raise TraceroError(f"trace {trace_id} was not sent: {exc}") from exc
+            if redacted is None:
+                raise TraceroError(f"trace {trace_id} was dropped by redact, so it can't be judged")
+            payload = redacted
         response = await self._http.post(
             f"{self.base_url}/v1/traces",
             params={"sync_deep_eval": "true"},

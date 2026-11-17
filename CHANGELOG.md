@@ -47,6 +47,11 @@ Notable changes to the API, dashboard and `traceroai` SDK. The format follows
   (counted per server instance) and has a sign-out button.
 
 ### Added
+- SDK: `redact=` on `TraceroClient` and `AsyncTraceroClient` removes sensitive data before
+  a trace leaves the application. The function gets a copy of each trace and returns the
+  trace to send, or `None` to drop it; if it fails, the trace is dropped, never sent
+  unredacted, and counted in `redaction_failures`. `traceroai.redaction` adds
+  `redact_strings` and `mask_emails`.
 - The trace page shows a run's steps: a tree on a time axis (which step called which,
   in order, and how long each took), with errors in amber, and a panel with the selected
   step's input, output and attributes (messages as messages, retrieved documents as

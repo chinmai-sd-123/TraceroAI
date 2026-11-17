@@ -71,6 +71,30 @@ a failure to send never raises.
 
 You don't send evaluations or a diagnosis; the server computes them.
 
+## Redacting sensitive data
+
+Give the client a `redact` function to remove personal data before anything leaves your
+application. It receives a copy of each trace (the JSON that `POST /v1/traces` takes) and
+returns the trace to send, or `None` to drop it:
+
+```python
+from traceroai import TraceroClient
+from traceroai.redaction import mask_emails, redact_strings
+
+client = TraceroClient(redact=redact_strings(mask_emails))
+```
+
+`redact_strings` applies a text function to every string that can hold user text: the
+question, the retrieved chunks, the prompt, the answer and metadata. Ids, timestamps,
+model names and the project are left alone. Write your own for anything else, such as
+phone or account numbers.
+
+It runs before a trace is queued, so unredacted text never waits in the send queue. If
+the function raises, or returns something other than a dict or `None`, the trace is
+dropped, never sent unredacted, and counted in `client.redaction_failures`. The trace id
+can't be changed by it, so retries stay safe. `AsyncTraceroClient` takes the same
+argument.
+
 ## Read a trace back
 
 ```python
