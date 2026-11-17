@@ -28,6 +28,7 @@ import httpx
 
 from traceroai._chunks import normalize_chunks
 from traceroai._version import __version__
+from traceroai.redaction import Redaction, RedactionError, Redactor
 from traceroai.trace import TraceContext
 
 logger = logging.getLogger("traceroai")
@@ -105,6 +106,7 @@ class TraceroClient:
         raise_on_error: bool = False,
         flush_on_exit_seconds: float = 2.0,
         transport: httpx.BaseTransport | None = None,
+        redact: Redactor | None = None,
     ) -> None:
         """
         base_url / api_key: default to TRACEROAI_API_URL / TRACEROAI_API_KEY.
@@ -119,6 +121,9 @@ class TraceroClient:
         raise_on_error: with background=False, raise TraceroError when a trace
             can't be delivered instead of logging it.
         transport: an httpx transport, for tests.
+        redact: a function given a copy of each trace that returns the trace to
+            send, or None to drop it (see traceroai.redaction). If it raises, the
+            trace is dropped, never sent unredacted.
         """
         self.enabled = _env_flag("TRACEROAI_ENABLED", True) if enabled is None else enabled
         url = base_url or os.environ.get("TRACEROAI_API_URL")
@@ -141,6 +146,7 @@ class TraceroClient:
             transport=transport,
         )
         self._failures = _FailureLog()
+        self._redaction = Redaction(redact) if redact is not None else None
         self._sender = (
             _BackgroundSender(self._deliver_quietly, max_queue_size, flush_on_exit_seconds)
             if background
@@ -243,6 +249,11 @@ class TraceroClient:
             metadata=metadata,
             status=status,
         )
+        if self._redaction is not None:
+            redacted = self._redaction.apply_quietly(payload)
+            if redacted is None:
+                return trace_id
+            payload = redacted
         if self._sender is not None:
             self._sender.enqueue(payload)
         elif self.raise_on_error:
@@ -282,6 +293,14 @@ class TraceroClient:
             project=project,
             metadata=metadata,
         )
+        if self._redaction is not None:
+            try:
+                redacted = self._redaction.apply(payload)
+            except RedactionError as exc:
+                raise TraceroError(f"trace {trace_id} was not sent: {exc}") from exc
+            if redacted is None:
+                raise TraceroError(f"trace {trace_id} was dropped by redact, so it can't be judged")
+            payload = redacted
         response = self._http.post(
             f"{self.base_url}/v1/traces",
             params={"sync_deep_eval": "true"},
@@ -307,6 +326,11 @@ class TraceroClient:
     def dropped_traces(self) -> int:
         """Traces discarded because the send queue was full."""
         return self._sender.dropped if self._sender is not None else 0
+
+    @property
+    def redaction_failures(self) -> int:
+        """Traces dropped because the redact function failed."""
+        return self._redaction.failures if self._redaction is not None else 0
 
     # --- reading ---
 
