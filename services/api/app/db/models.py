@@ -141,6 +141,18 @@ class IssueStateRecord(Base):
     )
 
 
+class AlertStateRecord(Base):
+    """What alerts have been sent (migration 0011); see app/services/alerts.py."""
+
+    __tablename__ = "alert_states"
+
+    project_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(32), primary_key=True)
+    subject: Mapped[str] = mapped_column(Text, primary_key=True)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
 class SpanRecord(Base):
     """One step inside a trace (migration 0008; see docs/adr/0002). A trace's
     steps are deleted with it, so retention and DELETE need no extra work."""

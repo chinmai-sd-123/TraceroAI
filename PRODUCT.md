@@ -57,15 +57,15 @@ playgrounds, hosted cloud). Those are well served elsewhere.
 ## Capabilities and Constraints
 
 - Today: RAG traces from the Python SDK (sync and async), the HTTP API, or OpenTelemetry
-  (OTLP/HTTP; tested with LangChain through OpenInference). Traces have steps. Runs that
+  (OTLP/HTTP; tested with LangChain and LangGraph through OpenInference). Traces have steps. Runs that
   aren't RAG runs (agents) are stored with their steps and marked "not diagnosed". Diagnoses: healthy answer,
   correct refusal, retrieval miss, unsupported claim, wrong answer, needs review.
   Sources: lexical, embedding, judge. Judge status: pending, complete, partial, failed,
   skipped. Issues (failures grouped by cause, with open, resolved and regressed states),
-  recovery runs, experiments with per-question results, tokens and cost, feedback,
-  retention, and bundled demo data.
-- Planned (P3), not yet built: agent failure diagnosis, an agent run view, alerts,
-  datasets and a regression gate.
+  recovery runs, experiments with per-question results, tokens and cost (per model call,
+  per run, and per healthy answer), an agent run view (steps, tool calls, errors),
+  alerts to a webhook, redaction in the SDK, feedback, retention, and bundled demo data.
+- Planned (P3), not yet built: agent failure diagnosis, datasets and a regression gate.
   Nothing planned may be presented as available.
 - Without a configured LLM judge, every diagnosis is an estimate; the interface must say
   so rather than present it as fact.

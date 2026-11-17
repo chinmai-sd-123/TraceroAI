@@ -40,6 +40,7 @@ export const DOCS_NAV: DocGroup[] = [
       { slug: "fix/investigate", title: "Investigate failures" },
       { slug: "fix/recovery-agent", title: "Recovery agent" },
       { slug: "fix/experiments", title: "Experiments" },
+      { slug: "fix/alerts", title: "Alerts" },
     ],
   },
   {

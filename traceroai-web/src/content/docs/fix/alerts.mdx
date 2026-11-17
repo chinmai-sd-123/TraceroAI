@@ -1,0 +1,74 @@
+export const meta = {
+  description: "Get told in Slack, or anything that takes a webhook, when a new issue appears, a resolved one comes back, or too many answers fail.",
+};
+
+TraceroAI can post to a webhook when something needs a person. Set one variable and
+restart the worker:
+
+```bash
+export TRACEROAI_ALERT_WEBHOOK_URL=https://hooks.slack.com/services/...
+```
+
+Any Slack incoming webhook works, and so does anything that accepts a JSON `POST`.
+
+## What you're told
+
+| Alert | When | How often |
+|---|---|---|
+| New issue | A kind of failure not seen before in a project | Once per issue |
+| Regressed issue | An issue you marked resolved fails again | Once each time it's resolved and comes back |
+| Failure rate | Too many of a project's answers failed in the last hour | When it crosses the threshold, and again when it drops back below |
+
+A new issue reads like this:
+
+```text
+New issue in support-bot: Unsupported claim, prompt version v3. 1 failing run so far,
+latest: "Can I get a refund after 30 days?"
+http://localhost:3000/dashboard/issues?project=support-bot
+```
+
+Issues that already existed when you turn alerts on aren't announced, so the first
+check doesn't post your whole backlog.
+
+The failure rate counts diagnosed runs only: runs still waiting for a diagnosis and agent
+runs, which aren't diagnosed yet, count toward neither side. A project needs at least
+20 diagnosed runs in the window before its rate can alert, so three failures out of
+four on a quiet afternoon don't wake anyone.
+
+## Tuning
+
+| Variable | Default | What it does |
+|---|---|---|
+| `TRACEROAI_ALERT_FAILURE_RATE` | `0.3` | Alert when this share of answers fails |
+| `TRACEROAI_ALERT_WINDOW_MINUTES` | `60` | Over this many minutes |
+| `TRACEROAI_ALERT_MIN_RUNS` | `20` | Once the window has at least this many diagnosed runs |
+| `TRACEROAI_DASHBOARD_URL` | none (Compose: `http://localhost:3000`) | Where alerts link to |
+
+## What's sent
+
+Each alert is a JSON `POST`:
+
+```json
+{
+  "text": "New issue in support-bot: Unsupported claim, prompt version v3. ...",
+  "event": {
+    "kind": "new_issue",
+    "project_id": "support-bot",
+    "label": "unsupported_claim",
+    "grouped_by": "prompt_version",
+    "source": "v3",
+    "count": 1
+  }
+}
+```
+
+Slack posts `text`; a service of your own can read `event`, whose `kind` is
+`new_issue`, `regressed_issue`, `failure_rate` or `failure_rate_recovered`. Alerts carry
+the latest question of an issue but never retrieved text or answers.
+
+## Delivery
+
+The worker checks once a minute, so alerts need the worker running (in Docker Compose it
+is). An alert counts as sent only when the webhook answers with a success; if it's down,
+the alert goes out at the next check. With several workers, one checks at a time, so
+nothing is sent twice.
