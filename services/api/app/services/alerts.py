@@ -138,7 +138,10 @@ def _new_issues(db: Session, settings: Settings, started: datetime, since: datet
         .distinct()
     )
     alerts = []
-    for project_id, issue_key in db.execute(recent).all():
+    for row in db.execute(recent).all():
+        # Named columns, typed here: the row's own types are too broad to check.
+        project_id: str = row._mapping["project_id"]
+        issue_key: str = row._mapping["issue_key"]
         first_seen, total, question = _issue_facts(db, project_id, issue_key)
         if first_seen <= started:
             # Existed before alerts were turned on: remember it, don't announce it.
@@ -178,7 +181,10 @@ def _regressed_issues(db: Session, settings: Settings) -> list[Alert]:
         )
     ).all()
     alerts = []
-    for project_id, issue_key, resolved_at in rows:
+    for row in rows:
+        project_id: str = row._mapping["project_id"]
+        issue_key: str = row._mapping["issue_key"]
+        resolved_at: datetime = row._mapping["resolved_at"]
         since = db.execute(
             select(func.count()).where(
                 TraceRecord.project_id == project_id,
