@@ -6,7 +6,8 @@
 
 When an answer is wrong, TraceroAI names the step that caused it (retrieval, grounding or
 the answer itself), shows why, and says whether an LLM judge or a cheaper estimate made
-the call. Open source, self-hosted, Postgres and one command.
+the call. Send traces from the Python SDK or from any app instrumented with
+OpenTelemetry. Open source, self-hosted, Postgres and one command.
 
 [![PyPI](https://img.shields.io/pypi/v/traceroai?color=06b6d4&label=pip%20install%20traceroai)](https://pypi.org/project/traceroai/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776ab)](https://www.python.org/)
@@ -38,10 +39,12 @@ context doesn't say? "The answer is wrong" doesn't tell you where to look.
 **TraceroAI diagnoses every trace**: one named cause, tied to the step that failed, with
 the evidence and a note of who decided. Debugging becomes a lookup instead of a guess.
 
-Today that covers RAG pipelines instrumented with the Python SDK. Agents (tool calls,
-multi-step runs) and traces sent over OpenTelemetry are in development; see
-[the positioning decision](docs/adr/0001-failure-diagnosis-positioning.md) and
-[how traces will hold steps](docs/adr/0002-traces-made-of-steps.md). The words used
+Today TraceroAI diagnoses RAG pipelines, whether they're traced with the Python SDK or
+arrive over OpenTelemetry. Agent runs (tool calls, nested model calls) are stored and
+shown step by step; diagnosing their failures (a wrong tool, an ignored tool error, a
+loop) is the next milestone, and its accuracy will be measured and published before the
+site claims it. See [the positioning decision](docs/adr/0001-failure-diagnosis-positioning.md)
+and [how traces hold steps](docs/adr/0002-traces-made-of-steps.md). The words used
 throughout are defined in the [glossary](GLOSSARY.md).
 
 ## Demo
@@ -53,7 +56,12 @@ https://github.com/user-attachments/assets/9e94fdb2-fc38-4ef6-9288-69bd23c2ef73
 ## What it does
 
 - **Trace every answer**: the question, the retrieved chunks, the prompt, the answer, and
-  how long each step took.
+  how long each step took. Send traces from the Python SDK (sync and async), the HTTP
+  API, or **OpenTelemetry**: point an OTLP/HTTP exporter at `/otlp` and apps
+  instrumented with OpenInference or the OpenTelemetry GenAI conventions need no
+  TraceroAI code (tested end to end with LangChain).
+- **Runs as steps**: every trace is a tree of steps (agent, model call, tool call,
+  retrieval), shown on a time axis with what went in and what came out.
 - **Evaluation in tiers**: a quick term-overlap check runs the moment a trace arrives,
   with no network calls. With a provider key, embeddings and an **LLM judge** run in the
   background and the judge's verdict replaces the estimate. Every diagnosis says which
@@ -70,6 +78,7 @@ https://github.com/user-attachments/assets/9e94fdb2-fc38-4ef6-9288-69bd23c2ef73
   | `unsupported_claim` | Grounding | the answer states something the context doesn't support |
   | `wrong_answer` | Answer | grounded, but it doesn't answer the question, or refuses one it could |
   | `needs_review` | | the checks couldn't decide; a person should look |
+  | `not_diagnosed` | | not a RAG run (an agent, say): stored with its steps, counted as neither healthy nor failing |
 
 - **Drop-in SDK** — `pip install traceroai`; instrument any RAG pipeline in a few lines.
 - **Self-healing recovery** (`pip install traceroai[recovery]`): a LangGraph agent that
@@ -79,6 +88,8 @@ https://github.com/user-attachments/assets/9e94fdb2-fc38-4ef6-9288-69bd23c2ef73
 - **Experiments** (`traceroai.eval`): run a labelled dataset through each version of your
   pipeline, grade every answer with the judge, and see which questions the variants
   disagree on. Bring your own retrieve and generate.
+- **Issues**: failures with the same cause grouped into one, with a count, first and last
+  seen, and a state: open, resolved, or regressed when it comes back.
 - **Cost & token tracking** — per-trace prompt/completion tokens and computed cost.
 - **Project isolation** — a project API key writes to and reads only its own project;
   admin keys (used by the dashboard's server) see every project. See
@@ -107,8 +118,11 @@ flowchart TB
         RECOVERY["RecoveryAgent (optional extra)<br/>LangGraph self-healing loop"]
     end
 
+    OTELAPP["Any OpenTelemetry-instrumented app<br/>OpenInference · gen_ai.*"]
+
     subgraph api["API service (FastAPI)"]
         INGEST["POST /v1/traces<br/>auth · validate · stamp project"]
+        OTLP["POST /otlp/v1/traces<br/>spans → steps, held until the run ends"]
         QUICK["Quick check (in the request)<br/>term overlap, no network calls"]
         DIAG["Diagnosis<br/>one label, tied to a stage"]
     end
@@ -117,7 +131,7 @@ flowchart TB
         DEEP["Embeddings + LLM judge<br/>per-stage verdicts"]
     end
 
-    PG[("Postgres<br/>traces, verdicts, eval runs")]
+    PG[("Postgres<br/>traces, steps, verdicts, eval runs")]
     REDIS[["Redis stream<br/>evaluation queue + rate limits"]]
     WEB["Next.js dashboard + docs"]
     EXT(["Your LLM provider<br/>only if a key is set"])
@@ -126,6 +140,8 @@ flowchart TB
     RECOVERY -->|"trace each attempt"| SDK
     RECOVERY -.->|"read the diagnosis to choose a retry"| INGEST
     INGEST --> QUICK --> DIAG
+    OTELAPP -->|"OTLP/HTTP"| OTLP
+    OTLP --> QUICK
     DIAG -->|"store + 202 Accepted"| PG
     INGEST -.->|"enqueue trace id"| REDIS
 
@@ -151,6 +167,12 @@ flowchart TB
    judge's diagnosis replaces the estimate and is marked Final.
 5. The **dashboard** reads traces, metrics, recovery runs and experiments from the API.
 
+An app instrumented with OpenTelemetry takes a different door: its exporter sends spans
+to `POST /otlp/v1/traces`. Spans of one run usually arrive over several requests, so
+they're held until the run's root span arrives (or 30 seconds pass quietly), then built
+into a trace and its steps. A run that retrieved documents with their text and then got
+a model answer is diagnosed exactly like an SDK trace from step 2 on.
+
 Beyond this core flow, two SDK features build on it: the **experiment harness**
 (`traceroai.eval.run_experiment`) replays a labeled dataset across pipeline configs,
 grades via the server-side judge (`POST /v1/eval/grade`), and recommends a winner; and
@@ -169,11 +191,12 @@ pipeline.
 | **Self-healing recovery as an opt-in extra** (`traceroai[recovery]`) | A LangGraph loop turns the eval pipeline into a feedback signal that *fixes* answers, not just observes them; shipped as an extra so the base SDK stays lean | Pulls langgraph only for users who want it; bounded by max-attempts to prevent infinite loops |
 | **Eval-runs harness grades correctness with an LLM** | A/B-comparing pipeline configs needs a correctness signal; grading failures are tracked as *ungradeable*, not silently counted as wrong | Cost of one LLM call per case; mitigated by small datasets |
 | **Cost priced from a live source** | The SDK sends token counts; the server prices them from the community-maintained LiteLLM map (~thousands of models, cached) with a small built-in table as fallback — so prices stay current without hand-maintenance | One cached fetch on startup; unknown models return no cost (never guessed) |
-| **Traces stored as JSONB** | The trace schema evolves fast; JSONB avoids migrations per field while still being queryable | Less rigid than fully normalized columns |
+| **A trace is a summary row plus a table of steps** | Lists and summaries read one indexed row per run; steps (agents, tool calls, nesting) live in their own table, so reading a run with its steps stays around 12 ms with half a million steps stored | Two writes per trace; the RAG fields stay a JSONB document for the code that reads them |
+| **OpenTelemetry in, mapped by a table of keys** | Teams already instrument their apps; reading OpenInference and `gen_ai.*` attributes means no new SDK, and a convention renaming an attribute is a one-line change | The GenAI conventions are still marked Development, and GenAI retrieval spans carry no document text, so those runs can't be checked for grounding |
 | **Fail-open everywhere** | No key, a 429 from the provider, or an unreachable Redis must never break ingest or the public demo | A degraded path silently falls back to the cheaper result |
 | **Per-IP rate limit on the public demo** | The `/playground` endpoint is unauthenticated and burns shared LLM quota; a fixed-window Redis counter caps abuse | Fixed-window is coarser than a sliding window (acceptable for a demo) |
 
-See [`docs/traceroai-system-plan.md`](docs/traceroai-system-plan.md) for the full design.
+The decisions behind the current design are recorded in [`docs/adr/`](docs/adr/).
 
 ## Screenshots
 
@@ -215,19 +238,29 @@ with client.trace("How long does a refund take?") as t:
 Then open the dashboard at <http://localhost:3000> to inspect the trace. The
 [documentation](https://www.traceroai.tech/docs) covers every option.
 
-A complete, runnable example is in [`examples/recovery-agent/`](examples/recovery-agent/) —
-it showcases tracing, self-healing recovery, and an eval run (`python app.py --eval`).
+Already instrumented with OpenTelemetry? Skip the SDK and point your exporter at the API:
+
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:8000/otlp
+```
+
+[`examples/opentelemetry-langchain/`](examples/opentelemetry-langchain/) is a LangChain
+app traced this way; it uses LangChain's fake chat model, so it runs without any API key.
+
+A complete SDK example is in [`examples/recovery-agent/`](examples/recovery-agent/): it
+showcases tracing, self-healing recovery, and an eval run (`python app.py --eval`).
 
 ## Tech stack
 
 | Layer | Stack |
 |---|---|
 | **API** | FastAPI · Pydantic · SQLAlchemy |
-| **Storage** | Postgres (JSONB) · Redis (async deep-eval queue + rate limiter) |
+| **Ingest** | Python SDK · HTTP API · OpenTelemetry (OTLP over HTTP, protobuf or JSON) |
+| **Storage** | Postgres (traces and steps) · Redis, optional (async deep-eval queue + rate limiter) |
 | **Evaluation** | Term overlap on ingest · embedding relevance and an LLM judge in the background (any OpenAI-compatible provider) · experiment harness |
 | **SDK** | Python (`httpx`), context-manager + decorator + low-level APIs; optional `[recovery]` extra (LangGraph) |
 | **Web** | Next.js · Tailwind CSS |
-| **Deploy** | Render (API + colocated worker) · Vercel (web) · Neon (Postgres) · Upstash (Redis) |
+| **Deploy** | Self-hosted: one Docker Compose file (API, worker, Postgres, Redis, dashboard) |
 
 ## Repository structure
 
@@ -237,13 +270,15 @@ TraceroAI/
 │   └── app/
 │       ├── api/routes/     traces · metrics · recovery runs · eval runs · grading · jobs · health
 │       ├── evaluators/     quick checks + embedding relevance + LLM judge + diagnosis
+│       ├── otlp/           OpenTelemetry ingest: decode, map spans to steps, assemble runs
 │       └── services/       repositories · queue · rate limiter · judge · embeddings · cost
 ├── sdks/python/           the `traceroai` package (PyPI) — client, tracing,
 │                          recovery agent (traceroai.recovery), eval harness (traceroai.eval)
 ├── traceroai-web/         Next.js dashboard + interactive docs
 ├── examples/recovery-agent/   full showcase — tracing, query rewrite, cost, self-healing recovery, eval run
+├── examples/opentelemetry-langchain/   a LangChain app sending traces over OpenTelemetry
 ├── infra/                 Docker Compose for the whole stack
-├── docs/                  system design plan + screenshots
+├── docs/                  decision records (adr/), accuracy benchmark, trace data, screenshots
 └── USAGE.md               complete SDK usage guide
 ```
 
